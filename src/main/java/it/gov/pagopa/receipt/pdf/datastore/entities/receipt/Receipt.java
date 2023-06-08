@@ -1,7 +1,6 @@
 package it.gov.pagopa.receipt.pdf.datastore.entities.receipt;
 
-import it.gov.pagopa.receipt.pdf.datastore.entities.event.enumeration.ReceiptStatusType;
-import lombok.AllArgsConstructor;
+import it.gov.pagopa.receipt.pdf.datastore.entities.receipt.enumeration.ReceiptStatusType;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
