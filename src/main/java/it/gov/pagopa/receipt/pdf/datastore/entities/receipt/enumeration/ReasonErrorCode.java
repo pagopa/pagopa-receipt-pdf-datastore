@@ -1,4 +1,4 @@
-package it.gov.pagopa.receipt.pdf.datastore.entities.event.enumeration;
+package it.gov.pagopa.receipt.pdf.datastore.entities.receipt.enumeration;
 
 public enum ReasonErrorCode {
     ERROR_QUEUE(902), ERROR_BLOB_STORAGE(901);
