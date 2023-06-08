@@ -1,6 +1,6 @@
 package it.gov.pagopa.receipt.pdf.datastore.entities.event;
 
-import it.gov.pagopa.receipt.pdf.datastore.entities.event.enumeration.StatusType;
+import it.gov.pagopa.receipt.pdf.datastore.entities.event.enumeration.BizEventStatusType;
 import lombok.*;
 
 import java.util.List;
@@ -31,7 +31,7 @@ public class BizEvent {
 	
 	// internal management field
 	@Builder.Default
-	private StatusType eventStatus = StatusType.NA;
+	private BizEventStatusType eventStatus = BizEventStatusType.NA;
 	@Builder.Default
 	private Integer eventRetryEnrichmentCount = 0;
 	@Builder.Default

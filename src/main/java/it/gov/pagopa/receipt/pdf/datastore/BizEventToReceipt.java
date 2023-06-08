@@ -1,6 +1,5 @@
 package it.gov.pagopa.receipt.pdf.datastore;
 
-
 import com.azure.core.http.rest.Response;
 import com.azure.storage.queue.QueueClient;
 import com.azure.storage.queue.QueueClientBuilder;
@@ -12,7 +11,11 @@ import com.microsoft.azure.functions.annotation.CosmosDBTrigger;
 import com.microsoft.azure.functions.annotation.ExponentialBackoffRetry;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import it.gov.pagopa.receipt.pdf.datastore.entities.event.BizEvent;
-import it.gov.pagopa.receipt.pdf.datastore.entities.event.enumeration.StatusType;
+import it.gov.pagopa.receipt.pdf.datastore.entities.event.enumeration.BizEventStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.entities.event.enumeration.ReasonErrorCode;
+import it.gov.pagopa.receipt.pdf.datastore.entities.event.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.entities.receipt.EventData;
+import it.gov.pagopa.receipt.pdf.datastore.entities.receipt.ReasonError;
 import it.gov.pagopa.receipt.pdf.datastore.entities.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.utils.ObjectMapperUtils;
 
@@ -31,7 +34,7 @@ public class BizEventToReceipt {
 
 	@FunctionName("BizEventToReceiptProcessor")
 	@ExponentialBackoffRetry(maxRetryCount = 5, minimumInterval = "500", maximumInterval = "5000")
-	public void processBizEventEnrichment(
+	public void processBizEventToReceipt(
 			@CosmosDBTrigger(
 					name = "BizEventDatastore",
 					databaseName = "db",
@@ -62,9 +65,19 @@ public class BizEventToReceipt {
 		int discarder = 0;
 		for (BizEvent be: items) {
 			
-	        if (be.getEventStatus().equals(StatusType.DONE)) {
+	        if (be.getEventStatus().equals(BizEventStatusType.DONE)) {
 
 				Receipt receipt = new Receipt();
+
+				//insert BizEvent data into receipt
+				receipt.setIdEvent(be.getId());
+
+				EventData eventData = new EventData();
+				eventData.setPayerFiscalCode(be.getPayer().getEntityUniqueIdentifierValue());
+				eventData.setDebtorFiscalCode(be.getDebtor().getEntityUniqueIdentifierValue());
+				//TODO define right transaction value
+				eventData.setTransactionCreationDate(be.getTransactionDetails().getTransaction().getCreationDate());
+				receipt.setEventData(eventData);
 
 	        	String message = String.format("BizEventToReceipt function called at %s for event with id %s and status %s",
 		        		LocalDateTime.now(), be.getId(), be.getEventStatus());
@@ -80,11 +93,20 @@ public class BizEventToReceipt {
 							null, null, null);
 
 					if (sendMessageResult.getStatusCode() != 200) {
-						//SET receipt status to NOT_QUEUE_SENT
+						receipt.setStatus(ReceiptStatusType.NOT_QUEUE_SENT);
+
+						ReasonError reasonError = new ReasonError(ReasonErrorCode.ERROR_QUEUE.getCode(), "Error sending message to queue");
+						receipt.setReasonErr(reasonError);
+					} else {
+						receipt.setStatus(ReceiptStatusType.INSERTED);
 					}
 
 				} catch (Exception e) {
-					//
+					receipt.setStatus(ReceiptStatusType.NOT_QUEUE_SENT);
+					ReasonError reasonError = new ReasonError(ReasonErrorCode.ERROR_QUEUE.getCode(), "Generic exception error: "+e.getMessage());
+					receipt.setReasonErr(reasonError);
+
+					logger.severe("Generic exception sending msg to queue at "+ LocalDateTime.now()+ " : " + e.getMessage());
 				}
 
 				itemsDone.add(receipt);
