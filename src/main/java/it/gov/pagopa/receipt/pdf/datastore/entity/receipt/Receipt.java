@@ -1,0 +1,21 @@
+package it.gov.pagopa.receipt.pdf.datastore.entity.receipt;
+
+import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
+public class Receipt {
+
+    private String idEvent;
+    private EventData eventData;
+    private IOMessageData ioMessageData;
+    private ReceiptStatusType status;
+    private ReceiptMetadata mdAttach;
+    private ReceiptMetadata mdAttachPayer;
+    private int numRetry;
+    private ReasonError reasonErr;
+}

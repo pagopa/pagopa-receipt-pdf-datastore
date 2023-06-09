@@ -4,12 +4,12 @@ import com.azure.core.http.rest.Response;
 import com.azure.storage.queue.models.SendMessageResult;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.OutputBinding;
-import it.gov.pagopa.receipt.pdf.datastore.entities.event.*;
-import it.gov.pagopa.receipt.pdf.datastore.entities.event.enumeration.BizEventStatusType;
-import it.gov.pagopa.receipt.pdf.datastore.entities.receipt.Receipt;
-import it.gov.pagopa.receipt.pdf.datastore.entities.receipt.enumeration.ReasonErrorCode;
-import it.gov.pagopa.receipt.pdf.datastore.entities.receipt.enumeration.ReceiptStatusType;
-import it.gov.pagopa.receipt.pdf.datastore.service.QueueService;
+import it.gov.pagopa.receipt.pdf.datastore.entity.event.*;
+import it.gov.pagopa.receipt.pdf.datastore.entity.event.enumeration.BizEventStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
+import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReasonErrorCode;
+import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptQueueClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -71,7 +71,7 @@ class BizEventToReceiptTest {
         Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
         when(context.getLogger()).thenReturn(logger);
 
-        QueueService serviceMock = mock(QueueService.class);
+        ReceiptQueueClient serviceMock = mock(ReceiptQueueClient.class);
         Response<SendMessageResult> response = mock(Response.class);
         when(response.getStatusCode()).thenReturn(200);
         when(serviceMock.sendMessageToQueue(anyString())).thenReturn(response);
@@ -100,7 +100,7 @@ class BizEventToReceiptTest {
         Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
         when(context.getLogger()).thenReturn(logger);
 
-        QueueService serviceMock = mock(QueueService.class);
+        ReceiptQueueClient serviceMock = mock(ReceiptQueueClient.class);
         Response<SendMessageResult> response = mock(Response.class);
         when(response.getStatusCode()).thenReturn(400);
         when(serviceMock.sendMessageToQueue(anyString())).thenReturn(response);
