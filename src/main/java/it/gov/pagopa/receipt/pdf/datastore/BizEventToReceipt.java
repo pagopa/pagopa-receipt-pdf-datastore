@@ -8,14 +8,14 @@ import com.microsoft.azure.functions.annotation.CosmosDBOutput;
 import com.microsoft.azure.functions.annotation.CosmosDBTrigger;
 import com.microsoft.azure.functions.annotation.ExponentialBackoffRetry;
 import com.microsoft.azure.functions.annotation.FunctionName;
-import it.gov.pagopa.receipt.pdf.datastore.entities.event.BizEvent;
-import it.gov.pagopa.receipt.pdf.datastore.entities.event.enumeration.BizEventStatusType;
-import it.gov.pagopa.receipt.pdf.datastore.entities.receipt.EventData;
-import it.gov.pagopa.receipt.pdf.datastore.entities.receipt.ReasonError;
-import it.gov.pagopa.receipt.pdf.datastore.entities.receipt.Receipt;
-import it.gov.pagopa.receipt.pdf.datastore.entities.receipt.enumeration.ReasonErrorCode;
-import it.gov.pagopa.receipt.pdf.datastore.entities.receipt.enumeration.ReceiptStatusType;
-import it.gov.pagopa.receipt.pdf.datastore.service.QueueService;
+import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
+import it.gov.pagopa.receipt.pdf.datastore.entity.event.enumeration.BizEventStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
+import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReasonError;
+import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
+import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReasonErrorCode;
+import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptQueueClient;
 import it.gov.pagopa.receipt.pdf.datastore.utils.ObjectMapperUtils;
 
 import java.time.LocalDateTime;
@@ -25,14 +25,14 @@ import java.util.logging.Logger;
 
 public class BizEventToReceipt {
 
-	private final QueueService queueService;
+	private final ReceiptQueueClient queueService;
 
-	BizEventToReceipt(QueueService queueService){
+	BizEventToReceipt(ReceiptQueueClient queueService){
 		this.queueService = queueService;
 	}
 
 	BizEventToReceipt(){
-		this.queueService = new QueueService();
+		this.queueService = new ReceiptQueueClient();
 	}
 
 	@FunctionName("BizEventToReceiptProcessor")
@@ -61,29 +61,29 @@ public class BizEventToReceipt {
 		String msg = String.format("BizEventEnrichment stat %s function - num events triggered %d", context.getInvocationId(),  items.size());
 		logger.info(msg);
 		int discarder = 0;
-		for (BizEvent be: items) {
+		for (BizEvent bizEvent: items) {
 			
-	        if (be.getEventStatus().equals(BizEventStatusType.DONE)) {
+	        if (bizEvent.getEventStatus().equals(BizEventStatusType.DONE)) {
 
 				Receipt receipt = new Receipt();
 
 				//insert BizEvent data into receipt
-				receipt.setIdEvent(be.getId());
+				receipt.setIdEvent(bizEvent.getId());
 
 				EventData eventData = new EventData();
-				eventData.setPayerFiscalCode(be.getPayer().getEntityUniqueIdentifierValue());
-				eventData.setDebtorFiscalCode(be.getDebtor().getEntityUniqueIdentifierValue());
+				eventData.setPayerFiscalCode(bizEvent.getPayer().getEntityUniqueIdentifierValue());
+				eventData.setDebtorFiscalCode(bizEvent.getDebtor().getEntityUniqueIdentifierValue());
 				//TODO define right transaction value
-				eventData.setTransactionCreationDate(be.getTransactionDetails().getTransaction().getCreationDate());
+				eventData.setTransactionCreationDate(bizEvent.getTransactionDetails().getTransaction().getCreationDate());
 				receipt.setEventData(eventData);
 
 	        	String message = String.format("BizEventToReceipt function called at %s for event with id %s and status %s",
-		        		LocalDateTime.now(), be.getId(), be.getEventStatus());
+		        		LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
 		        logger.info(message);
 
 				try {
 
-					String messageText = ObjectMapperUtils.writeValueAsString(be);
+					String messageText = ObjectMapperUtils.writeValueAsString(bizEvent);
 
 					// Add a message to the queue
 					Response<SendMessageResult> sendMessageResult = queueService.sendMessageToQueue(messageText);
