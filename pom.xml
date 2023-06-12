@@ -31,6 +31,11 @@
             <artifactId>azure-functions-java-library</artifactId>
             <version>${azure.functions.java.library.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.azure</groupId>
+            <artifactId>azure-cosmos</artifactId>
+            <version>4.45.1</version>
+        </dependency>
 
         <!-- End Azure -->
 
