@@ -119,7 +119,7 @@ class BizEventToReceiptTest {
         verify(documentdb).setValue(receiptCaptor.capture());
         Receipt captured = receiptCaptor.getValue().get(0);
         assertEquals(ReceiptStatusType.NOT_QUEUE_SENT, captured.getStatus());
-        assertEquals(ReasonErrorCode.ERROR_QUEUE, captured.getReasonErr().getCode());
+        assertEquals(ReasonErrorCode.ERROR_QUEUE.getCode(), captured.getReasonErr().getCode());
         assertEquals(EVENT_ID, captured.getIdEvent());
         assertEquals(PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
         assertEquals(DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
