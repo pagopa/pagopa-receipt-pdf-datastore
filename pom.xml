@@ -21,6 +21,7 @@
 
     <dependencies>
         <!-- Start Azure -->
+
         <dependency>
             <groupId>org.modelmapper</groupId>
             <artifactId>modelmapper</artifactId>
@@ -38,6 +39,26 @@
         </dependency>
 
         <!-- End Azure -->
+
+        <!-- Start Feign -->
+
+        <dependency>
+            <groupId>io.github.openfeign</groupId>
+            <artifactId>feign-okhttp</artifactId>
+            <version>10.11</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.openfeign</groupId>
+            <artifactId>feign-gson</artifactId>
+            <version>10.11</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.openfeign</groupId>
+            <artifactId>feign-slf4j</artifactId>
+            <version>10.11</version>
+        </dependency>
+
+        <!-- End Feign -->
 
         <!-- Test -->
         <dependency>
