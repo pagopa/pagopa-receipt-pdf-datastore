@@ -1,9 +1,9 @@
 microservice-chart:
-  namespace: "<namespace>" # TODO
+  namespace: "receipts"
   nameOverride: ""
   fullnameOverride: ""
   image:
-    repository: pagopapcommonacr.azurecr.io/pagopa<project-name>  # TODO
+    repository: pagopapcommonacr.azurecr.io/pagopareceiptpdfdatastore
     tag: "0.0.1"
     pullPolicy: Always
   # https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script.WebHost/Controllers/HostController.cs
@@ -29,8 +29,8 @@ microservice-chart:
     port: 80
   ingress:
     create: true
-    host: "weuprod.<namespace>.internal.platform.pagopa.it"  # TODO
-    path: /pagopa-<project-name>-service/(.*) # TODO
+    host: "weuprod.receipts.internal.platform.pagopa.it"
+    path: /pagopa-receipt-pdf-datastore/(.*) #
   serviceAccount:
     create: false
     annotations: {}
@@ -61,12 +61,15 @@ microservice-chart:
           type: Utilization # Allowed types are 'Utilization' or 'AverageValue'
           value: "75"
   envConfig:
-    WEBSITE_SITE_NAME: "pagopa<project-name>" # required to show cloud role name in application insights # TODO
+    WEBSITE_SITE_NAME: "pagopareceiptpdfdatastore" # required to show cloud role name in application insights
     FUNCTIONS_WORKER_RUNTIME: "java"
   envSecret:
-    APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-d-connection-string' # TODO set in kv
+    APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-d-connection-string'
+    COSMOS_RECEIPTS_CONN_STRING: 'cosmos-receipt-d-connection-string'
+    RECEIPT_QUEUE_CONN_STRING: 'receipt-queue-d-connection-string'
+    COSMOS_BIZ_EVENT_CONN_STRING: 'cosmos-biz-event-d-connection-string'
   keyvault:
-    name: "pagopa-p-<namespace>-kv" # TODO
+    name: "pagopa-p-receipts-kv"
     tenantId: "7788edaf-0346-4068-9d79-c868aed15b3d"
   nodeSelector: {}
   tolerations: []
