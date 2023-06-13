@@ -9,7 +9,7 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.event.enumeration.BizEventStat
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReasonErrorCode;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
-import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptQueueClient;
+import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptQueueClientImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -71,7 +71,7 @@ class BizEventToReceiptTest {
         Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
         when(context.getLogger()).thenReturn(logger);
 
-        ReceiptQueueClient serviceMock = mock(ReceiptQueueClient.class);
+        ReceiptQueueClientImpl serviceMock = mock(ReceiptQueueClientImpl.class);
         Response<SendMessageResult> response = mock(Response.class);
         when(response.getStatusCode()).thenReturn(200);
         when(serviceMock.sendMessageToQueue(anyString())).thenReturn(response);
@@ -100,7 +100,7 @@ class BizEventToReceiptTest {
         Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
         when(context.getLogger()).thenReturn(logger);
 
-        ReceiptQueueClient serviceMock = mock(ReceiptQueueClient.class);
+        ReceiptQueueClientImpl serviceMock = mock(ReceiptQueueClientImpl.class);
         Response<SendMessageResult> response = mock(Response.class);
         when(response.getStatusCode()).thenReturn(400);
         when(serviceMock.sendMessageToQueue(anyString())).thenReturn(response);

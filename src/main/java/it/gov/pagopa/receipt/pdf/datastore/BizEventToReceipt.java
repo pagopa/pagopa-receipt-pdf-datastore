@@ -15,7 +15,7 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReasonError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReasonErrorCode;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
-import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptQueueClient;
+import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptQueueClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.utils.ObjectMapperUtils;
 
 import java.time.LocalDateTime;
@@ -25,14 +25,14 @@ import java.util.logging.Logger;
 
 public class BizEventToReceipt {
 
-	private final ReceiptQueueClient queueService;
+	private final ReceiptQueueClientImpl queueService;
 
-	BizEventToReceipt(ReceiptQueueClient queueService){
+	BizEventToReceipt(ReceiptQueueClientImpl queueService){
 		this.queueService = queueService;
 	}
 
 	BizEventToReceipt(){
-		this.queueService = new ReceiptQueueClient();
+		this.queueService = new ReceiptQueueClientImpl();
 	}
 
 	@FunctionName("BizEventToReceiptProcessor")
