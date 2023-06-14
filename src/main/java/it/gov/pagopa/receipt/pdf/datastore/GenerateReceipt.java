@@ -4,8 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.OutputBinding;
 import com.microsoft.azure.functions.annotation.*;
+import feign.Response;
 import it.gov.pagopa.receipt.pdf.datastore.client.PdfEngineClient;
-import it.gov.pagopa.receipt.pdf.datastore.client.PdfEngineClientProvider;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.PdfEngineClientProviderImpl;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
@@ -13,20 +13,16 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReasonError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReasonErrorCode;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
-import it.gov.pagopa.receipt.pdf.datastore.model.request.PdfEngineRequest;
-import it.gov.pagopa.receipt.pdf.datastore.model.response.PdfEngineResponse;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
+import it.gov.pagopa.receipt.pdf.datastore.model.request.PdfEngineRequest;
 import it.gov.pagopa.receipt.pdf.datastore.utils.ObjectMapperUtils;
-import org.apache.commons.io.IOUtils;
 
-import javax.swing.text.html.HTML;
 import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 import java.util.logging.Logger;
 
 public class GenerateReceipt {
@@ -34,6 +30,8 @@ public class GenerateReceipt {
     private ReceiptCosmosClientImpl receiptCosmosClient;
 
     private PdfEngineClient pdfEngineClient;
+
+    private final int maxNumberRetry = Integer.parseInt(System.getenv().getOrDefault("COSMOS_RECEIPT_QUEUE_MAX_RETRY", "5"));
 
     GenerateReceipt(ReceiptCosmosClientImpl receiptCosmosClient, PdfEngineClient pdfEngineClient) {
         this.receiptCosmosClient = receiptCosmosClient;
@@ -101,30 +99,27 @@ public class GenerateReceipt {
 
             boolean payerDebtorEqual = payerCF.equals(debtorCF);
 
-            PdfEngineResponse statusDebtorGen = new PdfEngineResponse();
-            PdfEngineResponse statusPayerGen = new PdfEngineResponse();
+            int statusDebtorGen = 0;
+            int statusPayerGen = 0;
 
             //Generate PDFs for the needed fiscal codes
-            //TODO generate complete template
             if (payerDebtorEqual) {
                 if (receipt.getMdAttach().getName().isEmpty()) {
-                    statusDebtorGen = handleReceiptPDFGeneration(receipt, true);
+                    statusDebtorGen = handleReceiptPDFGeneration(bizEvent, true);
                 }
             } else {
-                //TODO generate partial template
-                //verify the debot pdf hasn't already been generated
+                //verify the debtor pdf hasn't already been generated
                 if (receipt.getMdAttach().getName().isEmpty()) {
-                    statusDebtorGen = handleReceiptPDFGeneration(receipt, false);
+                    statusDebtorGen = handleReceiptPDFGeneration(bizEvent, false);
                 }
-                //TODO generate complete template
                 //verify the payer pdf hasn't already been generated
                 if (receipt.getMdAttachPayer().getName().isEmpty()) {
-                    statusPayerGen = handleReceiptPDFGeneration(receipt, true);
+                    statusPayerGen = handleReceiptPDFGeneration(bizEvent, true);
                 }
             }
 
             //Verify pdf generation success
-            if (statusDebtorGen.getStatusCode() == 200 && statusPayerGen.getStatusCode() == 200) {
+            if (statusDebtorGen == 200 && statusPayerGen == 200) {
                 //TODO update receipt with PDF metadata
                 receipt.setStatus(ReceiptStatusType.GENERATED);
             } else {
@@ -135,7 +130,7 @@ public class GenerateReceipt {
                     receipt.setStatus(ReceiptStatusType.RETRY);
                 }
                 //TODO menage api call error code -> pdfengineStatusCode + add PDFEngine error message
-                int errorStatusCode = statusDebtorGen.getStatusCode() == 200 ? statusPayerGen.getStatusCode() : statusDebtorGen.getStatusCode();
+                int errorStatusCode = statusDebtorGen == 200 ? statusPayerGen : statusDebtorGen;
                 ReasonError reasonError = new ReasonError(ReasonErrorCode.ERROR_PDF_ENGINE.getCustomCode(errorStatusCode), "Error generating PDF: ");
                 receipt.setReasonErr(reasonError);
                 receipt.setNumRetry(receipt.getNumRetry() + 1);
@@ -160,31 +155,94 @@ public class GenerateReceipt {
         }
     }
 
-    private PdfEngineResponse handleReceiptPDFGeneration(Receipt receipt, boolean completeTemplate) {
+    private int handleReceiptPDFGeneration(BizEvent bizEvent, boolean completeTemplate) {
         int pdfEngineStatusCode = 0;
         PdfEngineRequest request = new PdfEngineRequest();
-        PdfEngineResponse response = new PdfEngineResponse();
-        String templateFileName = completeTemplate ? "/complete_template.html" : "/partial_template.html";
 
-        String htmlTemplate = null;
-        try {
-            htmlTemplate = IOUtils.toString(
-                    Objects.requireNonNull(this.getClass().getResourceAsStream(templateFileName)),
-                    StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            response.setStatusCode(400);
-
-            return response;
-        }
-
+        String templateFileName = completeTemplate ? "/complete_template.zip" : "/partial_template.zip";
+        File htmlTemplate = new File(templateFileName);
         request.setTemplate(htmlTemplate);
+        request.setData(convertReceiptToData(bizEvent));
+        request.setApplySignature(false);
 
-        response = pdfEngineClient.generatePDF(request);
+        Response pdfResponse = pdfEngineClient.generatePDF(request);
 
-        //TODO add call to PDFEngine service to generate pdf (full o partial template)
+        return pdfResponse.status();
+    }
 
-        response.setStatusCode(pdfEngineStatusCode);
+    private Map<String, Object> convertReceiptToData(BizEvent bizEvent) {
+        Map<String, Object> map = new HashMap<String, Object>();
 
-        return response;
+        //transaction
+        Map<String, Object> transactionMap = new HashMap<String, Object>();
+        //transaction.psp
+        Map<String, Object> transactionPspMap = new HashMap<String, Object>();
+        transactionPspMap.put("name", bizEvent.getTransactionDetails().getTransaction().getPsp().getBusinessName());
+        //transaction.psp.fee
+        Map<String, Object> transactionPspFeeMap = new HashMap<String, Object>();
+        transactionPspFeeMap.put("amount", bizEvent.getTransactionDetails().getTransaction().getFee());
+        transactionPspMap.put("fee", transactionPspFeeMap);
+        //transaction.paymentMethod
+        Map<String, String> transactionPaymentMethod = new HashMap<String, String>();
+        transactionPaymentMethod.put("name", bizEvent.getPaymentInfo().getPaymentMethod());
+        transactionPaymentMethod.put("logo", bizEvent.getTransactionDetails().getWallet().getInfo().getBrand());
+        transactionPaymentMethod.put("accountHolder", bizEvent.getTransactionDetails().getWallet().getInfo().getHolder());
+        transactionPaymentMethod.put("extraFee", "false");
+
+        transactionMap.put("id", bizEvent.getTransactionDetails().getTransaction().getIdTransaction());
+        transactionMap.put("timestamp", bizEvent.getPaymentInfo().getPaymentDateTime());
+        transactionMap.put("amount", bizEvent.getPaymentInfo().getAmount());
+        transactionMap.put("psp", transactionPspMap);
+        transactionMap.put("rrn", bizEvent.getTransactionDetails().getTransaction().getRrn());
+        transactionMap.put("paymentMethod", transactionPaymentMethod);
+        transactionMap.put("authCode", bizEvent.getTransactionDetails().getTransaction().getAuthorizationCode());
+
+        //user
+        Map<String, Object> userMap = new HashMap<String, Object>();
+        //user.data
+        Map<String, Object> userDataMap = new HashMap<String, Object>();
+        userDataMap.put("firstName", bizEvent.getTransactionDetails().getUser().getFullName());
+        userDataMap.put("lastName", "x");
+        userDataMap.put("taxCode", bizEvent.getTransactionDetails().getUser().getFiscalCode());
+
+        userMap.put("data", userDataMap);
+        userMap.put("mail", bizEvent.getDebtor().getEMail());
+
+        //cart
+        Map<String, Object> cartMap = new HashMap<String, Object>();
+        //cart.items
+        ArrayList<Object> cartItemsArray = new ArrayList<>();
+        //cart.items[0]
+        Map<String, Object> cartItemMap = new HashMap<String, Object>();
+        //cart.items[0].refNumber
+        Map<String, Object> cartItemRefNumberMap = new HashMap<String, Object>();
+        cartItemRefNumberMap.put("type", "CODICE AVVISO");
+        cartItemRefNumberMap.put("value", bizEvent.getDebtorPosition().getIuv());
+        //cart.items[0].debtor
+        Map<String, Object> cartItemDebtorMap = new HashMap<String, Object>();
+        cartItemDebtorMap.put("fullName", bizEvent.getDebtor().getFullName());
+        cartItemDebtorMap.put("taxCode", bizEvent.getDebtor().getEntityUniqueIdentifierType());
+        //cart.items[0].payee
+        Map<String, Object> cartItemPayeeMap = new HashMap<String, Object>();
+        cartItemPayeeMap.put("name", bizEvent.getCreditor().getOfficeName());
+        cartItemPayeeMap.put("taxCode", bizEvent.getCreditor().getCompanyName());
+
+        cartItemMap.put("refNumber", cartItemRefNumberMap);
+        cartItemMap.put("debtor", cartItemDebtorMap);
+        cartItemMap.put("payee", cartItemPayeeMap);
+        cartItemMap.put("subject", bizEvent.getPaymentInfo().getRemittanceInformation());
+        cartItemMap.put("amount", bizEvent.getPaymentInfo().getAmount());
+
+        cartItemsArray.add(cartItemMap);
+
+        cartMap.put("items", cartItemsArray);
+
+
+        map.put("transaction", transactionMap);
+        map.put("cart", cartMap);
+        map.put("noticeCode", "x");
+        map.put("amount", 0);
+
+        return map;
     }
 }
