@@ -4,9 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.OutputBinding;
 import com.microsoft.azure.functions.annotation.*;
-import feign.Response;
 import it.gov.pagopa.receipt.pdf.datastore.client.PdfEngineClient;
-import it.gov.pagopa.receipt.pdf.datastore.client.impl.PdfEngineClientProviderImpl;
+import it.gov.pagopa.receipt.pdf.datastore.client.impl.PdfEngineClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReasonError;
@@ -33,6 +32,8 @@ public class GenerateReceipt {
 
     private final int maxNumberRetry = Integer.parseInt(System.getenv().getOrDefault("COSMOS_RECEIPT_QUEUE_MAX_RETRY", "5"));
 
+    private final String ocpApimSubsKey = System.getenv("OCP_APIM_SUBSCRIPTION_KEY");
+
     GenerateReceipt(ReceiptCosmosClientImpl receiptCosmosClient, PdfEngineClient pdfEngineClient) {
         this.receiptCosmosClient = receiptCosmosClient;
         this.pdfEngineClient = pdfEngineClient;
@@ -40,7 +41,7 @@ public class GenerateReceipt {
 
     GenerateReceipt() {
         this.receiptCosmosClient = new ReceiptCosmosClientImpl();
-        this.pdfEngineClient = new PdfEngineClientProviderImpl().provideClient();
+        this.pdfEngineClient = new PdfEngineClientImpl();
     }
 
     @FunctionName("GenerateReceiptProcess")
@@ -159,15 +160,15 @@ public class GenerateReceipt {
         int pdfEngineStatusCode = 0;
         PdfEngineRequest request = new PdfEngineRequest();
 
-        String templateFileName = completeTemplate ? "/complete_template.zip" : "/partial_template.zip";
-        File htmlTemplate = new File(templateFileName);
+        String templateFileName = completeTemplate ? "complete_template.zip" : "partial_template.zip";
+        File htmlTemplate = new File("src/main/resources/"+templateFileName);
         request.setTemplate(htmlTemplate);
-        request.setData(convertReceiptToData(bizEvent));
+        request.setData(convertReceiptToData(bizEvent).toString());
         request.setApplySignature(false);
 
-        Response pdfResponse = pdfEngineClient.generatePDF(request);
+        //Response pdfResponse = pdfEngineClient.generatePDF();
 
-        return pdfResponse.status();
+        return 0; //pdfResponse.status();
     }
 
     private Map<String, Object> convertReceiptToData(BizEvent bizEvent) {
