@@ -74,5 +74,9 @@ public class ObjectMapperUtils {
         return objectMapper.writeValueAsString(value);
     }
 
+    public static <T>T mapString(final String string, Class<T> outClass) throws JsonProcessingException {
+        return objectMapper.readValue(string, outClass);
+    }
+
 
 }
