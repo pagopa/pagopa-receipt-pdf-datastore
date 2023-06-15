@@ -63,11 +63,22 @@ microservice-chart:
   envConfig:
     WEBSITE_SITE_NAME: "pagopareceiptpdfdatastore" # required to show cloud role name in application insights
     FUNCTIONS_WORKER_RUNTIME: "java"
+    RECEIPT_QUEUE_TOPIC: 'pagopa-u-weu-receipts-queue-receipt-waiting-4-gen'
+    COSMOS_RECEIPT_QUEUE_MAX_RETRY: '5'
+    PDF_ENGINE_ENDPOINT: 'https://api.uat.platform.pagopa.it/shared/pdf-engine/v1/generate-pdf'
+    COSMOS_RECEIPT_SERVICE_ENDPOINT: 'https://pagopa-u-weu-receipts-ds-cosmos-account.documents.azure.com:443/'
+    COSMOS_RECEIPT_DB_NAME: 'db'
+    COSMOS_RECEIPT_CONTAINER_NAME: 'receipts'
+    PDF_BLOB_STORAGE_ENDPOINT: 'https://pagopauweureceiptsfnsa.blob.core.windows.net'
+    PDF_BLOB_STORAGE_CONTAINER: 'pagopa-u-weu-receipts-azure-blob-receipt-st-attach'
   envSecret:
-    APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-d-connection-string'
-    COSMOS_RECEIPTS_CONN_STRING: 'cosmos-receipt-d-connection-string'
-    RECEIPT_QUEUE_CONN_STRING: 'receipt-queue-d-connection-string'
-    COSMOS_BIZ_EVENT_CONN_STRING: 'cosmos-biz-event-d-connection-string'
+    APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-u-connection-string'
+    PDF_BLOB_STORAGE_CONN_STRING: 'pdf-blob-storage-u-connection-string'
+    COSMOS_RECEIPTS_CONN_STRING: 'cosmos-receipt-u-connection-string'
+    RECEIPT_QUEUE_CONN_STRING: 'receipt-queue-u-connection-string'
+    COSMOS_BIZ_EVENT_CONN_STRING: 'cosmos-biz-event-u-connection-string'
+    OCP_APIM_SUBSCRIPTION_KEY: 'shared-apim-u-subscription-key'
+    COSMOS_RECEIPT_KEY: 'cosmos-receipt-u-key'
   keyvault:
     name: "pagopa-d-receipts-kv"
     tenantId: "7788edaf-0346-4068-9d79-c868aed15b3d"
