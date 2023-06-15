@@ -49,8 +49,8 @@ public class GenerateReceipt {
     public void processGenerateReceipt(
             @QueueTrigger(
                     name = "QueueReceiptWaitingForGen",
-                    queueName = "COSMOS_RECEIPT_QUEUE_TOPIC",
-                    connection = "COSMOS_RECEIPT_QUEUE_CONN_STRING")
+                    queueName = "RECEIPT_QUEUE_TOPIC",
+                    connection = "RECEIPT_QUEUE_CONN_STRING")
             String message,
             @CosmosDBOutput(
                     name = "ReceiptDatastore",
@@ -60,8 +60,8 @@ public class GenerateReceipt {
             OutputBinding<List<Receipt>> documentdb,
             @QueueOutput(
                     name = "QueueReceiptWaitingForGen",
-                    queueName = "COSMOS_RECEIPT_QUEUE_TOPIC",
-                    connection = "COSMOS_RECEIPT_QUEUE_CONN_STRING")
+                    queueName = "RECEIPT_QUEUE_TOPIC",
+                    connection = "RECEIPT_QUEUE_CONN_STRING")
             OutputBinding<String> requeueMessage,
             final ExecutionContext context) {
 
