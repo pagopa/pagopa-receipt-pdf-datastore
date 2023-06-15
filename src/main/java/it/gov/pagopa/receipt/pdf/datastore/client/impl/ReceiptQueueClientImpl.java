@@ -23,7 +23,7 @@ public class ReceiptQueueClientImpl implements ReceiptQueueClient {
                 .buildClient();
 
         return queueClient.sendMessageWithResponse(
-                messageText, Duration.of(30, ChronoUnit.SECONDS),
+                messageText, Duration.of(1, ChronoUnit.SECONDS),
                 null, null, null);
 
     }

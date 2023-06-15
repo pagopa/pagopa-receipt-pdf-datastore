@@ -28,7 +28,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
 
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
-        String query = "SELECT * FROM c WHERE c.id = @id";
+        String query = "SELECT * FROM c WHERE c.idEvent = " + "'" + receiptId + "'";
 
         CosmosPagedIterable<Receipt> queryResponse = cosmosContainer
                 .queryItems(query, new CosmosQueryRequestOptions(), Receipt.class);
