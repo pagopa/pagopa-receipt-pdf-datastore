@@ -76,7 +76,7 @@ class BizEventToReceiptTest {
         when(response.getStatusCode()).thenReturn(200);
         when(serviceMock.sendMessageToQueue(anyString())).thenReturn(response);
 
-        function = new BizEventToReceipt(serviceMock);
+        function = new BizEventToReceipt();
 
         List<BizEvent> bizEventItems = new ArrayList<>();
         bizEventItems.add(generateValidBizEvent());
@@ -105,7 +105,7 @@ class BizEventToReceiptTest {
         when(response.getStatusCode()).thenReturn(400);
         when(serviceMock.sendMessageToQueue(anyString())).thenReturn(response);
 
-        function = new BizEventToReceipt(serviceMock);
+        function = new BizEventToReceipt();
 
         List<BizEvent> bizEventItems = new ArrayList<>();
         bizEventItems.add(generateValidBizEvent());

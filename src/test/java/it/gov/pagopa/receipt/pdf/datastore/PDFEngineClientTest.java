@@ -14,7 +14,7 @@ public class PDFEngineClientTest {
     @Test
     public void runOk() throws IOException {
 
-        File template = new File("src/main/resources/template.zip");
+        byte[] template = new FileInputStream(new File("src/main/resources/complete_template.zip")).readAllBytes();
 
         try (FileInputStream fileInputStream = new FileInputStream(new File("src/test/resources/receipt_data.json"))) {
             String data = new String(fileInputStream.readAllBytes());
@@ -29,6 +29,12 @@ public class PDFEngineClientTest {
 
             Assertions.assertEquals(HttpStatus.SC_OK, pdfEngineResponse.getStatusCode());
             Assertions.assertNotNull(pdfEngineResponse.getPdf());
+
+            //  FileOutputStream outputStream = new FileOutputStream("output.pdf");
+            //
+            //  outputStream.write(pdfEngineResponse.getPdf());
+            //
+            //  outputStream.close();
         }
 
     }
