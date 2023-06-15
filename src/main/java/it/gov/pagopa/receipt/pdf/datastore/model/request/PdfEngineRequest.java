@@ -5,6 +5,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.io.File;
+import java.io.InputStream;
 import java.util.Map;
 
 @Getter
@@ -12,7 +13,7 @@ import java.util.Map;
 @NoArgsConstructor
 public class PdfEngineRequest {
 
-    File template;
+    byte[] template;
     String data;
     boolean applySignature;
 }

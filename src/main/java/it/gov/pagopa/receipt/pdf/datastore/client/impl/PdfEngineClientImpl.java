@@ -10,6 +10,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.entity.mime.content.ByteArrayBody;
 import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -26,7 +27,7 @@ public class PdfEngineClientImpl implements PdfEngineClient {
         PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
 
         try (CloseableHttpClient client = HttpClientBuilder.create().build()) {
-            FileBody fileBody = new FileBody(pdfEngineRequest.getTemplate(), ContentType.DEFAULT_BINARY);
+            ByteArrayBody fileBody = new ByteArrayBody(pdfEngineRequest.getTemplate(), "template.zip");
             StringBody dataBody = new StringBody(pdfEngineRequest.getData(), ContentType.APPLICATION_JSON);
 
             MultipartEntityBuilder builder = MultipartEntityBuilder.create();
@@ -49,9 +50,10 @@ public class PdfEngineClientImpl implements PdfEngineClient {
                     pdfEngineResponse.setPdf(inputStream.readAllBytes());
                 } else {
                     pdfEngineResponse.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-
+                    //TODO retrieve error message from response json
                     pdfEngineResponse.setErrorMessage(response.getStatusLine().getReasonPhrase());
                 }
+
             } catch (IOException e) {
                 pdfEngineResponse.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
             }
