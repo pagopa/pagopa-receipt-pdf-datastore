@@ -20,109 +20,107 @@ import it.gov.pagopa.receipt.pdf.datastore.utils.ObjectMapperUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.logging.Logger;
 
 public class BizEventToReceipt {
 
-	private final ReceiptQueueClientImpl queueService;
+    @FunctionName("BizEventToReceiptProcessor")
+    @ExponentialBackoffRetry(maxRetryCount = 5, minimumInterval = "500", maximumInterval = "5000")
+    public void processBizEventToReceipt(
+            @CosmosDBTrigger(
+                    name = "BizEventDatastore",
+                    databaseName = "db",
+                    collectionName = "biz-events",
+                    leaseCollectionName = "biz-events-leases",
+                    leaseCollectionPrefix = "materialized",
+                    createLeaseCollectionIfNotExists = true,
+                    maxItemsPerInvocation = 100,
+                    connectionStringSetting = "COSMOS_BIZ_EVENT_CONN_STRING")
+            List<BizEvent> items,
+            @CosmosDBOutput(
+                    name = "ReceiptDatastore",
+                    databaseName = "db",
+                    collectionName = "receipts",
+                    connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING")
+            OutputBinding<List<Receipt>> documentdb,
+            final ExecutionContext context) {
 
-	BizEventToReceipt(ReceiptQueueClientImpl queueService){
-		this.queueService = queueService;
-	}
+        List<Receipt> itemsDone = new ArrayList<>();
+        Logger logger = context.getLogger();
 
-	BizEventToReceipt(){
-		this.queueService = new ReceiptQueueClientImpl();
-	}
+        String msg = String.format("BizEventEnrichment stat %s function - num events triggered %d", context.getInvocationId(), items.size());
+        logger.info(msg);
+        int discarder = 0;
 
-	@FunctionName("BizEventToReceiptProcessor")
-	@ExponentialBackoffRetry(maxRetryCount = 5, minimumInterval = "500", maximumInterval = "5000")
-	public void processBizEventToReceipt(
-			@CosmosDBTrigger(
-					name = "BizEventDatastore",
-					databaseName = "db",
-					collectionName = "biz-events",
-					leaseCollectionName = "biz-events-leases",
-					createLeaseCollectionIfNotExists = true,
-					maxItemsPerInvocation=100,
-					connectionStringSetting = "COSMOS_BIZ_EVENT_CONN_STRING")
-			List<BizEvent> items,
-			@CosmosDBOutput(
-					name = "ReceiptDatastore",
-					databaseName = "db",
-					collectionName = "receipts",
-					connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING")
-			OutputBinding<List<Receipt>> documentdb,
-			final ExecutionContext context) {
-		
-		List<Receipt> itemsDone = new ArrayList<>();
-		Logger logger = context.getLogger();
+        ReceiptQueueClientImpl queueService = new ReceiptQueueClientImpl();
+        for (BizEvent bizEvent : items) {
 
-		String msg = String.format("BizEventEnrichment stat %s function - num events triggered %d", context.getInvocationId(),  items.size());
-		logger.info(msg);
-		int discarder = 0;
-		for (BizEvent bizEvent: items) {
-			
-	        if (bizEvent.getEventStatus().equals(BizEventStatusType.DONE)) {
+            if (bizEvent.getEventStatus().equals(BizEventStatusType.DONE)) {
 
-				Receipt receipt = new Receipt();
+                Receipt receipt = new Receipt();
 
-				//insert BizEvent data into receipt
-				receipt.setIdEvent(bizEvent.getId());
+                //insert BizEvent data into receipt
+                receipt.setIdEvent(bizEvent.getId());
 
-				EventData eventData = new EventData();
-				eventData.setPayerFiscalCode(bizEvent.getPayer().getEntityUniqueIdentifierValue());
-				eventData.setDebtorFiscalCode(bizEvent.getDebtor().getEntityUniqueIdentifierValue());
-				//TODO define right transaction value
-				eventData.setTransactionCreationDate(bizEvent.getTransactionDetails().getTransaction().getCreationDate());
-				receipt.setEventData(eventData);
+                EventData eventData = new EventData();
+                eventData.setPayerFiscalCode(bizEvent.getPayer().getEntityUniqueIdentifierValue());
+                eventData.setDebtorFiscalCode(bizEvent.getDebtor().getEntityUniqueIdentifierValue());
+                //TODO define right transaction value
+                eventData.setTransactionCreationDate(
+                        bizEvent.getTransactionDetails() != null &&
+                                bizEvent.getTransactionDetails().getTransaction() != null
+                                ?
+                                bizEvent.getTransactionDetails().getTransaction().getCreationDate()
+                                : null
+                );
+                receipt.setEventData(eventData);
 
-	        	String message = String.format("BizEventToReceipt function called at %s for event with id %s and status %s",
-		        		LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
-		        logger.info(message);
+                String message = String.format("BizEventToReceipt function called at %s for event with id %s and status %s",
+                        LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
+                logger.info(message);
 
-				try {
+                try {
+                    String messageText = Base64.getMimeEncoder().encodeToString(ObjectMapperUtils.writeValueAsString(bizEvent).getBytes());
+                    // Add a message to the queue
+                    Response<SendMessageResult> sendMessageResult = queueService.sendMessageToQueue(messageText);
 
-					String messageText = ObjectMapperUtils.writeValueAsString(bizEvent);
-
-					// Add a message to the queue
-					Response<SendMessageResult> sendMessageResult = queueService.sendMessageToQueue(messageText);
-
-					if (sendMessageResult.getStatusCode() != 200) {
-						receipt.setStatus(ReceiptStatusType.NOT_QUEUE_SENT);
-						ReasonError reasonError = new ReasonError(ReasonErrorCode.ERROR_QUEUE.getCode(), "Error sending message to queue");
-						receipt.setReasonErr(reasonError);
-					} else {
-						receipt.setStatus(ReceiptStatusType.INSERTED);
-					}
+                    if (sendMessageResult.getStatusCode() != com.microsoft.azure.functions.HttpStatus.CREATED.value()) {
+                        receipt.setStatus(ReceiptStatusType.NOT_QUEUE_SENT);
+                        ReasonError reasonError = new ReasonError(ReasonErrorCode.ERROR_QUEUE.getCode(), "Error sending message to queue");
+                        receipt.setReasonErr(reasonError);
+                    } else {
+                        receipt.setStatus(ReceiptStatusType.INSERTED);
+                    }
 
 
-				} catch (Exception e) {
-					receipt.setStatus(ReceiptStatusType.NOT_QUEUE_SENT);
-					ReasonError reasonError = new ReasonError(ReasonErrorCode.ERROR_QUEUE.getCode(), "Error parsing BizEvent as string at: "+e.getMessage());
-					receipt.setReasonErr(reasonError);
+                } catch (Exception e) {
+                    receipt.setStatus(ReceiptStatusType.NOT_QUEUE_SENT);
+                    ReasonError reasonError = new ReasonError(ReasonErrorCode.ERROR_QUEUE.getCode(), "Error parsing BizEvent as string at: " + e.getMessage());
+                    receipt.setReasonErr(reasonError);
 
-					logger.severe("Error parsing BizEvent as string at "+ LocalDateTime.now()+ " : " + e.getMessage());
-				}
+                    logger.severe("Error parsing BizEvent as string at " + LocalDateTime.now() + " : " + e.getMessage());
+                }
 
-				itemsDone.add(receipt);
+                itemsDone.add(receipt);
 
-			} else {
-				discarder++;
-			}
+            } else {
+                discarder++;
+            }
 
-		}
-		// discarder
-		msg = String.format("itemsDone stat %s function - %d number of events in discarder  ", context.getInvocationId(), discarder);
-		logger.info(msg);
-		// call the Queue
-		msg = String.format("itemsDone stat %s function - number of events in DONE sent to the receipt queue %d", context.getInvocationId(), itemsDone.size());
-		logger.info(msg);
+        }
+        // discarder
+        msg = String.format("itemsDone stat %s function - %d number of events in discarder  ", context.getInvocationId(), discarder);
+        logger.info(msg);
+        // call the Queue
+        msg = String.format("itemsDone stat %s function - number of events in DONE sent to the receipt queue %d", context.getInvocationId(), itemsDone.size());
+        logger.info(msg);
 
-		// call the Datastore
-		msg = String.format("BizEventToReceipt stat %s function - number of receipts inserted on the datastore %d", context.getInvocationId(), itemsDone.size());
-		logger.info(msg);
+        // call the Datastore
+        msg = String.format("BizEventToReceipt stat %s function - number of receipts inserted on the datastore %d", context.getInvocationId(), itemsDone.size());
+        logger.info(msg);
 
-		documentdb.setValue(itemsDone);
-	}
+        documentdb.setValue(itemsDone);
+    }
 }
