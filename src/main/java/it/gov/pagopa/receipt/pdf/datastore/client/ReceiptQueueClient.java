@@ -12,13 +12,13 @@ import java.time.temporal.ChronoUnit;
 @Setter
 public class ReceiptQueueClient {
 
-    private final String cosmosReceiptQueueConnString = System.getenv("COSMOS_RECEIPT_QUEUE_CONN_STRING");
-    private final String cosmosReceiptQueueTopic = System.getenv("COSMOS_RECEIPT_QUEUE_TOPIC");
+    private final String receiptQueueConnString = System.getenv("RECEIPT_QUEUE_CONN_STRING");
+    private final String receiptQueueTopic = System.getenv("RECEIPT_QUEUE_TOPIC");
 
     public Response<SendMessageResult> sendMessageToQueue(String messageText) {
         QueueClient queueClient = new QueueClientBuilder()
-                .connectionString(cosmosReceiptQueueConnString)
-                .queueName(cosmosReceiptQueueTopic)
+                .connectionString(receiptQueueConnString)
+                .queueName(receiptQueueTopic)
                 .buildClient();
 
         return queueClient.sendMessageWithResponse(
