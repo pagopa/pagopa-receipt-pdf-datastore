@@ -104,7 +104,7 @@ public class GenerateReceipt {
                 } else {
                     //verify the debtor pdf hasn't already been generated
                     if (receipt.getMdAttach() == null || receipt.getMdAttach().getName().isEmpty()) {
-                        responseDebtorGen = handleReceiptPDFGeneration(bizEvent, debtorCF, true);
+                        responseDebtorGen = handleReceiptPDFGeneration(bizEvent, debtorCF, false);
                     }
                     //verify the payer pdf hasn't already been generated
                     if (receipt.getMdAttachPayer() == null || receipt.getMdAttachPayer().getName().isEmpty()) {
