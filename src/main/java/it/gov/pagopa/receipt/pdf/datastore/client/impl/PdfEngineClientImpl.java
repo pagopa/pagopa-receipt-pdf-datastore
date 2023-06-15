@@ -20,24 +20,29 @@ import java.io.InputStream;
 
 public class PdfEngineClientImpl implements PdfEngineClient {
 
+    private final String pdfEngineEndpoint = System.getenv("PDF_ENGINE_ENDPOINT");
+    private final String ocpAimSubKey = System.getenv("OCP_APIM_SUBSCRIPTION_KEY");
     private final String HEADER_AUTH_KEY = "Ocp-Apim-Subscription-Key";
+    private final String ZIP_FILE_NAME = "template.zip";
+    private final String TEMPLATE_KEY = "template";
+    private final String DATA_KEY = "data";
 
     public PdfEngineResponse generatePDF(PdfEngineRequest pdfEngineRequest) {
 
         PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
 
         try (CloseableHttpClient client = HttpClientBuilder.create().build()) {
-            ByteArrayBody fileBody = new ByteArrayBody(pdfEngineRequest.getTemplate(), "template.zip");
+            ByteArrayBody fileBody = new ByteArrayBody(pdfEngineRequest.getTemplate(), ZIP_FILE_NAME);
             StringBody dataBody = new StringBody(pdfEngineRequest.getData(), ContentType.APPLICATION_JSON);
 
             MultipartEntityBuilder builder = MultipartEntityBuilder.create();
             builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
-            builder.addPart("template", fileBody);
-            builder.addPart("data", dataBody);
+            builder.addPart(TEMPLATE_KEY, fileBody);
+            builder.addPart(DATA_KEY, dataBody);
             HttpEntity entity = builder.build();
 
-            HttpPost request = new HttpPost(System.getenv("PDF_ENGINE_ENDPOINT"));
-            request.setHeader(HEADER_AUTH_KEY, System.getenv("OCP_APIM_SUBSCRIPTION_KEY"));
+            HttpPost request = new HttpPost(pdfEngineEndpoint);
+            request.setHeader(HEADER_AUTH_KEY, ocpAimSubKey);
             request.setEntity(entity);
 
             try (CloseableHttpResponse response = client.execute(request)) {

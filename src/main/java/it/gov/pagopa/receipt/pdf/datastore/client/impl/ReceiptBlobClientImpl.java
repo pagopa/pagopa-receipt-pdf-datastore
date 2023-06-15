@@ -7,6 +7,7 @@ import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.azure.storage.blob.models.BlockBlobItem;
 import com.azure.storage.blob.options.BlobParallelUploadOptions;
+import com.microsoft.azure.functions.HttpStatus;
 import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptBlobClient;
 import it.gov.pagopa.receipt.pdf.datastore.model.response.BlobStorageResponse;
 
@@ -19,6 +20,8 @@ public class ReceiptBlobClientImpl implements ReceiptBlobClient {
 
     private final String containerName = System.getenv("BLOB_STORAGE_CONTAINER_NAME");
 
+    private final String FILE_EXTENSION = ".pdf";
+
     public BlobStorageResponse savePdfToBlobStorage(byte[] pdf, String fileName) {
         BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
                 .endpoint(storageAccount)
@@ -27,7 +30,7 @@ public class ReceiptBlobClientImpl implements ReceiptBlobClient {
 
         // Create the container and return a container client object
         BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerName);
-        String fileNamePdf = fileName+".pdf";
+        String fileNamePdf = fileName + FILE_EXTENSION;
 
         // Get a reference to a blob
         BlobClient blobClient = blobContainerClient.getBlobClient(fileNamePdf);
@@ -42,7 +45,7 @@ public class ReceiptBlobClientImpl implements ReceiptBlobClient {
 
         int statusCode = blockBlobItemResponse.getStatusCode();
 
-        if(statusCode == 201){
+        if (statusCode == HttpStatus.CREATED.value()) {
             blobStorageResponse.setDocumentName(blobClient.getBlobName());
             blobStorageResponse.setDocumentUrl(blobClient.getBlobUrl());
             blobStorageResponse.setMdAttach(blockBlobItemResponse.getValue().getContentMd5());

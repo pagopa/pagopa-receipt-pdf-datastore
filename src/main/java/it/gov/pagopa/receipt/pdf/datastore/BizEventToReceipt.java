@@ -3,6 +3,7 @@ package it.gov.pagopa.receipt.pdf.datastore;
 import com.azure.core.http.rest.Response;
 import com.azure.storage.queue.models.SendMessageResult;
 import com.microsoft.azure.functions.ExecutionContext;
+import com.microsoft.azure.functions.HttpStatus;
 import com.microsoft.azure.functions.OutputBinding;
 import com.microsoft.azure.functions.annotation.CosmosDBOutput;
 import com.microsoft.azure.functions.annotation.CosmosDBTrigger;
@@ -86,7 +87,7 @@ public class BizEventToReceipt {
                     // Add a message to the queue
                     Response<SendMessageResult> sendMessageResult = queueService.sendMessageToQueue(messageText);
 
-                    if (sendMessageResult.getStatusCode() != com.microsoft.azure.functions.HttpStatus.CREATED.value()) {
+                    if (sendMessageResult.getStatusCode() != HttpStatus.CREATED.value()) {
                         receipt.setStatus(ReceiptStatusType.NOT_QUEUE_SENT);
                         ReasonError reasonError = new ReasonError(ReasonErrorCode.ERROR_QUEUE.getCode(), "Error sending message to queue");
                         receipt.setReasonErr(reasonError);

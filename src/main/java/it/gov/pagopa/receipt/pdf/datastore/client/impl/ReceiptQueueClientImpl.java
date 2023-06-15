@@ -13,17 +13,18 @@ import java.time.temporal.ChronoUnit;
 @Setter
 public class ReceiptQueueClientImpl implements ReceiptQueueClient {
 
-    private final String cosmosReceiptQueueConnString = System.getenv("RECEIPT_QUEUE_CONN_STRING");
-    private final String cosmosReceiptQueueTopic = System.getenv("RECEIPT_QUEUE_TOPIC");
+    private final String receiptQueueConnString = System.getenv("RECEIPT_QUEUE_CONN_STRING");
+    private final String receiptQueueTopic = System.getenv("RECEIPT_QUEUE_TOPIC");
+    private final int receiptQueueDelay = Integer.parseInt(System.getenv().getOrDefault("RECEIPT_QUEUE_DELAY", "1"));
 
     public Response<SendMessageResult> sendMessageToQueue(String messageText) {
         QueueClient queueClient = new QueueClientBuilder()
-                .connectionString(cosmosReceiptQueueConnString)
-                .queueName(cosmosReceiptQueueTopic)
+                .connectionString(receiptQueueConnString)
+                .queueName(receiptQueueTopic)
                 .buildClient();
 
         return queueClient.sendMessageWithResponse(
-                messageText, Duration.of(1, ChronoUnit.SECONDS),
+                messageText, Duration.of(receiptQueueDelay, ChronoUnit.SECONDS),
                 null, null, null);
 
     }
