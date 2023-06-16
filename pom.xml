@@ -5,7 +5,7 @@
 
     <groupId>it.gov.pagopa.receipt</groupId>
     <artifactId>receipt-pdf-datastore</artifactId>
-    <version>0.0.1</version>
+    <version>0.0.1-1-PRDP-17-feat-add-event-to-receipt-function</version>
     <packaging>jar</packaging>
 
     <name>Azure Custom Fn</name>
