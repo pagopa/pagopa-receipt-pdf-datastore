@@ -46,9 +46,6 @@ class BizEventToReceiptTest {
     @Captor
     private ArgumentCaptor<List<Receipt>> receiptCaptor;
 
-    @Captor
-    private ArgumentCaptor<BizEvent> messageCaptor;
-
     @AfterEach
     public void teardown() throws Exception {
         // reset singleton
