@@ -117,7 +117,7 @@ public class GenerateReceiptPdf {
                     ReceiptMetadata receiptMetadata = new ReceiptMetadata();
                     receiptMetadata.setName(responseDebtorGen.getDocumentName());
                     receiptMetadata.setUrl(responseDebtorGen.getDocumentUrl());
-                    //TODO verify need to set mdAttach byte array
+
                     receipt.setMdAttach(receiptMetadata);
                 }
 
@@ -125,7 +125,7 @@ public class GenerateReceiptPdf {
                     ReceiptMetadata receiptMetadata = new ReceiptMetadata();
                     receiptMetadata.setName(responsePayerGen.getDocumentName());
                     receiptMetadata.setUrl(responsePayerGen.getDocumentUrl());
-                    //TODO verify need to set mdAttach byte array
+
                     receipt.setMdAttachPayer(receiptMetadata);
                 }
 
@@ -185,7 +185,6 @@ public class GenerateReceiptPdf {
                 if(blobStorageResponse.getStatusCode() == com.microsoft.azure.functions.HttpStatus.CREATED.value()){
                     response.setDocumentName(blobStorageResponse.getDocumentName());
                     response.setDocumentUrl(blobStorageResponse.getDocumentUrl());
-                    response.setMdAttach(blobStorageResponse.getMdAttach());
 
                     response.setStatusCode(HttpStatus.SC_OK);
                 } else {

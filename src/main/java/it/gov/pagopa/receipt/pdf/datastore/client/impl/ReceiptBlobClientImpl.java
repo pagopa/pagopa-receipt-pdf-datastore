@@ -58,7 +58,6 @@ public class ReceiptBlobClientImpl implements ReceiptBlobClient {
         if (statusCode == HttpStatus.CREATED.value()) {
             blobStorageResponse.setDocumentName(blobClient.getBlobName());
             blobStorageResponse.setDocumentUrl(blobClient.getBlobUrl());
-            blobStorageResponse.setMdAttach(blockBlobItemResponse.getValue().getContentMd5());
         }
 
         blobStorageResponse.setStatusCode(blockBlobItemResponse.getStatusCode());
