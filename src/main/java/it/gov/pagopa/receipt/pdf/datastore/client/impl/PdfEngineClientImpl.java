@@ -1,8 +1,12 @@
 package it.gov.pagopa.receipt.pdf.datastore.client.impl;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import it.gov.pagopa.receipt.pdf.datastore.client.PdfEngineClient;
+import it.gov.pagopa.receipt.pdf.datastore.model.PdfEngineErrorResponse;
 import it.gov.pagopa.receipt.pdf.datastore.model.request.PdfEngineRequest;
 import it.gov.pagopa.receipt.pdf.datastore.model.response.PdfEngineResponse;
+import it.gov.pagopa.receipt.pdf.datastore.utils.ObjectMapperUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -11,12 +15,14 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.entity.mime.content.ByteArrayBody;
-import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
+
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 public class PdfEngineClientImpl implements PdfEngineClient {
 
@@ -55,8 +61,29 @@ public class PdfEngineClientImpl implements PdfEngineClient {
                     pdfEngineResponse.setPdf(inputStream.readAllBytes());
                 } else {
                     pdfEngineResponse.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-                    //TODO retrieve error message from response json
-                    pdfEngineResponse.setErrorMessage(response.getStatusLine().getReasonPhrase());
+
+                    if (response.getStatusLine().getStatusCode() == HttpStatus.SC_UNAUTHORIZED) {
+                        pdfEngineResponse.setErrorMessage("Unauthorized call to PDF engine function");
+
+                    } else if (entityResponse != null) {
+                        String jsonString = EntityUtils.toString(entityResponse, StandardCharsets.UTF_8);
+
+                        if(!jsonString.isEmpty()){
+                            PdfEngineErrorResponse errorResponse = ObjectMapperUtils.mapString(jsonString, PdfEngineErrorResponse.class);
+
+                            if (errorResponse != null &&
+                                    errorResponse.getErrors() != null &&
+                                    errorResponse.getErrors().size() > 0 &&
+                                    errorResponse.getErrors().get(0) != null
+                            ) {
+                                pdfEngineResponse.setErrorMessage(errorResponse.getErrors().get(0).getMessage());
+                            }
+                        }
+                    }
+
+                    if(pdfEngineResponse.getErrorMessage() == null){
+                        pdfEngineResponse.setErrorMessage("Unknown error in PDF engine function");
+                    }
                 }
 
             } catch (IOException e) {
