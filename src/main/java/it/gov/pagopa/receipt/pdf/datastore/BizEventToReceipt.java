@@ -55,7 +55,7 @@ public class BizEventToReceipt {
         logger.info(msg);
         int discarder = 0;
 
-        ReceiptQueueClientImpl queueService = new ReceiptQueueClientImpl();
+        ReceiptQueueClientImpl queueService = ReceiptQueueClientImpl.getInstance();
         for (BizEvent bizEvent : items) {
 
             if (bizEvent.getEventStatus().equals(BizEventStatusType.DONE)) {

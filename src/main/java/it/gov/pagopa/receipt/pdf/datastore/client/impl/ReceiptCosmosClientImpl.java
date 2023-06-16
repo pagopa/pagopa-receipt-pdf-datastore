@@ -12,11 +12,21 @@ import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 
 public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
 
+    private static ReceiptCosmosClientImpl instance;
+
     private final String serviceEndpoint = System.getenv("COSMOS_RECEIPT_SERVICE_ENDPOINT");
     private final String azureKey = System.getenv("COSMOS_RECEIPT_KEY");
 
     private final String databaseId = System.getenv("COSMOS_RECEIPT_DB_NAME");
     private final String containerId = System.getenv("COSMOS_RECEIPT_CONTAINER_NAME");
+
+    public static ReceiptCosmosClientImpl getInstance(){
+        if(instance == null){
+            instance = new ReceiptCosmosClientImpl();
+        }
+
+        return instance;
+    }
 
     public Receipt getReceiptDocument(String receiptId) throws ReceiptNotFoundException {
         CosmosClient cosmosClient = new CosmosClientBuilder()

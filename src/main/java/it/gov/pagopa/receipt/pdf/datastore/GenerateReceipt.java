@@ -72,7 +72,7 @@ public class GenerateReceipt {
         //Retrieve receipt's data from CosmosDB
         Receipt receipt = null;
 
-        ReceiptCosmosClientImpl receiptCosmosClient = new ReceiptCosmosClientImpl();
+        ReceiptCosmosClientImpl receiptCosmosClient = ReceiptCosmosClientImpl.getInstance();
 
         try {
             receipt = receiptCosmosClient.getReceiptDocument(bizEvent.getId());
@@ -180,12 +180,12 @@ public class GenerateReceipt {
 
             request.setApplySignature(false);
 
-            PdfEngineClientImpl pdfEngineClient = new PdfEngineClientImpl();
+            PdfEngineClientImpl pdfEngineClient = PdfEngineClientImpl.getInstance();
 
             PdfEngineResponse pdfEngineResponse = pdfEngineClient.generatePDF(request);
 
             if (pdfEngineResponse.getStatusCode() == HttpStatus.SC_OK) {
-                ReceiptBlobClientImpl blobClient = new ReceiptBlobClientImpl();
+                ReceiptBlobClientImpl blobClient = ReceiptBlobClientImpl.getInstance();
                 String pdfFileName = bizEvent.getId() + fiscalCode;
 
                 BlobStorageResponse blobStorageResponse = blobClient.savePdfToBlobStorage(pdfEngineResponse.getPdf(), pdfFileName);

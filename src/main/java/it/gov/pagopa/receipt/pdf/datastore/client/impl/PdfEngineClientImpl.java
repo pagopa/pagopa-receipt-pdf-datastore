@@ -26,12 +26,22 @@ import java.nio.charset.StandardCharsets;
 
 public class PdfEngineClientImpl implements PdfEngineClient {
 
+    private static PdfEngineClientImpl instance = null;
+
     private final String pdfEngineEndpoint = System.getenv("PDF_ENGINE_ENDPOINT");
     private final String ocpAimSubKey = System.getenv("OCP_APIM_SUBSCRIPTION_KEY");
     private final String HEADER_AUTH_KEY = "Ocp-Apim-Subscription-Key";
     private final String ZIP_FILE_NAME = "template.zip";
     private final String TEMPLATE_KEY = "template";
     private final String DATA_KEY = "data";
+
+    public static PdfEngineClientImpl getInstance() {
+        if (instance == null) {
+            instance = new PdfEngineClientImpl();
+        }
+
+        return instance;
+    }
 
     public PdfEngineResponse generatePDF(PdfEngineRequest pdfEngineRequest) {
 
@@ -68,7 +78,7 @@ public class PdfEngineClientImpl implements PdfEngineClient {
                     } else if (entityResponse != null) {
                         String jsonString = EntityUtils.toString(entityResponse, StandardCharsets.UTF_8);
 
-                        if(!jsonString.isEmpty()){
+                        if (!jsonString.isEmpty()) {
                             PdfEngineErrorResponse errorResponse = ObjectMapperUtils.mapString(jsonString, PdfEngineErrorResponse.class);
 
                             if (errorResponse != null &&
@@ -81,7 +91,7 @@ public class PdfEngineClientImpl implements PdfEngineClient {
                         }
                     }
 
-                    if(pdfEngineResponse.getErrorMessage() == null){
+                    if (pdfEngineResponse.getErrorMessage() == null) {
                         pdfEngineResponse.setErrorMessage("Unknown error in PDF engine function");
                     }
                 }

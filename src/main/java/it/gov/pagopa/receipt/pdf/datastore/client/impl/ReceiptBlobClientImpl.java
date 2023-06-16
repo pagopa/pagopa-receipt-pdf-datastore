@@ -15,12 +15,22 @@ import java.io.ByteArrayInputStream;
 
 public class ReceiptBlobClientImpl implements ReceiptBlobClient {
 
+    private static ReceiptBlobClientImpl instance;
+
     private final String storageAccount = System.getenv("BLOB_STORAGE_ACCOUNT_ENDPOINT");
     private final String connectionString = System.getenv("BLOB_STORAGE_CONN_STRING");
 
     private final String containerName = System.getenv("BLOB_STORAGE_CONTAINER_NAME");
 
     private final String FILE_EXTENSION = ".pdf";
+
+    public static ReceiptBlobClientImpl getInstance(){
+        if(instance == null){
+            instance = new ReceiptBlobClientImpl();
+        }
+
+        return instance;
+    }
 
     public BlobStorageResponse savePdfToBlobStorage(byte[] pdf, String fileName) {
         BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
