@@ -3,6 +3,7 @@ package it.gov.pagopa.receipt.pdf.datastore;
 import com.azure.core.http.rest.Response;
 import com.azure.storage.queue.models.SendMessageResult;
 import com.microsoft.azure.functions.ExecutionContext;
+import com.microsoft.azure.functions.HttpStatus;
 import com.microsoft.azure.functions.OutputBinding;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.*;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.enumeration.BizEventStatusType;
@@ -10,13 +11,16 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReasonErrorCode;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptQueueClientImpl;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +37,7 @@ class BizEventToReceiptTest {
     private final String DEBTOR_FISCAL_CODE = "a valid debtor CF";
     private final String EVENT_ID = "a valid id";
 
+    @Spy
     private BizEventToReceipt function;
 
     @Mock
@@ -44,26 +49,12 @@ class BizEventToReceiptTest {
     @Captor
     private ArgumentCaptor<BizEvent> messageCaptor;
 
-    private BizEvent generateValidBizEvent(){
-        BizEvent item = new BizEvent();
-
-        Payer payer = new Payer();
-        payer.setEntityUniqueIdentifierValue(PAYER_FISCAL_CODE);
-        Debtor debtor = new Debtor();
-        debtor.setEntityUniqueIdentifierValue(DEBTOR_FISCAL_CODE);
-
-        TransactionDetails transactionDetails = new TransactionDetails();
-        Transaction transaction = new Transaction();
-        transaction.setCreationDate(String.valueOf(LocalDateTime.now()));
-        transactionDetails.setTransaction(transaction);
-
-        item.setEventStatus(BizEventStatusType.DONE);
-        item.setId(EVENT_ID);
-        item.setPayer(payer);
-        item.setDebtor(debtor);
-        item.setTransactionDetails(transactionDetails);
-
-        return item;
+    @AfterEach
+    public void teardown() throws Exception {
+        // reset singleton
+        Field instance = ReceiptQueueClientImpl.class.getDeclaredField("instance");
+        instance.setAccessible(true);
+        instance.set(null, null);
     }
 
     @Test
@@ -73,10 +64,10 @@ class BizEventToReceiptTest {
 
         ReceiptQueueClientImpl serviceMock = mock(ReceiptQueueClientImpl.class);
         Response<SendMessageResult> response = mock(Response.class);
-        when(response.getStatusCode()).thenReturn(200);
+        when(response.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
         when(serviceMock.sendMessageToQueue(anyString())).thenReturn(response);
 
-        function = new BizEventToReceipt();
+        BizEventToReceiptTest.setMock(serviceMock);
 
         List<BizEvent> bizEventItems = new ArrayList<>();
         bizEventItems.add(generateValidBizEvent());
@@ -105,7 +96,7 @@ class BizEventToReceiptTest {
         when(response.getStatusCode()).thenReturn(400);
         when(serviceMock.sendMessageToQueue(anyString())).thenReturn(response);
 
-        function = new BizEventToReceipt();
+        BizEventToReceiptTest.setMock(serviceMock);
 
         List<BizEvent> bizEventItems = new ArrayList<>();
         bizEventItems.add(generateValidBizEvent());
@@ -123,5 +114,37 @@ class BizEventToReceiptTest {
         assertEquals(EVENT_ID, captured.getIdEvent());
         assertEquals(PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
         assertEquals(DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
+    }
+
+    private static void setMock(ReceiptQueueClientImpl mock) {
+        try {
+            Field instance = ReceiptQueueClientImpl.class.getDeclaredField("instance");
+            instance.setAccessible(true);
+            instance.set(instance, mock);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private BizEvent generateValidBizEvent(){
+        BizEvent item = new BizEvent();
+
+        Payer payer = new Payer();
+        payer.setEntityUniqueIdentifierValue(PAYER_FISCAL_CODE);
+        Debtor debtor = new Debtor();
+        debtor.setEntityUniqueIdentifierValue(DEBTOR_FISCAL_CODE);
+
+        TransactionDetails transactionDetails = new TransactionDetails();
+        Transaction transaction = new Transaction();
+        transaction.setCreationDate(String.valueOf(LocalDateTime.now()));
+        transactionDetails.setTransaction(transaction);
+
+        item.setEventStatus(BizEventStatusType.DONE);
+        item.setId(EVENT_ID);
+        item.setPayer(payer);
+        item.setDebtor(debtor);
+        item.setTransactionDetails(transactionDetails);
+
+        return item;
     }
 }
