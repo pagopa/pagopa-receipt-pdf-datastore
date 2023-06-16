@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
-public class GenerateReceipt {
+public class GenerateReceiptPdf {
 
     public final int maxNumberRetry = Integer.parseInt(System.getenv().getOrDefault("COSMOS_RECEIPT_QUEUE_MAX_RETRY", "5"));
 
@@ -98,16 +98,16 @@ public class GenerateReceipt {
 
                 //Generate PDFs for the needed fiscal codes
                 if (payerDebtorEqual) {
-                    if (receipt.getMdAttach() == null || receipt.getMdAttach().getName().isEmpty()) {
+                    if (receipt.getMdAttach() == null || receipt.getMdAttach().getUrl() == null ||  receipt.getMdAttach().getUrl().isEmpty()) {
                         responseDebtorGen = handleReceiptPDFGeneration(bizEvent, debtorCF, true);
                     }
                 } else {
                     //verify the debtor pdf hasn't already been generated
-                    if (receipt.getMdAttach() == null || receipt.getMdAttach().getName().isEmpty()) {
+                    if (receipt.getMdAttach() == null || receipt.getMdAttach().getUrl() == null ||  receipt.getMdAttach().getUrl().isEmpty()) {
                         responseDebtorGen = handleReceiptPDFGeneration(bizEvent, debtorCF, false);
                     }
                     //verify the payer pdf hasn't already been generated
-                    if (receipt.getMdAttachPayer() == null || receipt.getMdAttachPayer().getName().isEmpty()) {
+                    if (receipt.getMdAttachPayer() == null || receipt.getMdAttachPayer().getUrl() == null || receipt.getMdAttachPayer().getUrl().isEmpty()) {
                         responsePayerGen = handleReceiptPDFGeneration(bizEvent, payerCF, true);
                     }
                 }
@@ -141,7 +141,7 @@ public class GenerateReceipt {
 
                     int errorStatusCode = responseDebtorGen.getStatusCode() == HttpStatus.SC_OK ? responsePayerGen.getStatusCode() : responseDebtorGen.getStatusCode();
                     String errorMessage = responseDebtorGen.getErrorMessage() == null ? responsePayerGen.getErrorMessage() : responseDebtorGen.getErrorMessage();
-                    ReasonError reasonError = new ReasonError(ReasonErrorCode.ERROR_PDF_ENGINE.getCustomCode(errorStatusCode), "Error generating PDF: " + errorMessage);
+                    ReasonError reasonError = new ReasonError(errorStatusCode, errorMessage);
                     receipt.setReasonErr(reasonError);
                     receipt.setNumRetry(receipt.getNumRetry() + 1);
 
@@ -153,16 +153,8 @@ public class GenerateReceipt {
             }
         }
 
-        try {
-            if (itemsToNotify.size() > 0) {
-                documentdb.setValue(itemsToNotify);
-            }
-        } catch (NullPointerException e) {
-            requeueMessage.setValue(message);
-            logger.severe("NullPointerException exception on cosmos receipts msg ingestion at " + LocalDateTime.now() + " : " + e.getMessage());
-        } catch (Exception e) {
-            requeueMessage.setValue(message);
-            logger.severe("Generic exception on cosmos receipts msg ingestion at " + LocalDateTime.now() + " : " + e.getMessage());
+        if (itemsToNotify.size() > 0) {
+            documentdb.setValue(itemsToNotify);
         }
     }
 
@@ -173,7 +165,7 @@ public class GenerateReceipt {
         String fileName = completeTemplate ? "complete_template.zip" : "partial_template.zip";
 
         try {
-            byte[] htmlTemplate = GenerateReceipt.class.getClassLoader().getResourceAsStream(fileName).readAllBytes();
+            byte[] htmlTemplate = GenerateReceiptPdf.class.getClassLoader().getResourceAsStream(fileName).readAllBytes();
 
             request.setTemplate(htmlTemplate);
             request.setData(ObjectMapperUtils.writeValueAsString(convertReceiptToPdfData(bizEvent)));
@@ -197,12 +189,12 @@ public class GenerateReceipt {
 
                     response.setStatusCode(HttpStatus.SC_OK);
                 } else {
-                    response.setStatusCode(blobStorageResponse.getStatusCode());
+                    response.setStatusCode(ReasonErrorCode.ERROR_BLOB_STORAGE.getCode());
                     response.setErrorMessage("Error saving pdf to blob storage");
                 }
 
             } else {
-                response.setStatusCode(pdfEngineResponse.getStatusCode());
+                response.setStatusCode(ReasonErrorCode.ERROR_PDF_ENGINE.getCustomCode(pdfEngineResponse.getStatusCode()));
                 response.setErrorMessage(pdfEngineResponse.getErrorMessage());
             }
 
