@@ -80,7 +80,7 @@ public class GenerateReceipt {
             requeueMessage.setValue(message);
         }
 
-        if (receipt != null && receipt.getStatus().equals(ReceiptStatusType.INSERTED)) {
+        if (receipt != null && (receipt.getStatus().equals(ReceiptStatusType.INSERTED) || receipt.getStatus().equals(ReceiptStatusType.RETRY))) {
 
             logMsg = String.format("GenerateReceipt function called at %s for event with id %s and status %s",
                     LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
@@ -367,6 +367,7 @@ public class GenerateReceipt {
 
 
         map.put("transaction", transactionMap);
+        map.put("user", userMap);
         map.put("cart", cartMap);
         map.put("noticeCode", "");
         map.put("amount", 0);
