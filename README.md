@@ -22,12 +22,12 @@ There is an example of a Http Trigger function.
 `mvn azure-functions:run`
 
 ### Test
-`curl http://localhost:7071/example` 
+`curl http://localhost:7071/example`
 
 ---
 
 
-## TODO
+## How to run it
 Once cloned the repo, you should:
 - to deploy on standard Azure service:
   - rename `deploy-pipelines-standard.yml` to `deploy-pipelines.yml`
@@ -35,7 +35,7 @@ Once cloned the repo, you should:
 - to deploy on Kubernetes:
   - rename `deploy-pipelines-aks.yml` to `deploy-pipelines.yml`
   - customize `helm` configuration
-- configure the following GitHub action in `.github` folder: 
+- configure the following GitHub action in `.github` folder:
   - `deploy.yml`
   - `sonar_analysis.yml`
 
