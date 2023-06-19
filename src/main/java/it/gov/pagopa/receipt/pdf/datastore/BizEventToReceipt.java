@@ -113,14 +113,17 @@ public class BizEventToReceipt {
         ReceiptQueueClientImpl queueService = ReceiptQueueClientImpl.getInstance();
 
         // Add a message to the queue
-        Response<SendMessageResult> sendMessageResult = queueService.sendMessageToQueue(messageText);
+        try{
+            Response<SendMessageResult> sendMessageResult = queueService.sendMessageToQueue(messageText);
 
-        if (sendMessageResult.getStatusCode() != HttpStatus.CREATED.value()) {
+            if (sendMessageResult.getStatusCode() != HttpStatus.CREATED.value()) {
+                handleError(receipt, "Error sending message to queue");
+            } else {
+                receipt.setStatus(ReceiptStatusType.INSERTED);
+            }
+        } catch (Exception e) {
             handleError(receipt, "Error sending message to queue");
-        } else {
-            receipt.setStatus(ReceiptStatusType.INSERTED);
         }
-
     }
 
     private static void handleError(Receipt receipt, String e) {

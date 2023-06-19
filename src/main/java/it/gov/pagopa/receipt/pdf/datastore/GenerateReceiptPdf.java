@@ -203,17 +203,7 @@ public class GenerateReceiptPdf {
                 ReceiptBlobClientImpl blobClient = ReceiptBlobClientImpl.getInstance();
                 String pdfFileName = bizEvent.getId() + fiscalCode;
 
-                BlobStorageResponse blobStorageResponse = blobClient.savePdfToBlobStorage(pdfEngineResponse.getPdf(), pdfFileName);
-
-                if (blobStorageResponse.getStatusCode() == com.microsoft.azure.functions.HttpStatus.CREATED.value()) {
-                    response.setDocumentName(blobStorageResponse.getDocumentName());
-                    response.setDocumentUrl(blobStorageResponse.getDocumentUrl());
-
-                    response.setStatusCode(HttpStatus.SC_OK);
-                } else {
-                    response.setStatusCode(ReasonErrorCode.ERROR_BLOB_STORAGE.getCode());
-                    response.setErrorMessage("Error saving pdf to blob storage");
-                }
+                handleSaveToBlobStorage(response, pdfEngineResponse, blobClient, pdfFileName);
 
             } else {
                 response.setStatusCode(ReasonErrorCode.ERROR_PDF_ENGINE.getCustomCode(pdfEngineResponse.getStatusCode()));
@@ -226,6 +216,28 @@ public class GenerateReceiptPdf {
             response.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
             response.setErrorMessage("File template not found, error: " + e);
             return response;
+        }
+    }
+
+    private static void handleSaveToBlobStorage(PdfMetadata response, PdfEngineResponse pdfEngineResponse, ReceiptBlobClientImpl blobClient, String pdfFileName) {
+        BlobStorageResponse blobStorageResponse;
+
+        try {
+            blobStorageResponse = blobClient.savePdfToBlobStorage(pdfEngineResponse.getPdf(), pdfFileName);
+
+            if (blobStorageResponse.getStatusCode() == com.microsoft.azure.functions.HttpStatus.CREATED.value()) {
+                response.setDocumentName(blobStorageResponse.getDocumentName());
+                response.setDocumentUrl(blobStorageResponse.getDocumentUrl());
+
+                response.setStatusCode(HttpStatus.SC_OK);
+            } else {
+                response.setStatusCode(ReasonErrorCode.ERROR_BLOB_STORAGE.getCode());
+                response.setErrorMessage("Error saving pdf to blob storage");
+            }
+
+        } catch (Exception e) {
+            response.setStatusCode(ReasonErrorCode.ERROR_BLOB_STORAGE.getCode());
+            response.setErrorMessage("Error saving pdf to blob storage : " + e);
         }
     }
 

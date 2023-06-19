@@ -419,6 +419,58 @@ class GenerateReceiptPdfTest {
     }
 
     @Test
+    void runKoBlobStorageThrowException() throws Exception {
+        Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
+        when(context.getLogger()).thenReturn(logger);
+
+        ReceiptCosmosClientImpl cosmosClient = mock(ReceiptCosmosClientImpl.class);
+        receiptMock.setStatus(ReceiptStatusType.INSERTED);
+        EventData eventDataMock = mock(EventData.class);
+        when(eventDataMock.getDebtorFiscalCode()).thenReturn(VALID_DEBTOR_CF);
+        when(eventDataMock.getPayerFiscalCode()).thenReturn(VALID_PAYER_CF);
+        receiptMock.setEventData(eventDataMock);
+        when(cosmosClient.getReceiptDocument(any())).thenReturn(receiptMock);
+
+        GenerateReceiptPdfTest.setMock(ReceiptCosmosClientImpl.class, cosmosClient);
+
+        PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
+        when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
+        byte[] pdf = new FileInputStream("src/test/resources/output.pdf").readAllBytes();
+        when(pdfEngineResponse.getPdf()).thenReturn(pdf);
+        when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);
+
+        GenerateReceiptPdfTest.setMock(PdfEngineClientImpl.class, pdfEngineClient);
+
+        ReceiptBlobClientImpl blobClient = mock(ReceiptBlobClientImpl.class);
+        when(blobStorageResponse.getStatusCode()).thenReturn(com.microsoft.azure.functions.HttpStatus.FORBIDDEN.value());
+        when(blobClient.savePdfToBlobStorage(eq(pdf), anyString())).thenReturn(blobStorageResponse);
+
+        GenerateReceiptPdfTest.setMock(ReceiptBlobClientImpl.class, blobClient);
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<String> requeueMessage = (OutputBinding<String>) spy(OutputBinding.class);
+
+        // test execution
+        withEnvironmentVariable("BLOB_STORAGE_CONTAINER_NAME", "wrong-container-name").execute(() ->
+                assertDoesNotThrow(() ->
+                        function.processGenerateReceipt(BIZ_EVENT_MESSAGE_DIFFERENT_CF, documentdb, requeueMessage, context))
+        );
+
+        verify(documentdb).setValue(receiptCaptor.capture());
+        Receipt capturedCosmos = receiptCaptor.getValue().get(0);
+
+        verify(requeueMessage).setValue(messageCaptor.capture());
+        String caputuredMessage = messageCaptor.getValue();
+
+        assertEquals(BIZ_EVENT_MESSAGE_DIFFERENT_CF, caputuredMessage);
+        assertEquals(ReceiptStatusType.RETRY, capturedCosmos.getStatus());
+        assertEquals(ReasonErrorCode.ERROR_BLOB_STORAGE.getCode(), capturedCosmos.getReasonErr().getCode());
+    }
+
+    @Test
     void runKoTooManyRetry() throws ReceiptNotFoundException {
         Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
         when(context.getLogger()).thenReturn(logger);

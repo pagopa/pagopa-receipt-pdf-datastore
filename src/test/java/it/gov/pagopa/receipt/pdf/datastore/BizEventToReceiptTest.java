@@ -11,7 +11,7 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReasonErrorCode;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptQueueClientImpl;
-import it.gov.pagopa.receipt.pdf.datastore.utils.ObjectMapperUtils;
+import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +30,7 @@ import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariable;
 
 @ExtendWith(MockitoExtension.class)
 class BizEventToReceiptTest {
@@ -104,6 +105,39 @@ class BizEventToReceiptTest {
 
         // test execution
         assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
+
+        verify(documentdb).setValue(receiptCaptor.capture());
+        Receipt captured = receiptCaptor.getValue().get(0);
+        assertEquals(ReceiptStatusType.NOT_QUEUE_SENT, captured.getStatus());
+        assertEquals(ReasonErrorCode.ERROR_QUEUE.getCode(), captured.getReasonErr().getCode());
+        assertEquals(EVENT_ID, captured.getIdEvent());
+        assertEquals(PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
+        assertEquals(DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
+    }
+
+    @Test
+    void errorAddingMessageToQueueThrowException() throws Exception {
+        Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
+        when(context.getLogger()).thenReturn(logger);
+
+        ReceiptQueueClientImpl serviceMock = mock(ReceiptQueueClientImpl.class);
+        Response<SendMessageResult> response = mock(Response.class);
+        when(response.getStatusCode()).thenReturn(400);
+        when(serviceMock.sendMessageToQueue(anyString())).thenReturn(response);
+
+        BizEventToReceiptTest.setMock(serviceMock);
+
+        List<BizEvent> bizEventItems = new ArrayList<>();
+        bizEventItems.add(generateValidBizEvent());
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+
+        // test execution
+        withEnvironmentVariable("RECEIPT_QUEUE_TOPIC", "wrong-queue-topic").execute(() ->
+                assertDoesNotThrow(() ->
+                        function.processBizEventToReceipt(bizEventItems, documentdb, context))
+        );
 
         verify(documentdb).setValue(receiptCaptor.capture());
         Receipt captured = receiptCaptor.getValue().get(0);
