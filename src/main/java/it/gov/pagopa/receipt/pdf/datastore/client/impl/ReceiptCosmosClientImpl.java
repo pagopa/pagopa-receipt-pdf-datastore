@@ -14,11 +14,24 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
 
     private static ReceiptCosmosClientImpl instance;
 
-    private final String serviceEndpoint = System.getenv("COSMOS_RECEIPT_SERVICE_ENDPOINT");
-    private final String azureKey = System.getenv("COSMOS_RECEIPT_KEY");
-
     private final String databaseId = System.getenv("COSMOS_RECEIPT_DB_NAME");
     private final String containerId = System.getenv("COSMOS_RECEIPT_CONTAINER_NAME");
+
+    private final CosmosClient cosmosClient;
+
+    private ReceiptCosmosClientImpl(){
+        String azureKey = System.getenv("COSMOS_RECEIPT_KEY");
+        String serviceEndpoint = System.getenv("COSMOS_RECEIPT_SERVICE_ENDPOINT");
+
+        this.cosmosClient = new CosmosClientBuilder()
+                .endpoint(serviceEndpoint)
+                .key(azureKey)
+                .buildClient();
+    }
+
+    public ReceiptCosmosClientImpl(CosmosClient cosmosClient){
+        this.cosmosClient = cosmosClient;
+    }
 
     public static ReceiptCosmosClientImpl getInstance(){
         if(instance == null){
@@ -29,12 +42,8 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
     }
 
     public Receipt getReceiptDocument(String receiptId) throws ReceiptNotFoundException {
-        CosmosClient cosmosClient = new CosmosClientBuilder()
-                .endpoint(serviceEndpoint)
-                .key(azureKey)
-                .buildClient();
 
-        CosmosDatabase cosmosDatabase = cosmosClient.getDatabase(databaseId);
+        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
 
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 

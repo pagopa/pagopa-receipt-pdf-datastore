@@ -11,6 +11,5 @@ public class BlobStorageResponse {
 
     String documentUrl;
     String documentName;
-    byte[] mdAttach;
     int statusCode;
 }

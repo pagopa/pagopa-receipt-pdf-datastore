@@ -11,6 +11,8 @@ import lombok.Setter;
 public class Receipt {
 
     private String idEvent;
+    private String id;
+    private String version;
     private EventData eventData;
     private IOMessageData ioMessageData;
     private ReceiptStatusType status;

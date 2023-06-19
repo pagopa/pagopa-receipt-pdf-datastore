@@ -17,12 +17,25 @@ public class ReceiptBlobClientImpl implements ReceiptBlobClient {
 
     private static ReceiptBlobClientImpl instance;
 
-    private final String storageAccount = System.getenv("BLOB_STORAGE_ACCOUNT_ENDPOINT");
-    private final String connectionString = System.getenv("BLOB_STORAGE_CONN_STRING");
-
     private final String containerName = System.getenv("BLOB_STORAGE_CONTAINER_NAME");
 
-    private final String FILE_EXTENSION = ".pdf";
+    private static final String FILE_EXTENSION = ".pdf";
+
+    private final BlobServiceClient blobServiceClient;
+
+    private ReceiptBlobClientImpl(){
+        String connectionString = System.getenv("BLOB_STORAGE_CONN_STRING");
+        String storageAccount = System.getenv("BLOB_STORAGE_ACCOUNT_ENDPOINT");
+
+        this.blobServiceClient = new BlobServiceClientBuilder()
+                .endpoint(storageAccount)
+                .connectionString(connectionString)
+                .buildClient();
+    }
+
+    public ReceiptBlobClientImpl(BlobServiceClient serviceClient){
+        this.blobServiceClient = serviceClient;
+    }
 
     public static ReceiptBlobClientImpl getInstance(){
         if(instance == null){
@@ -33,13 +46,9 @@ public class ReceiptBlobClientImpl implements ReceiptBlobClient {
     }
 
     public BlobStorageResponse savePdfToBlobStorage(byte[] pdf, String fileName) {
-        BlobServiceClient blobServiceClient = new BlobServiceClientBuilder()
-                .endpoint(storageAccount)
-                .connectionString(connectionString)
-                .buildClient();
 
         // Create the container and return a container client object
-        BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerName);
+        BlobContainerClient blobContainerClient = this.blobServiceClient.getBlobContainerClient(containerName);
         String fileNamePdf = fileName + FILE_EXTENSION;
 
         // Get a reference to a blob
@@ -58,10 +67,9 @@ public class ReceiptBlobClientImpl implements ReceiptBlobClient {
         if (statusCode == HttpStatus.CREATED.value()) {
             blobStorageResponse.setDocumentName(blobClient.getBlobName());
             blobStorageResponse.setDocumentUrl(blobClient.getBlobUrl());
-            blobStorageResponse.setMdAttach(blockBlobItemResponse.getValue().getContentMd5());
         }
 
-        blobStorageResponse.setStatusCode(blockBlobItemResponse.getStatusCode());
+        blobStorageResponse.setStatusCode(statusCode);
 
         return blobStorageResponse;
     }

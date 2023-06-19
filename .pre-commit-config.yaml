@@ -3,9 +3,23 @@
 # 3. set GITGUARDIAN_API_KEY in your develop environment (get an api key here: https://dashboard.gitguardian.com/workspace/230910/settings/personal/personal-access-tokens)
 # more info https://docs.gitguardian.com/internal-repositories-monitoring/integrations/git_hooks/pre_commit
 repos:
-  - repo: https://github.com/gitguardian/ggshield
-    rev: v1.11.0
+  #  - repo: https://github.com/gitguardian/ggshield
+  #    rev: v1.11.0
+  #    hooks:
+  #      - id: ggshield
+  #        language_version: python3
+  #        stages: [ commit ]
+  - repo: https://github.com/ejba/pre-commit-maven
+    rev: v0.3.3
     hooks:
-      - id: ggshield
-        language_version: python3
-        stages: [ commit ]
+      - id: maven
+        args: [ 'clean compile', "spotless:apply" ]
+      - id: maven-spotless-apply
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.2.0
+    hooks:
+      - id: trailing-whitespace
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.16.1
+    hooks:
+      - id: gitleaks

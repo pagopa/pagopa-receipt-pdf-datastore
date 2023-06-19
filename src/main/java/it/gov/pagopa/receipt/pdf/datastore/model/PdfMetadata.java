@@ -7,9 +7,10 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class PdfGeneration {
+public class PdfMetadata {
 
-    PdfMetadata debtorMetadata;
-    PdfMetadata payerMetadata;
-
+    int statusCode;
+    String errorMessage;
+    String documentName;
+    String documentUrl;
 }
