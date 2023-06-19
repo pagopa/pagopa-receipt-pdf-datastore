@@ -5,10 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
-
 public class ObjectMapperUtils {
 
     private static final ModelMapper modelMapper;
@@ -31,12 +27,20 @@ public class ObjectMapperUtils {
     private ObjectMapperUtils() {
     }
 
-    public static String writeValueAsString(Object value) throws JsonProcessingException {
-        return objectMapper.writeValueAsString(value);
+    public static String writeValueAsString(Object value) {
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (JsonProcessingException e) {
+            return null;
+        }
     }
 
-    public static <T>T mapString(final String string, Class<T> outClass) throws JsonProcessingException {
-        return objectMapper.readValue(string, outClass);
+    public static <T>T mapString(final String string, Class<T> outClass) {
+        try {
+            return objectMapper.readValue(string, outClass);
+        } catch (JsonProcessingException e) {
+            return null;
+        }
     }
 
 

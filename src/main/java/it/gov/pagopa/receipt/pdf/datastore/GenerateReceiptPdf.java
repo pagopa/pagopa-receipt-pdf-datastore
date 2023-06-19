@@ -1,6 +1,5 @@
 package it.gov.pagopa.receipt.pdf.datastore;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.OutputBinding;
 import com.microsoft.azure.functions.annotation.*;
@@ -56,58 +55,57 @@ public class GenerateReceiptPdf {
                     connection = "RECEIPT_QUEUE_CONN_STRING")
             OutputBinding<String> requeueMessage,
             final ExecutionContext context) {
-        BizEvent bizEvent = new BizEvent();
 
-        try {
-            bizEvent = ObjectMapperUtils.mapString(message, BizEvent.class);
-        } catch (JsonProcessingException e) {
-            requeueMessage.setValue(message);
-        }
+        BizEvent bizEvent = ObjectMapperUtils.mapString(message, BizEvent.class);
 
-        List<Receipt> itemsToNotify = new ArrayList<>();
-        Logger logger = context.getLogger();
+        if (bizEvent != null) {
+            List<Receipt> itemsToNotify = new ArrayList<>();
+            Logger logger = context.getLogger();
 
-        String logMsg = String.format("GenerateReceipt function called at %s", LocalDateTime.now());
-        logger.info(logMsg);
-
-        //Retrieve receipt's data from CosmosDB
-        Receipt receipt = null;
-
-        ReceiptCosmosClientImpl receiptCosmosClient = ReceiptCosmosClientImpl.getInstance();
-
-        try {
-            receipt = receiptCosmosClient.getReceiptDocument(bizEvent.getId());
-        } catch (ReceiptNotFoundException e) {
-            requeueMessage.setValue(message);
-        }
-
-        if (receipt != null && (receipt.getStatus().equals(ReceiptStatusType.INSERTED) || receipt.getStatus().equals(ReceiptStatusType.RETRY))) {
-
-            logMsg = String.format("GenerateReceipt function called at %s for event with id %s and status %s",
-                    LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
+            String logMsg = String.format("GenerateReceipt function called at %s", LocalDateTime.now());
             logger.info(logMsg);
 
-            //Verify debtor's fiscal code is different from the payer's one
-            if (receipt.getEventData() != null) {
-                String debtorCF = receipt.getEventData().getDebtorFiscalCode();
-                String payerCF = receipt.getEventData().getPayerFiscalCode();
+            //Retrieve receipt's data from CosmosDB
+            Receipt receipt = null;
 
-                boolean payerDebtorEqual = payerCF.equals(debtorCF);
+            ReceiptCosmosClientImpl receiptCosmosClient = ReceiptCosmosClientImpl.getInstance();
 
-                PdfGeneration pdfGeneration = handlePdfsGeneration(payerDebtorEqual, receipt, bizEvent, debtorCF, payerCF);
-
-                //write pdf metadata on receipt
-                addPdfsMetadataToReceipt(receipt, pdfGeneration);
-
-                //Verify pdf generation success
-                verifyPdfGeneration(message, requeueMessage, logger, receipt, payerDebtorEqual, pdfGeneration);
-
-                itemsToNotify.add(receipt);
+            try {
+                receipt = receiptCosmosClient.getReceiptDocument(bizEvent.getId());
+            } catch (ReceiptNotFoundException e) {
+                requeueMessage.setValue(message);
             }
-        }
 
-        if (!itemsToNotify.isEmpty()) {
-            documentdb.setValue(itemsToNotify);
+            if (receipt != null && (receipt.getStatus().equals(ReceiptStatusType.INSERTED) || receipt.getStatus().equals(ReceiptStatusType.RETRY))) {
+
+                logMsg = String.format("GenerateReceipt function called at %s for event with id %s and status %s",
+                        LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
+                logger.info(logMsg);
+
+                //Verify debtor's fiscal code is different from the payer's one
+                if (receipt.getEventData() != null) {
+                    String debtorCF = receipt.getEventData().getDebtorFiscalCode();
+                    String payerCF = receipt.getEventData().getPayerFiscalCode();
+
+                    boolean payerDebtorEqual = payerCF.equals(debtorCF);
+
+                    PdfGeneration pdfGeneration = handlePdfsGeneration(payerDebtorEqual, receipt, bizEvent, debtorCF, payerCF);
+
+                    //write pdf metadata on receipt
+                    addPdfsMetadataToReceipt(receipt, pdfGeneration);
+
+                    //Verify pdf generation success
+                    verifyPdfGeneration(message, requeueMessage, logger, receipt, payerDebtorEqual, pdfGeneration);
+
+                    itemsToNotify.add(receipt);
+                }
+            }
+
+            if (!itemsToNotify.isEmpty()) {
+                documentdb.setValue(itemsToNotify);
+            }
+        } else {
+            requeueMessage.setValue(message);
         }
     }
 
@@ -184,10 +182,13 @@ public class GenerateReceiptPdf {
         PdfEngineRequest request = new PdfEngineRequest();
         PdfMetadata response = new PdfMetadata();
 
-        String fileName = completeTemplate ? "complete_template.zip" : "partial_template.zip";
+        String completeTemplateFileName = System.getenv().getOrDefault("COMPLETE_TEMPLATE_FILE_NAME", "complete_template.zip");
+        String partialTemplateFileName = System.getenv().getOrDefault("PARTIAL_TEMPLATE_FILE_NAME", "partial_template.zip");
+
+        String fileName = completeTemplate ? completeTemplateFileName : partialTemplateFileName;
 
         try {
-            byte[] htmlTemplate = Objects.requireNonNull(GenerateReceiptPdf.class.getClassLoader().getResourceAsStream(fileName)).readAllBytes();
+            byte[] htmlTemplate = GenerateReceiptPdf.class.getClassLoader().getResourceAsStream(fileName).readAllBytes();
 
             request.setTemplate(htmlTemplate);
             request.setData(ObjectMapperUtils.writeValueAsString(convertReceiptToPdfData(bizEvent)));
@@ -223,7 +224,7 @@ public class GenerateReceiptPdf {
 
         } catch (Exception e) {
             response.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            response.setErrorMessage("Generic error in pdf generation:" + e);
+            response.setErrorMessage("File template not found, error: " + e);
             return response;
         }
     }

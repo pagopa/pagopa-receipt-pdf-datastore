@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Objects;
 import java.util.logging.Logger;
 
 public class BizEventToReceipt {
@@ -55,10 +56,9 @@ public class BizEventToReceipt {
         logger.info(msg);
         int discarder = 0;
 
-        ReceiptQueueClientImpl queueService = ReceiptQueueClientImpl.getInstance();
         for (BizEvent bizEvent : items) {
 
-            if (bizEvent.getEventStatus().equals(BizEventStatusType.DONE)) {
+            if (bizEvent != null && bizEvent.getEventStatus().equals(BizEventStatusType.DONE)) {
 
                 Receipt receipt = new Receipt();
 
@@ -82,27 +82,7 @@ public class BizEventToReceipt {
                         LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
                 logger.info(message);
 
-                try {
-                    String messageText = Base64.getMimeEncoder().encodeToString(ObjectMapperUtils.writeValueAsString(bizEvent).getBytes());
-                    // Add a message to the queue
-                    Response<SendMessageResult> sendMessageResult = queueService.sendMessageToQueue(messageText);
-
-                    if (sendMessageResult.getStatusCode() != HttpStatus.CREATED.value()) {
-                        receipt.setStatus(ReceiptStatusType.NOT_QUEUE_SENT);
-                        ReasonError reasonError = new ReasonError(ReasonErrorCode.ERROR_QUEUE.getCode(), "Error sending message to queue");
-                        receipt.setReasonErr(reasonError);
-                    } else {
-                        receipt.setStatus(ReceiptStatusType.INSERTED);
-                    }
-
-
-                } catch (Exception e) {
-                    receipt.setStatus(ReceiptStatusType.NOT_QUEUE_SENT);
-                    ReasonError reasonError = new ReasonError(ReasonErrorCode.ERROR_QUEUE.getCode(), "Error parsing BizEvent as string at: " + e.getMessage());
-                    receipt.setReasonErr(reasonError);
-
-                    logger.severe("Error parsing BizEvent as string at " + LocalDateTime.now() + " : " + e.getMessage());
-                }
+                handleSendMessageToQueue(bizEvent, receipt);
 
                 itemsDone.add(receipt);
 
@@ -122,8 +102,30 @@ public class BizEventToReceipt {
         msg = String.format("BizEventToReceipt stat %s function - number of receipts inserted on the datastore %d", context.getInvocationId(), itemsDone.size());
         logger.info(msg);
 
-        if(!itemsDone.isEmpty()){
+        if (!itemsDone.isEmpty()) {
             documentdb.setValue(itemsDone);
         }
+    }
+
+    private static void handleSendMessageToQueue(BizEvent bizEvent, Receipt receipt) {
+        String messageText = Base64.getMimeEncoder().encodeToString(Objects.requireNonNull(ObjectMapperUtils.writeValueAsString(bizEvent)).getBytes());
+
+        ReceiptQueueClientImpl queueService = ReceiptQueueClientImpl.getInstance();
+
+        // Add a message to the queue
+        Response<SendMessageResult> sendMessageResult = queueService.sendMessageToQueue(messageText);
+
+        if (sendMessageResult.getStatusCode() != HttpStatus.CREATED.value()) {
+            handleError(receipt, "Error sending message to queue");
+        } else {
+            receipt.setStatus(ReceiptStatusType.INSERTED);
+        }
+
+    }
+
+    private static void handleError(Receipt receipt, String e) {
+        receipt.setStatus(ReceiptStatusType.NOT_QUEUE_SENT);
+        ReasonError reasonError = new ReasonError(ReasonErrorCode.ERROR_QUEUE.getCode(), e);
+        receipt.setReasonErr(reasonError);
     }
 }
