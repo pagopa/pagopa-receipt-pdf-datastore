@@ -122,6 +122,8 @@ public class BizEventToReceipt {
         msg = String.format("BizEventToReceipt stat %s function - number of receipts inserted on the datastore %d", context.getInvocationId(), itemsDone.size());
         logger.info(msg);
 
-        documentdb.setValue(itemsDone);
+        if(!itemsDone.isEmpty()){
+            documentdb.setValue(itemsDone);
+        }
     }
 }
