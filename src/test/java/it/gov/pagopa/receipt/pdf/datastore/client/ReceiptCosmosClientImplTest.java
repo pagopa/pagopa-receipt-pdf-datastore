@@ -3,7 +3,6 @@ package it.gov.pagopa.receipt.pdf.datastore.client;
 import com.azure.cosmos.CosmosClient;
 import com.azure.cosmos.CosmosContainer;
 import com.azure.cosmos.CosmosDatabase;
-import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.util.CosmosPagedIterable;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
@@ -54,7 +53,7 @@ class ReceiptCosmosClientImplTest {
     }
 
     @Test
-    void runKo() throws ReceiptNotFoundException {
+    void runKo() {
         CosmosClient mockClient = mock(CosmosClient.class);
 
         CosmosDatabase mockDatabase = mock(CosmosDatabase.class);
@@ -76,7 +75,7 @@ class ReceiptCosmosClientImplTest {
 
         ReceiptCosmosClientImpl client = new ReceiptCosmosClientImpl(mockClient);
 
-        Assertions.assertThrows(ReceiptNotFoundException.class, () -> client.getReceiptDocument("a non-valid receipt id"));
+        Assertions.assertThrows(ReceiptNotFoundException.class, () -> client.getReceiptDocument("an invalid receipt id"));
     }
 
 }
