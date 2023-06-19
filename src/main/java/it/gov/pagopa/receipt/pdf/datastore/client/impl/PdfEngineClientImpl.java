@@ -26,14 +26,22 @@ public class PdfEngineClientImpl implements PdfEngineClient {
 
     private static PdfEngineClientImpl instance = null;
 
-    private final String pdfEngineEndpoint = System.getenv("PDF_ENGINE_ENDPOINT");
-    private final String ocpAimSubKey = System.getenv("OCP_APIM_SUBSCRIPTION_KEY");
+    private final String pdfEngineEndpoint = System.getenv().getOrDefault("PDF_ENGINE_ENDPOINT", "");
+    private final String ocpAimSubKey = System.getenv().getOrDefault("OCP_APIM_SUBSCRIPTION_KEY", "");
     private static final String HEADER_AUTH_KEY = "Ocp-Apim-Subscription-Key";
     private static final String ZIP_FILE_NAME = "template.zip";
     private static final String TEMPLATE_KEY = "template";
     private static final String DATA_KEY = "data";
 
-    private PdfEngineClientImpl(){}
+    private final HttpClientBuilder httpClientBuilder;
+
+    private PdfEngineClientImpl(){
+        this.httpClientBuilder = HttpClientBuilder.create();
+    }
+
+    public PdfEngineClientImpl(HttpClientBuilder clientBuilder){
+        this.httpClientBuilder = clientBuilder;
+    }
 
     public static PdfEngineClientImpl getInstance() {
         if (instance == null) {
@@ -47,7 +55,7 @@ public class PdfEngineClientImpl implements PdfEngineClient {
 
         PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
 
-        try (CloseableHttpClient client = HttpClientBuilder.create().build()) {
+        try (CloseableHttpClient client = this.httpClientBuilder.build()) {
             ByteArrayBody fileBody = new ByteArrayBody(pdfEngineRequest.getTemplate(), ZIP_FILE_NAME);
             StringBody dataBody = new StringBody(pdfEngineRequest.getData(), ContentType.APPLICATION_JSON);
 
