@@ -8,7 +8,7 @@
     <version>0.0.1-1-PRDP-17-feat-add-event-to-receipt-function</version>
     <packaging>jar</packaging>
 
-    <name>Azure Custom Fn</name>
+    <name>pagopa-receipt-pdf-datastore</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
