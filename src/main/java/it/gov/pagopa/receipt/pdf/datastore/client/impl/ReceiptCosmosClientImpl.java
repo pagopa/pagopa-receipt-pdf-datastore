@@ -20,6 +20,8 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
     private final String databaseId = System.getenv("COSMOS_RECEIPT_DB_NAME");
     private final String containerId = System.getenv("COSMOS_RECEIPT_CONTAINER_NAME");
 
+    private ReceiptCosmosClientImpl(){}
+
     public static ReceiptCosmosClientImpl getInstance(){
         if(instance == null){
             instance = new ReceiptCosmosClientImpl();

@@ -1,7 +1,5 @@
 package it.gov.pagopa.receipt.pdf.datastore.client.impl;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import it.gov.pagopa.receipt.pdf.datastore.client.PdfEngineClient;
 import it.gov.pagopa.receipt.pdf.datastore.model.PdfEngineErrorResponse;
 import it.gov.pagopa.receipt.pdf.datastore.model.request.PdfEngineRequest;
@@ -30,10 +28,12 @@ public class PdfEngineClientImpl implements PdfEngineClient {
 
     private final String pdfEngineEndpoint = System.getenv("PDF_ENGINE_ENDPOINT");
     private final String ocpAimSubKey = System.getenv("OCP_APIM_SUBSCRIPTION_KEY");
-    private final String HEADER_AUTH_KEY = "Ocp-Apim-Subscription-Key";
-    private final String ZIP_FILE_NAME = "template.zip";
-    private final String TEMPLATE_KEY = "template";
-    private final String DATA_KEY = "data";
+    private static final String HEADER_AUTH_KEY = "Ocp-Apim-Subscription-Key";
+    private static final String ZIP_FILE_NAME = "template.zip";
+    private static final String TEMPLATE_KEY = "template";
+    private static final String DATA_KEY = "data";
+
+    private PdfEngineClientImpl(){}
 
     public static PdfEngineClientImpl getInstance() {
         if (instance == null) {
@@ -61,48 +61,56 @@ public class PdfEngineClientImpl implements PdfEngineClient {
             request.setHeader(HEADER_AUTH_KEY, ocpAimSubKey);
             request.setEntity(entity);
 
-            try (CloseableHttpResponse response = client.execute(request)) {
-                HttpEntity entityResponse = response.getEntity();
-
-                if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK && entityResponse != null) {
-                    InputStream inputStream = entityResponse.getContent();
-
-                    pdfEngineResponse.setStatusCode(HttpStatus.SC_OK);
-                    pdfEngineResponse.setPdf(inputStream.readAllBytes());
-                } else {
-                    pdfEngineResponse.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-
-                    if (response.getStatusLine().getStatusCode() == HttpStatus.SC_UNAUTHORIZED) {
-                        pdfEngineResponse.setErrorMessage("Unauthorized call to PDF engine function");
-
-                    } else if (entityResponse != null) {
-                        String jsonString = EntityUtils.toString(entityResponse, StandardCharsets.UTF_8);
-
-                        if (!jsonString.isEmpty()) {
-                            PdfEngineErrorResponse errorResponse = ObjectMapperUtils.mapString(jsonString, PdfEngineErrorResponse.class);
-
-                            if (errorResponse != null &&
-                                    errorResponse.getErrors() != null &&
-                                    errorResponse.getErrors().size() > 0 &&
-                                    errorResponse.getErrors().get(0) != null
-                            ) {
-                                pdfEngineResponse.setErrorMessage(errorResponse.getErrors().get(0).getMessage());
-                            }
-                        }
-                    }
-
-                    if (pdfEngineResponse.getErrorMessage() == null) {
-                        pdfEngineResponse.setErrorMessage("Unknown error in PDF engine function");
-                    }
-                }
-
-            } catch (IOException e) {
-                pdfEngineResponse.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            }
+            handlePdfEngineResponse(pdfEngineResponse, client, request);
         } catch (IOException e) {
             pdfEngineResponse.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }
 
         return pdfEngineResponse;
+    }
+
+    private static void handlePdfEngineResponse(PdfEngineResponse pdfEngineResponse, CloseableHttpClient client, HttpPost request) {
+        try (CloseableHttpResponse response = client.execute(request)) {
+            HttpEntity entityResponse = response.getEntity();
+
+            if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK && entityResponse != null) {
+                InputStream inputStream = entityResponse.getContent();
+
+                pdfEngineResponse.setStatusCode(HttpStatus.SC_OK);
+                pdfEngineResponse.setPdf(inputStream.readAllBytes());
+            } else {
+                pdfEngineResponse.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+
+                handleErrorResponse(pdfEngineResponse, response, entityResponse);
+            }
+
+        } catch (IOException e) {
+            pdfEngineResponse.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private static void handleErrorResponse(PdfEngineResponse pdfEngineResponse, CloseableHttpResponse response, HttpEntity entityResponse) throws IOException {
+        if (response.getStatusLine().getStatusCode() == HttpStatus.SC_UNAUTHORIZED) {
+            pdfEngineResponse.setErrorMessage("Unauthorized call to PDF engine function");
+
+        } else if (entityResponse != null) {
+            String jsonString = EntityUtils.toString(entityResponse, StandardCharsets.UTF_8);
+
+            if (!jsonString.isEmpty()) {
+                PdfEngineErrorResponse errorResponse = ObjectMapperUtils.mapString(jsonString, PdfEngineErrorResponse.class);
+
+                if (errorResponse != null &&
+                        errorResponse.getErrors() != null &&
+                        !errorResponse.getErrors().isEmpty() &&
+                        errorResponse.getErrors().get(0) != null
+                ) {
+                    pdfEngineResponse.setErrorMessage(errorResponse.getErrors().get(0).getMessage());
+                }
+            }
+        }
+
+        if (pdfEngineResponse.getErrorMessage() == null) {
+            pdfEngineResponse.setErrorMessage("Unknown error in PDF engine function");
+        }
     }
 }

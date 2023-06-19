@@ -19,6 +19,8 @@ public class ReceiptQueueClientImpl implements ReceiptQueueClient {
     private final String receiptQueueTopic = System.getenv("RECEIPT_QUEUE_TOPIC");
     private final int receiptQueueDelay = Integer.parseInt(System.getenv().getOrDefault("RECEIPT_QUEUE_DELAY", "1"));
 
+    private ReceiptQueueClientImpl(){}
+
     public static ReceiptQueueClientImpl getInstance(){
         if(instance == null){
             instance = new ReceiptQueueClientImpl();

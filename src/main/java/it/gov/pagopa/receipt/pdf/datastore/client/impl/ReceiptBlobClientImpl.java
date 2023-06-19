@@ -22,7 +22,9 @@ public class ReceiptBlobClientImpl implements ReceiptBlobClient {
 
     private final String containerName = System.getenv("BLOB_STORAGE_CONTAINER_NAME");
 
-    private final String FILE_EXTENSION = ".pdf";
+    private static final String FILE_EXTENSION = ".pdf";
+
+    private ReceiptBlobClientImpl(){}
 
     public static ReceiptBlobClientImpl getInstance(){
         if(instance == null){

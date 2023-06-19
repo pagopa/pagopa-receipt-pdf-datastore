@@ -11,11 +11,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class PdfGeneration {
 
-    int statusCode;
-    String errorMessage;
-    String documentName;
-    String documentUrl;
-    byte[] mdAttach;
-
+    PdfMetadata debtorMetadata;
+    PdfMetadata payerMetadata;
 
 }
