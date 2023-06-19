@@ -1,7 +1,6 @@
 package it.gov.pagopa.receipt.pdf.datastore.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.microsoft.azure.functions.HttpStatus;
 import lombok.Getter;
 import lombok.Setter;
 

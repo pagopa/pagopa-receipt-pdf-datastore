@@ -30,7 +30,7 @@ public class ReceiptBlobClientImpl implements ReceiptBlobClient {
         this.blobServiceClient = new BlobServiceClientBuilder()
                 .endpoint(storageAccount)
                 .connectionString(connectionString)
-                .buildClient();;
+                .buildClient();
     }
 
     public ReceiptBlobClientImpl(BlobServiceClient serviceClient){

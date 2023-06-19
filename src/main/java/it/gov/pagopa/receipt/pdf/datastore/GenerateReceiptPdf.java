@@ -31,6 +31,9 @@ import java.util.logging.Logger;
 
 public class GenerateReceiptPdf {
 
+    private static final String KEY_AMOUNT = "amount";
+    private static final String KEY_TAX_CODE = "taxCode";
+
     public final int maxNumberRetry = Integer.parseInt(System.getenv().getOrDefault("COSMOS_RECEIPT_QUEUE_MAX_RETRY", "5"));
 
     @FunctionName("GenerateReceiptProcess")
@@ -172,7 +175,8 @@ public class GenerateReceiptPdf {
             receipt.setNumRetry(receipt.getNumRetry() + 1);
 
             requeueMessage.setValue(message);
-            logger.severe("Error generating PDF at " + LocalDateTime.now() + " : " + errorMessage);
+            String logMessage = "Error generating PDF at " + LocalDateTime.now() + " : " + errorMessage;
+            logger.severe(logMessage);
         }
     }
 
@@ -246,7 +250,7 @@ public class GenerateReceiptPdf {
         map.put("user", userMap);
         map.put("cart", cartMap);
         map.put("noticeCode", "");
-        map.put("amount", 0);
+        map.put(KEY_AMOUNT, 0);
 
         return map;
     }
@@ -262,7 +266,7 @@ public class GenerateReceiptPdf {
         //transaction.psp.fee
         Map<String, Object> transactionPspFeeMap = new HashMap<>();
         transactionPspFeeMap.put(
-                "amount",
+                KEY_AMOUNT,
                 transaction != null ? transaction.getFee() : ""
         );
         transactionPspMap.put(
@@ -295,7 +299,7 @@ public class GenerateReceiptPdf {
                 bizEvent.getPaymentInfo() != null ? bizEvent.getPaymentInfo().getPaymentDateTime() : ""
         );
         transactionMap.put(
-                "amount",
+                KEY_AMOUNT,
                 bizEvent.getPaymentInfo() != null ? bizEvent.getPaymentInfo().getAmount() : ""
         );
         transactionMap.put(
@@ -329,7 +333,7 @@ public class GenerateReceiptPdf {
                 ""
         );
         userDataMap.put(
-                "taxCode",
+                KEY_TAX_CODE,
                 transactionDetails != null && transactionDetails.getUser() != null ? transactionDetails.getUser().getFiscalCode() : ""
         );
 
@@ -368,7 +372,7 @@ public class GenerateReceiptPdf {
                 bizEvent.getDebtor() != null ? bizEvent.getDebtor().getFullName() : ""
         );
         cartItemDebtorMap.put(
-                "taxCode",
+                KEY_TAX_CODE,
                 bizEvent.getDebtor() != null ? bizEvent.getDebtor().getEntityUniqueIdentifierType() : ""
         );
         //cart.items[0].payee
@@ -378,7 +382,7 @@ public class GenerateReceiptPdf {
                 bizEvent.getCreditor() != null ? bizEvent.getCreditor().getOfficeName() : ""
         );
         cartItemPayeeMap.put(
-                "taxCode",
+                KEY_TAX_CODE,
                 bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : ""
         );
 
@@ -390,7 +394,7 @@ public class GenerateReceiptPdf {
                 bizEvent.getPaymentInfo() != null ? bizEvent.getPaymentInfo().getRemittanceInformation() : ""
         );
         cartItemMap.put(
-                "amount",
+                KEY_AMOUNT,
                 bizEvent.getPaymentInfo() != null ? bizEvent.getPaymentInfo().getAmount() : ""
         );
 

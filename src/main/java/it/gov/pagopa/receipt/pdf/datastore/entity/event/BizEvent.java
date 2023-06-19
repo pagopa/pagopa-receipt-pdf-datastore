@@ -26,9 +26,9 @@ public class BizEvent {
 	private PaymentInfo paymentInfo;
 	private List<Transfer> transferList;
 	private TransactionDetails transactionDetails;
-	private Long timestamp;  // to be valued with ZonedDateTime.now().toInstant().toEpochMilli();
+	private Long timestamp;
 	private Map<String, Object> properties;
-	
+
 	// internal management field
 	@Builder.Default
 	private BizEventStatusType eventStatus = BizEventStatusType.NA;
@@ -37,5 +37,5 @@ public class BizEvent {
 	@Builder.Default
 	private Boolean eventTriggeredBySchedule = Boolean.FALSE;
 	private String eventErrorMessage;
-	
+
 }
