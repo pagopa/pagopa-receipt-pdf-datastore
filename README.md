@@ -11,9 +11,6 @@ and replace in `.env` with correct values, then typing :
 
 `docker run -p 80:80 --env-file=./.env pagopa-functions-template`
 
-### Test
-`curl http://localhost:8999/example`
-
 ## Run locally with Maven
 
 On terminal and  typing :
@@ -49,7 +46,7 @@ then replace env variables with correct values
 `mvn azure-functions:run`
 
 ### Test
-`curl http://localhost:7071/example`
+`curl http://localhost:8080/info`
 
 ---
 
