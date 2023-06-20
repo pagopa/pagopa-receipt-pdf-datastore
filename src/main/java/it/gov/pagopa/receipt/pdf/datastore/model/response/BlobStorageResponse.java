@@ -4,6 +4,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * Model class for Blob Storage client's response
+ */
 @Getter
 @Setter
 @NoArgsConstructor

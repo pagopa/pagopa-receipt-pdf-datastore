@@ -19,7 +19,8 @@ public class Info {
 
     /**
      * This function will be invoked when a Http Trigger occurs
-     * @return HttpStatus.OK
+     *
+     * @return response with HttpStatus.OK
      */
     @FunctionName("Info")
     public HttpResponseMessage run (

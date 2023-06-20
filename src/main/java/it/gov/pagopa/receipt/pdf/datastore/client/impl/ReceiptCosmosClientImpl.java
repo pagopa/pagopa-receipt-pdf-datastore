@@ -10,6 +10,9 @@ import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 
+/**
+ * Client for the CosmosDB database
+ */
 public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
 
     private static ReceiptCosmosClientImpl instance;
@@ -41,14 +44,22 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
         return instance;
     }
 
-    public Receipt getReceiptDocument(String receiptId) throws ReceiptNotFoundException {
-
+    /**
+     * Retrieve receipt document from CosmosDB database
+     *
+     * @param eventId -> biz-event id
+     * @return receipt document
+     * @throws ReceiptNotFoundException in case no receipt has been found with the given idEvent
+     */
+    public Receipt getReceiptDocument(String eventId) throws ReceiptNotFoundException {
         CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
 
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
-        String query = "SELECT * FROM c WHERE c.idEvent = " + "'" + receiptId + "'";
+        //Build query
+        String query = "SELECT * FROM c WHERE c.idEvent = " + "'" + eventId + "'";
 
+        //Query the container
         CosmosPagedIterable<Receipt> queryResponse = cosmosContainer
                 .queryItems(query, new CosmosQueryRequestOptions(), Receipt.class);
 

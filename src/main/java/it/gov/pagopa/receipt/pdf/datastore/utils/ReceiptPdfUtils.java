@@ -24,7 +24,7 @@ public class ReceiptPdfUtils {
     private static final String KEY_AMOUNT = "amount";
     private static final String KEY_TAX_CODE = "taxCode";
 
-    public static final int maxNumberRetry = Integer.parseInt(System.getenv().getOrDefault("COSMOS_RECEIPT_QUEUE_MAX_RETRY", "5"));
+    public static final int MAX_NUMBER_RETRY = Integer.parseInt(System.getenv().getOrDefault("COSMOS_RECEIPT_QUEUE_MAX_RETRY", "5"));
 
     /**
      * Hide from public usage.
@@ -32,6 +32,12 @@ public class ReceiptPdfUtils {
     private ReceiptPdfUtils() {
     }
 
+    /**
+     * Adds PDF metadata from the Blob Storage to the receipt to be saved on CosmosDB
+     *
+     * @param receipt -> receipt to be saved
+     * @param responseGen -> response from the PDF generation process
+     */
     public static void addPdfsMetadataToReceipt(Receipt receipt, PdfGeneration responseGen) {
         PdfMetadata debtorMetadata = responseGen.getDebtorMetadata();
         PdfMetadata payerMetadata = responseGen.getPayerMetadata();
@@ -42,7 +48,6 @@ public class ReceiptPdfUtils {
             receiptMetadata.setUrl(debtorMetadata.getDocumentUrl());
 
             receipt.setMdAttach(receiptMetadata);
-
         }
 
         if (payerMetadata != null && payerMetadata.getStatusCode() == HttpStatus.SC_OK) {
@@ -55,41 +60,59 @@ public class ReceiptPdfUtils {
         }
     }
 
+    /**
+     * Verifies if the PDF generation process succeeded
+     * In case of errors updates the receipt status and error message and re-sends the queue message to the queue
+     *
+     * @param message -> queue message
+     * @param requeueMessage -> output binding for sending messages to the queue
+     * @param logger -> function logger
+     * @param receipt -> receipt to be updated
+     * @param payerDebtorEqual -> boolean to verify if debtor's and payer's fiscal code is the same
+     * @param pdfGeneration -> response from the PDF generation process
+     */
     public static void verifyPdfGeneration(String message, OutputBinding<String> requeueMessage, Logger logger, Receipt receipt, boolean payerDebtorEqual, PdfGeneration pdfGeneration) {
         PdfMetadata responseDebtorGen = pdfGeneration.getDebtorMetadata();
         PdfMetadata responsePayerGen = pdfGeneration.getPayerMetadata();
 
+        //Verify if all the needed PDFs have been generated
         if (responseDebtorGen.getStatusCode() == HttpStatus.SC_OK && (payerDebtorEqual || responsePayerGen.getStatusCode() == HttpStatus.SC_OK)) {
             receipt.setStatus(ReceiptStatusType.GENERATED);
         } else {
-            if (receipt.getNumRetry() > maxNumberRetry) {
+            //Verify if the max number of retry have been passed
+            if (receipt.getNumRetry() > MAX_NUMBER_RETRY) {
                 receipt.setStatus(ReceiptStatusType.FAILED);
             } else {
                 receipt.setStatus(ReceiptStatusType.RETRY);
             }
 
+            //Update the receipt's status and error message
             int errorStatusCode = responseDebtorGen.getStatusCode() == HttpStatus.SC_OK && responsePayerGen != null ? responsePayerGen.getStatusCode() : responseDebtorGen.getStatusCode();
             String errorMessage = responseDebtorGen.getErrorMessage() == null && responsePayerGen != null ? responsePayerGen.getErrorMessage() : responseDebtorGen.getErrorMessage();
             ReasonError reasonError = new ReasonError(errorStatusCode, errorMessage);
             receipt.setReasonErr(reasonError);
             receipt.setNumRetry(receipt.getNumRetry() + 1);
 
+            //Re-queue the message
             requeueMessage.setValue(message);
             String logMessage = "Error generating PDF at " + LocalDateTime.now() + " : " + errorMessage;
             logger.severe(logMessage);
         }
     }
 
+    /**
+     * Converts the data from the biz-event to data compatible with the template to be given to the PDF engine
+     *
+     * @param bizEvent -> biz-event from queue message
+     * @return map of data
+     */
     public static Map<String, Object> convertReceiptToPdfData(BizEvent bizEvent) {
         Map<String, Object> map = new HashMap<>();
 
         TransactionDetails transactionDetails = bizEvent.getTransactionDetails();
-        Transaction transaction = transactionDetails != null ? transactionDetails.getTransaction() : null;
-        Info transactionInfo = transactionDetails != null && transactionDetails.getWallet() != null
-                ? transactionDetails.getWallet().getInfo() : null;
 
         //transaction
-        Map<String, Object> transactionMap = getTransactionMap(bizEvent, transaction, transactionInfo);
+        Map<String, Object> transactionMap = getTransactionMap(bizEvent, transactionDetails);
 
         //user
         Map<String, Object> userMap = getUserMap(bizEvent, transactionDetails);
@@ -107,8 +130,20 @@ public class ReceiptPdfUtils {
         return map;
     }
 
-    private static Map<String, Object> getTransactionMap(BizEvent bizEvent, Transaction transaction, Info transactionInfo) {
+    /**
+     * Retrieves transaction's data from the biz-event
+     *
+     * @param bizEvent -> biz-event from queue message
+     * @param transactionDetails -> biz-event transaction details
+     * @return map of the transaction's data
+     */
+    private static Map<String, Object> getTransactionMap(BizEvent bizEvent, TransactionDetails transactionDetails) {
         Map<String, Object> transactionMap = new HashMap<>();
+
+        Transaction transaction = transactionDetails != null ? transactionDetails.getTransaction() : null;
+        Info transactionInfo = transactionDetails != null && transactionDetails.getWallet() != null
+                ? transactionDetails.getWallet().getInfo() : null;
+
         //transaction.psp
         Map<String, Object> transactionPspMap = new HashMap<>();
         transactionPspMap.put(
@@ -172,6 +207,13 @@ public class ReceiptPdfUtils {
         return transactionMap;
     }
 
+    /**
+     * Retrieves user's data from the biz-event
+     *
+     * @param bizEvent -> biz-event from queue message
+     * @param transactionDetails -> biz-event transaction details
+     * @return map of the user's data
+     */
     private static Map<String, Object> getUserMap(BizEvent bizEvent, TransactionDetails transactionDetails) {
         Map<String, Object> userMap = new HashMap<>();
         //user.data
@@ -200,6 +242,12 @@ public class ReceiptPdfUtils {
         return userMap;
     }
 
+    /**
+     * Retrieves items cart's data from the biz-event
+     *
+     * @param bizEvent -> biz-event from queue message
+     * @return map of items cart's data
+     */
     private static Map<String, Object> getCartMap(BizEvent bizEvent) {
         //cart
         Map<String, Object> cartMap = new HashMap<>();

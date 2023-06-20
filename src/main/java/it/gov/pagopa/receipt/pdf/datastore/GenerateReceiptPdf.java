@@ -7,9 +7,7 @@ import it.gov.pagopa.receipt.pdf.datastore.client.impl.PdfEngineClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptBlobClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReasonError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReceiptMetadata;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReasonErrorCode;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
@@ -26,8 +24,42 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.logging.Logger;
 
+/**
+ * Azure Functions with Azure Queue trigger.
+ */
 public class GenerateReceiptPdf {
 
+    /**
+     * This function will be invoked when a Queue trigger occurs
+     * #
+     * The biz-event is mapped from the string to the BizEvent object
+     * The receipt's data is retrieved from CosmosDB by the biz-event's id
+     * If receipt has status INSERTED or RETRY
+     * Is verified if the debtor's and payer's fiscal code are the same
+     * If different it will generate a pdf for each:
+     *      - Complete template for the payer
+     *      - Partial template for the debtor
+     * If the fiscal code is the same it will generate only one pdf with the complete template
+     * For every pdf to generate:
+     *      - call the API to the PDF Engine to generate the file from the template
+     *      - the pdf is saved to the designed Azure Blob Storage
+     *      - the pdf metadata retrieved from the storage are saved on the receipt's data (file name & url)
+     * If everything succeeded the receipt's status will be updated to GENERATED and saved to CosmosDB
+     * #
+     * The message is re-sent to the queue in case of errors like:
+     *      the receipt is not found;
+     *      the receipt has NOT status INSERTED or RETRY;
+     *      there is an error generating at least one pdf;
+     *      there is an error saving at least one pdf to blob storage;
+     *      errors processing the data;
+     * #
+     * After too many retry the receipt's status will be updated to FAILED
+     *
+     * @param message -> message, with biz-event's data, triggering the function
+     * @param documentdb -> output binding that will update the receipt data with the pdfs metadata
+     * @param requeueMessage -> output binding that will re-send the message to the queue in case of errors
+     * @param context -> function context
+     */
     @FunctionName("GenerateReceiptProcess")
     @ExponentialBackoffRetry(maxRetryCount = 5, minimumInterval = "500", maximumInterval = "5000")
     public void processGenerateReceipt(
@@ -49,6 +81,7 @@ public class GenerateReceiptPdf {
             OutputBinding<String> requeueMessage,
             final ExecutionContext context) {
 
+        //Map queue message to BizEvent
         BizEvent bizEvent = ObjectMapperUtils.mapString(message, BizEvent.class);
 
         if (bizEvent != null) {
@@ -63,33 +96,37 @@ public class GenerateReceiptPdf {
 
             ReceiptCosmosClientImpl receiptCosmosClient = ReceiptCosmosClientImpl.getInstance();
 
+            //Retrieve receipt from CosmosDB
             try {
                 receipt = receiptCosmosClient.getReceiptDocument(bizEvent.getId());
             } catch (ReceiptNotFoundException e) {
                 requeueMessage.setValue(message);
             }
 
+            //Verify receipt status
             if (receipt != null && (receipt.getStatus().equals(ReceiptStatusType.INSERTED) || receipt.getStatus().equals(ReceiptStatusType.RETRY))) {
 
                 logMsg = String.format("GenerateReceipt function called at %s for event with id %s and status %s",
                         LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
                 logger.info(logMsg);
 
-                //Verify debtor's fiscal code is different from the payer's one
+                //Verify if debtor's and payer's fiscal code are the same
                 if (receipt.getEventData() != null) {
                     String debtorCF = receipt.getEventData().getDebtorFiscalCode();
                     String payerCF = receipt.getEventData().getPayerFiscalCode();
 
                     boolean payerDebtorEqual = payerCF.equals(debtorCF);
 
+                    //Generate and save PDF
                     PdfGeneration pdfGeneration = handlePdfsGeneration(payerDebtorEqual, receipt, bizEvent, debtorCF, payerCF);
 
-                    //write pdf metadata on receipt
+                    //Write PDF blob storage metadata on receipt
                     ReceiptPdfUtils.addPdfsMetadataToReceipt(receipt, pdfGeneration);
 
-                    //Verify pdf generation success
+                    //Verify PDF generation success
                     ReceiptPdfUtils.verifyPdfGeneration(message, requeueMessage, logger, receipt, payerDebtorEqual, pdfGeneration);
 
+                    //Add receipt to items to be saved to CosmosDB
                     itemsToNotify.add(receipt);
                 }
             }
@@ -102,19 +139,30 @@ public class GenerateReceiptPdf {
         }
     }
 
+    /**
+     * Handles conditionally the generation of the PDFs based on the payerDebtorEqual boolean
+     *
+     * @param payerDebtorEqual -> boolean that verify if the payer and debtor have the same fiscal code
+     * @param receipt -> receipt from CosmosDB
+     * @param bizEvent -> biz-event from queue message
+     * @param debtorCF -> debtor fiscal code
+     * @param payerCF -> payer fiscal code
+     * @return PdfGeneration object with the PDF metadata from the Blob Storage or relatives error messages
+     */
     private PdfGeneration handlePdfsGeneration(boolean payerDebtorEqual, Receipt receipt, BizEvent bizEvent, String debtorCF, String payerCF) {
         PdfGeneration pdfGeneration = new PdfGeneration();
 
         if (payerDebtorEqual) {
+            //Generate debtor's complete PDF
             if (receipt.getMdAttach() == null || receipt.getMdAttach().getUrl() == null || receipt.getMdAttach().getUrl().isEmpty()) {
                 pdfGeneration.setDebtorMetadata(generatePdf(bizEvent, debtorCF, true));
             }
         } else {
-            //verify the debtor pdf hasn't already been generated
+            //Generate debtor's partial PDF
             if (receipt.getMdAttach() == null || receipt.getMdAttach().getUrl() == null || receipt.getMdAttach().getUrl().isEmpty()) {
                 pdfGeneration.setDebtorMetadata(generatePdf(bizEvent, debtorCF, false));
             }
-            //verify the payer pdf hasn't already been generated
+            //Generate payer's complete PDF
             if (receipt.getMdAttachPayer() == null || receipt.getMdAttachPayer().getUrl() == null || receipt.getMdAttachPayer().getUrl().isEmpty()) {
                 pdfGeneration.setPayerMetadata(generatePdf(bizEvent, payerCF, true));
             }
@@ -123,18 +171,29 @@ public class GenerateReceiptPdf {
         return pdfGeneration;
     }
 
+    /**
+     * Handles PDF generation and saving to storage
+     *
+     * @param bizEvent -> biz-event from queue message
+     * @param fiscalCode -> debtor or payer fiscal code
+     * @param completeTemplate -> boolean that indicates what template to use
+     * @return PDF metadata retrieved from Blob Storage or relative error message
+     */
     private PdfMetadata generatePdf(BizEvent bizEvent, String fiscalCode, boolean completeTemplate) {
         PdfEngineRequest request = new PdfEngineRequest();
         PdfMetadata response = new PdfMetadata();
 
+        //Get filename
         String completeTemplateFileName = System.getenv().getOrDefault("COMPLETE_TEMPLATE_FILE_NAME", "complete_template.zip");
         String partialTemplateFileName = System.getenv().getOrDefault("PARTIAL_TEMPLATE_FILE_NAME", "partial_template.zip");
 
         String fileName = completeTemplate ? completeTemplateFileName : partialTemplateFileName;
 
         try {
+            //File to byte[]
             byte[] htmlTemplate = GenerateReceiptPdf.class.getClassLoader().getResourceAsStream(fileName).readAllBytes();
 
+            //Build the request
             request.setTemplate(htmlTemplate);
             request.setData(ObjectMapperUtils.writeValueAsString(ReceiptPdfUtils.convertReceiptToPdfData(bizEvent)));
 
@@ -142,15 +201,17 @@ public class GenerateReceiptPdf {
 
             PdfEngineClientImpl pdfEngineClient = PdfEngineClientImpl.getInstance();
 
+            //Call the PDF Engine
             PdfEngineResponse pdfEngineResponse = pdfEngineClient.generatePDF(request);
 
             if (pdfEngineResponse.getStatusCode() == HttpStatus.SC_OK) {
-                ReceiptBlobClientImpl blobClient = ReceiptBlobClientImpl.getInstance();
+                //Save the PDF
                 String pdfFileName = bizEvent.getId() + fiscalCode;
 
-                handleSaveToBlobStorage(response, pdfEngineResponse, blobClient, pdfFileName);
+                handleSaveToBlobStorage(response, pdfEngineResponse, pdfFileName);
 
             } else {
+                //Handle PDF generation error
                 response.setStatusCode(ReasonErrorCode.ERROR_PDF_ENGINE.getCustomCode(pdfEngineResponse.getStatusCode()));
                 response.setErrorMessage(pdfEngineResponse.getErrorMessage());
             }
@@ -158,29 +219,43 @@ public class GenerateReceiptPdf {
             return response;
 
         } catch (Exception e) {
+            //Handle file not found error
             response.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
             response.setErrorMessage("File template not found, error: " + e);
             return response;
         }
     }
 
-    private static void handleSaveToBlobStorage(PdfMetadata response, PdfEngineResponse pdfEngineResponse, ReceiptBlobClientImpl blobClient, String pdfFileName) {
+    /**
+     * Handles saving PDF to Blob Storage
+     *
+     * @param response -> pdf metadata containing response
+     * @param pdfEngineResponse -> response from the pdf engine
+     * @param pdfFileName -> filename composed of biz-event id and user fiscal code
+     */
+    private static void handleSaveToBlobStorage(PdfMetadata response, PdfEngineResponse pdfEngineResponse, String pdfFileName) {
         BlobStorageResponse blobStorageResponse;
 
+        ReceiptBlobClientImpl blobClient = ReceiptBlobClientImpl.getInstance();
+
+        //Save to Blob Storage
         try {
             blobStorageResponse = blobClient.savePdfToBlobStorage(pdfEngineResponse.getPdf(), pdfFileName);
 
             if (blobStorageResponse.getStatusCode() == com.microsoft.azure.functions.HttpStatus.CREATED.value()) {
+                //Update PDF metadata
                 response.setDocumentName(blobStorageResponse.getDocumentName());
                 response.setDocumentUrl(blobStorageResponse.getDocumentUrl());
 
                 response.setStatusCode(HttpStatus.SC_OK);
             } else {
+                //Handle Blob storage error
                 response.setStatusCode(ReasonErrorCode.ERROR_BLOB_STORAGE.getCode());
                 response.setErrorMessage("Error saving pdf to blob storage");
             }
 
         } catch (Exception e) {
+            //Handle Blob storage error
             response.setStatusCode(ReasonErrorCode.ERROR_BLOB_STORAGE.getCode());
             response.setErrorMessage("Error saving pdf to blob storage : " + e);
         }

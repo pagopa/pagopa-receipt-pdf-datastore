@@ -4,6 +4,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * Model class for PDF metadata from Blob Storage
+ */
 @Getter
 @Setter
 @NoArgsConstructor
