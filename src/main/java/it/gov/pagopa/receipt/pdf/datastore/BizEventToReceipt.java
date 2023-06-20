@@ -68,13 +68,8 @@ public class BizEventToReceipt {
                 EventData eventData = new EventData();
                 eventData.setPayerFiscalCode(bizEvent.getPayer().getEntityUniqueIdentifierValue());
                 eventData.setDebtorFiscalCode(bizEvent.getDebtor().getEntityUniqueIdentifierValue());
-                //TODO define right transaction value
                 eventData.setTransactionCreationDate(
-                        bizEvent.getTransactionDetails() != null &&
-                                bizEvent.getTransactionDetails().getTransaction() != null
-                                ?
-                                bizEvent.getTransactionDetails().getTransaction().getCreationDate()
-                                : null
+                        getTransactionCreationDate(bizEvent)
                 );
                 receipt.setEventData(eventData);
 
@@ -130,5 +125,18 @@ public class BizEventToReceipt {
         receipt.setStatus(ReceiptStatusType.NOT_QUEUE_SENT);
         ReasonError reasonError = new ReasonError(ReasonErrorCode.ERROR_QUEUE.getCode(), e);
         receipt.setReasonErr(reasonError);
+    }
+
+    private static String getTransactionCreationDate(BizEvent bizEvent) {
+        if (bizEvent != null) {
+            if (bizEvent.getTransactionDetails() != null && bizEvent.getTransactionDetails().getTransaction() != null) {
+                return bizEvent.getTransactionDetails().getTransaction().getCreationDate();
+
+            } else if (bizEvent.getPaymentInfo() != null) {
+                return bizEvent.getPaymentInfo().getPaymentDateTime();
+            }
+        }
+
+        return null;
     }
 }
