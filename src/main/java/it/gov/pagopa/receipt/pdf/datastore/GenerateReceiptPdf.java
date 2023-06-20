@@ -103,6 +103,9 @@ public class GenerateReceiptPdf {
                 requeueMessage.setValue(message);
             }
 
+            int discarder = 0;
+            int numberOfSavedPdfs = 0;
+
             //Verify receipt status
             if (receipt != null && (receipt.getStatus().equals(ReceiptStatusType.INSERTED) || receipt.getStatus().equals(ReceiptStatusType.RETRY))) {
 
@@ -121,15 +124,28 @@ public class GenerateReceiptPdf {
                     PdfGeneration pdfGeneration = handlePdfsGeneration(payerDebtorEqual, receipt, bizEvent, debtorCF, payerCF);
 
                     //Write PDF blob storage metadata on receipt
-                    ReceiptPdfUtils.addPdfsMetadataToReceipt(receipt, pdfGeneration);
+                    numberOfSavedPdfs = ReceiptPdfUtils.addPdfsMetadataToReceipt(receipt, pdfGeneration);
 
                     //Verify PDF generation success
                     ReceiptPdfUtils.verifyPdfGeneration(message, requeueMessage, logger, receipt, payerDebtorEqual, pdfGeneration);
 
                     //Add receipt to items to be saved to CosmosDB
                     itemsToNotify.add(receipt);
+                } else {
+                    discarder++;
                 }
             }
+            //Discarder info
+            logMsg = String.format("itemsDone stat %s function - %d number of events in discarder  ", context.getInvocationId(), discarder);
+            logger.info(logMsg);
+
+            //Call to blob storage info
+            logMsg = String.format("itemsDone stat %s function - number of PDFs sent to the receipt blob storage %d", context.getInvocationId(), numberOfSavedPdfs);
+            logger.info(logMsg);
+
+            //Call to datastore info
+            logMsg = String.format("GenerateReceiptProcess stat %s function - number of receipt inserted on the datastore %d", context.getInvocationId(), itemsToNotify.size());
+            logger.info(logMsg);
 
             if (!itemsToNotify.isEmpty()) {
                 documentdb.setValue(itemsToNotify);
@@ -248,6 +264,7 @@ public class GenerateReceiptPdf {
                 response.setDocumentUrl(blobStorageResponse.getDocumentUrl());
 
                 response.setStatusCode(HttpStatus.SC_OK);
+
             } else {
                 //Handle Blob storage error
                 response.setStatusCode(ReasonErrorCode.ERROR_BLOB_STORAGE.getCode());

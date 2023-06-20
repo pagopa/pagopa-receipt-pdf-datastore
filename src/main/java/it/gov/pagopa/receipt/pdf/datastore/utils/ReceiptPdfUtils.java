@@ -37,10 +37,13 @@ public class ReceiptPdfUtils {
      *
      * @param receipt -> receipt to be saved
      * @param responseGen -> response from the PDF generation process
+     * @return number of pdfs saved to blob storage
      */
-    public static void addPdfsMetadataToReceipt(Receipt receipt, PdfGeneration responseGen) {
+    public static int addPdfsMetadataToReceipt(Receipt receipt, PdfGeneration responseGen) {
         PdfMetadata debtorMetadata = responseGen.getDebtorMetadata();
         PdfMetadata payerMetadata = responseGen.getPayerMetadata();
+
+        int numberOfSavedPdfs = 0;
 
         if (debtorMetadata != null && debtorMetadata.getStatusCode() == HttpStatus.SC_OK) {
             ReceiptMetadata receiptMetadata = new ReceiptMetadata();
@@ -48,6 +51,7 @@ public class ReceiptPdfUtils {
             receiptMetadata.setUrl(debtorMetadata.getDocumentUrl());
 
             receipt.setMdAttach(receiptMetadata);
+            numberOfSavedPdfs++;
         }
 
         if (payerMetadata != null && payerMetadata.getStatusCode() == HttpStatus.SC_OK) {
@@ -55,9 +59,11 @@ public class ReceiptPdfUtils {
             receiptMetadata.setName(payerMetadata.getDocumentName());
             receiptMetadata.setUrl(payerMetadata.getDocumentUrl());
 
-
             receipt.setMdAttachPayer(receiptMetadata);
+            numberOfSavedPdfs++;
         }
+
+        return numberOfSavedPdfs;
     }
 
     /**
