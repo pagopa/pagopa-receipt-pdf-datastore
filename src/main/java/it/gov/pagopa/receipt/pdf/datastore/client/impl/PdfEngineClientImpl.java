@@ -22,6 +22,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Client for the PDF Engine
+ */
 public class PdfEngineClientImpl implements PdfEngineClient {
 
     private static PdfEngineClientImpl instance = null;
@@ -51,20 +54,30 @@ public class PdfEngineClientImpl implements PdfEngineClient {
         return instance;
     }
 
+    /**
+     * Generate the client, builds the request and returns the response
+     *
+     * @param pdfEngineRequest -> request to the client
+     * @return response with the PDF or error message and the status
+     */
     public PdfEngineResponse generatePDF(PdfEngineRequest pdfEngineRequest) {
 
         PdfEngineResponse pdfEngineResponse = new PdfEngineResponse();
 
+        //Generate client
         try (CloseableHttpClient client = this.httpClientBuilder.build()) {
+            //Encode template and data
             ByteArrayBody fileBody = new ByteArrayBody(pdfEngineRequest.getTemplate(), ZIP_FILE_NAME);
             StringBody dataBody = new StringBody(pdfEngineRequest.getData(), ContentType.APPLICATION_JSON);
 
+            //Build the multipart request
             MultipartEntityBuilder builder = MultipartEntityBuilder.create();
             builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
             builder.addPart(TEMPLATE_KEY, fileBody);
             builder.addPart(DATA_KEY, dataBody);
             HttpEntity entity = builder.build();
 
+            //Set endpoint and auth key
             HttpPost request = new HttpPost(pdfEngineEndpoint);
             request.setHeader(HEADER_AUTH_KEY, ocpAimSubKey);
             request.setEntity(entity);
@@ -77,10 +90,20 @@ public class PdfEngineClientImpl implements PdfEngineClient {
         return pdfEngineResponse;
     }
 
+    /**
+     * Calls the PDF Engine and handles its response, updating the PdfEngineResponse accordingly
+     *
+     * @param pdfEngineResponse -> response output
+     * @param client -> the previously generated client
+     * @param request -> the request to the PDF engine
+     */
     private static void handlePdfEngineResponse(PdfEngineResponse pdfEngineResponse, CloseableHttpClient client, HttpPost request) {
+        //Execute call
         try (CloseableHttpResponse response = client.execute(request)) {
+            //Retrieve response
             HttpEntity entityResponse = response.getEntity();
 
+            //Handles response
             if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK && entityResponse != null) {
                 InputStream inputStream = entityResponse.getContent();
 
@@ -97,11 +120,21 @@ public class PdfEngineClientImpl implements PdfEngineClient {
         }
     }
 
+    /**
+     * Handles error response from the PDF Engine
+     *
+     * @param pdfEngineResponse -> response to update
+     * @param response -> response from the PDF engine
+     * @param entityResponse -> response content from the PDF Engine
+     * @throws IOException in case of error encoding to string
+     */
     private static void handleErrorResponse(PdfEngineResponse pdfEngineResponse, CloseableHttpResponse response, HttpEntity entityResponse) throws IOException {
+        //Verify if unauthorized
         if (response.getStatusLine().getStatusCode() == HttpStatus.SC_UNAUTHORIZED) {
             pdfEngineResponse.setErrorMessage("Unauthorized call to PDF engine function");
 
         } else if (entityResponse != null) {
+            //Handle JSON response
             String jsonString = EntityUtils.toString(entityResponse, StandardCharsets.UTF_8);
 
             if (!jsonString.isEmpty()) {

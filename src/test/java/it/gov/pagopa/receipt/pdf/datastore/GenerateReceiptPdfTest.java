@@ -21,6 +21,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -30,6 +31,7 @@ import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariable;
 
 @ExtendWith(MockitoExtension.class)
 class GenerateReceiptPdfTest {
@@ -42,6 +44,7 @@ class GenerateReceiptPdfTest {
     private final String VALID_BLOB_NAME = "a valid debtor blob name";
 
     private final String PDF_ENGINE_ERROR_MESSAGE = "pdf engine error message";
+
     @Spy
     private GenerateReceiptPdf function;
 
@@ -62,7 +65,6 @@ class GenerateReceiptPdfTest {
 
     @Captor
     private ArgumentCaptor<String> messageCaptor;
-
 
     @AfterEach
     public void teardown() throws Exception {
@@ -417,6 +419,58 @@ class GenerateReceiptPdfTest {
     }
 
     @Test
+    void runKoBlobStorageThrowException() throws Exception {
+        Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
+        when(context.getLogger()).thenReturn(logger);
+
+        ReceiptCosmosClientImpl cosmosClient = mock(ReceiptCosmosClientImpl.class);
+        receiptMock.setStatus(ReceiptStatusType.INSERTED);
+        EventData eventDataMock = mock(EventData.class);
+        when(eventDataMock.getDebtorFiscalCode()).thenReturn(VALID_DEBTOR_CF);
+        when(eventDataMock.getPayerFiscalCode()).thenReturn(VALID_PAYER_CF);
+        receiptMock.setEventData(eventDataMock);
+        when(cosmosClient.getReceiptDocument(any())).thenReturn(receiptMock);
+
+        GenerateReceiptPdfTest.setMock(ReceiptCosmosClientImpl.class, cosmosClient);
+
+        PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
+        when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
+        byte[] pdf = new FileInputStream("src/test/resources/output.pdf").readAllBytes();
+        when(pdfEngineResponse.getPdf()).thenReturn(pdf);
+        when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);
+
+        GenerateReceiptPdfTest.setMock(PdfEngineClientImpl.class, pdfEngineClient);
+
+        ReceiptBlobClientImpl blobClient = mock(ReceiptBlobClientImpl.class);
+        when(blobStorageResponse.getStatusCode()).thenReturn(com.microsoft.azure.functions.HttpStatus.FORBIDDEN.value());
+        when(blobClient.savePdfToBlobStorage(eq(pdf), anyString())).thenReturn(blobStorageResponse);
+
+        GenerateReceiptPdfTest.setMock(ReceiptBlobClientImpl.class, blobClient);
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<String> requeueMessage = (OutputBinding<String>) spy(OutputBinding.class);
+
+        // test execution
+        withEnvironmentVariable("BLOB_STORAGE_CONTAINER_NAME", "wrong-container-name").execute(() ->
+                assertDoesNotThrow(() ->
+                        function.processGenerateReceipt(BIZ_EVENT_MESSAGE_DIFFERENT_CF, documentdb, requeueMessage, context))
+        );
+
+        verify(documentdb).setValue(receiptCaptor.capture());
+        Receipt capturedCosmos = receiptCaptor.getValue().get(0);
+
+        verify(requeueMessage).setValue(messageCaptor.capture());
+        String caputuredMessage = messageCaptor.getValue();
+
+        assertEquals(BIZ_EVENT_MESSAGE_DIFFERENT_CF, caputuredMessage);
+        assertEquals(ReceiptStatusType.RETRY, capturedCosmos.getStatus());
+        assertEquals(ReasonErrorCode.ERROR_BLOB_STORAGE.getCode(), capturedCosmos.getReasonErr().getCode());
+    }
+
+    @Test
     void runKoTooManyRetry() throws ReceiptNotFoundException {
         Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
         when(context.getLogger()).thenReturn(logger);
@@ -451,6 +505,50 @@ class GenerateReceiptPdfTest {
         Receipt capturedCosmos = receiptCaptor.getValue().get(0);
 
         assertEquals(ReceiptStatusType.FAILED, capturedCosmos.getStatus());
+    }
+
+    @Test
+    void runKoTemplateNotFound() throws Exception {
+        Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
+        when(context.getLogger()).thenReturn(logger);
+
+        ReceiptCosmosClientImpl cosmosClient = mock(ReceiptCosmosClientImpl.class);
+        receiptMock.setStatus(ReceiptStatusType.INSERTED);
+        EventData eventDataMock = mock(EventData.class);
+        when(eventDataMock.getDebtorFiscalCode()).thenReturn(VALID_DEBTOR_CF);
+        when(eventDataMock.getPayerFiscalCode()).thenReturn(VALID_DEBTOR_CF);
+        receiptMock.setEventData(eventDataMock);
+        receiptMock.setNumRetry(0);
+        when(cosmosClient.getReceiptDocument(any())).thenReturn(receiptMock);
+
+        GenerateReceiptPdfTest.setMock(ReceiptCosmosClientImpl.class, cosmosClient);
+
+        PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
+
+        GenerateReceiptPdfTest.setMock(PdfEngineClientImpl.class, pdfEngineClient);
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<String> requeueMessage = (OutputBinding<String>) spy(OutputBinding.class);
+
+        // test execution
+        withEnvironmentVariable("COMPLETE_TEMPLATE_FILE_NAME", "invalid_filename")
+                .execute(() -> {
+                    assertDoesNotThrow(() -> function.processGenerateReceipt(BIZ_EVENT_MESSAGE_SAME_CF, documentdb, requeueMessage, context));
+                });
+
+
+        verify(documentdb).setValue(receiptCaptor.capture());
+        Receipt capturedCosmos = receiptCaptor.getValue().get(0);
+
+        verify(requeueMessage).setValue(messageCaptor.capture());
+        String caputuredMessage = messageCaptor.getValue();
+
+        assertEquals(BIZ_EVENT_MESSAGE_SAME_CF, caputuredMessage);
+        assertEquals(ReceiptStatusType.RETRY, capturedCosmos.getStatus());
+        assertNotNull(capturedCosmos.getReasonErr().getMessage());
     }
 
     private static <T> void setMock(Class<T> classToMock, T mock) {

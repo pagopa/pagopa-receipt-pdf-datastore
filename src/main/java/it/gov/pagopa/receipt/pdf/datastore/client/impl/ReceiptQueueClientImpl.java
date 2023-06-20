@@ -5,12 +5,13 @@ import com.azure.storage.queue.QueueClient;
 import com.azure.storage.queue.QueueClientBuilder;
 import com.azure.storage.queue.models.SendMessageResult;
 import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptQueueClient;
-import lombok.Setter;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 
-@Setter
+/**
+ * Client for the Queue
+ */
 public class ReceiptQueueClientImpl implements ReceiptQueueClient {
 
     private static ReceiptQueueClientImpl instance;
@@ -41,6 +42,12 @@ public class ReceiptQueueClientImpl implements ReceiptQueueClient {
         return instance;
     }
 
+    /**
+     * Send string message to the queue
+     *
+     * @param messageText -> biz-event encoded to base64 string
+     * @return response from the queue
+     */
     public Response<SendMessageResult> sendMessageToQueue(String messageText) {
 
         return this.queueClient.sendMessageWithResponse(

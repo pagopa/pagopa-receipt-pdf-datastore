@@ -1,6 +1,5 @@
 package it.gov.pagopa.receipt.pdf.datastore;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.OutputBinding;
 import com.microsoft.azure.functions.annotation.*;
@@ -8,12 +7,7 @@ import it.gov.pagopa.receipt.pdf.datastore.client.impl.PdfEngineClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptBlobClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
-import it.gov.pagopa.receipt.pdf.datastore.entity.event.Info;
-import it.gov.pagopa.receipt.pdf.datastore.entity.event.Transaction;
-import it.gov.pagopa.receipt.pdf.datastore.entity.event.TransactionDetails;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReasonError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReceiptMetadata;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReasonErrorCode;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
@@ -23,19 +17,49 @@ import it.gov.pagopa.receipt.pdf.datastore.model.request.PdfEngineRequest;
 import it.gov.pagopa.receipt.pdf.datastore.model.response.BlobStorageResponse;
 import it.gov.pagopa.receipt.pdf.datastore.model.response.PdfEngineResponse;
 import it.gov.pagopa.receipt.pdf.datastore.utils.ObjectMapperUtils;
+import it.gov.pagopa.receipt.pdf.datastore.utils.ReceiptPdfUtils;
 import org.apache.http.HttpStatus;
 
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.logging.Logger;
 
+/**
+ * Azure Functions with Azure Queue trigger.
+ */
 public class GenerateReceiptPdf {
 
-    private static final String KEY_AMOUNT = "amount";
-    private static final String KEY_TAX_CODE = "taxCode";
-
-    public final int maxNumberRetry = Integer.parseInt(System.getenv().getOrDefault("COSMOS_RECEIPT_QUEUE_MAX_RETRY", "5"));
-
+    /**
+     * This function will be invoked when a Queue trigger occurs
+     * #
+     * The biz-event is mapped from the string to the BizEvent object
+     * The receipt's data is retrieved from CosmosDB by the biz-event's id
+     * If receipt has status INSERTED or RETRY
+     * Is verified if the debtor's and payer's fiscal code are the same
+     * If different it will generate a pdf for each:
+     *      - Complete template for the payer
+     *      - Partial template for the debtor
+     * If the fiscal code is the same it will generate only one pdf with the complete template
+     * For every pdf to generate:
+     *      - call the API to the PDF Engine to generate the file from the template
+     *      - the pdf is saved to the designed Azure Blob Storage
+     *      - the pdf metadata retrieved from the storage are saved on the receipt's data (file name & url)
+     * If everything succeeded the receipt's status will be updated to GENERATED and saved to CosmosDB
+     * #
+     * The message is re-sent to the queue in case of errors like:
+     *      the receipt is not found;
+     *      the receipt has NOT status INSERTED or RETRY;
+     *      there is an error generating at least one pdf;
+     *      there is an error saving at least one pdf to blob storage;
+     *      errors processing the data;
+     * #
+     * After too many retry the receipt's status will be updated to FAILED
+     *
+     * @param message -> message, with biz-event's data, triggering the function
+     * @param documentdb -> output binding that will update the receipt data with the pdfs metadata
+     * @param requeueMessage -> output binding that will re-send the message to the queue in case of errors
+     * @param context -> function context
+     */
     @FunctionName("GenerateReceiptProcess")
     @ExponentialBackoffRetry(maxRetryCount = 5, minimumInterval = "500", maximumInterval = "5000")
     public void processGenerateReceipt(
@@ -56,74 +80,105 @@ public class GenerateReceiptPdf {
                     connection = "RECEIPT_QUEUE_CONN_STRING")
             OutputBinding<String> requeueMessage,
             final ExecutionContext context) {
-        BizEvent bizEvent = new BizEvent();
 
-        try {
-            bizEvent = ObjectMapperUtils.mapString(message, BizEvent.class);
-        } catch (JsonProcessingException e) {
-            requeueMessage.setValue(message);
-        }
+        //Map queue message to BizEvent
+        BizEvent bizEvent = ObjectMapperUtils.mapString(message, BizEvent.class);
 
-        List<Receipt> itemsToNotify = new ArrayList<>();
-        Logger logger = context.getLogger();
+        if (bizEvent != null) {
+            List<Receipt> itemsToNotify = new ArrayList<>();
+            Logger logger = context.getLogger();
 
-        String logMsg = String.format("GenerateReceipt function called at %s", LocalDateTime.now());
-        logger.info(logMsg);
-
-        //Retrieve receipt's data from CosmosDB
-        Receipt receipt = null;
-
-        ReceiptCosmosClientImpl receiptCosmosClient = ReceiptCosmosClientImpl.getInstance();
-
-        try {
-            receipt = receiptCosmosClient.getReceiptDocument(bizEvent.getId());
-        } catch (ReceiptNotFoundException e) {
-            requeueMessage.setValue(message);
-        }
-
-        if (receipt != null && (receipt.getStatus().equals(ReceiptStatusType.INSERTED) || receipt.getStatus().equals(ReceiptStatusType.RETRY))) {
-
-            logMsg = String.format("GenerateReceipt function called at %s for event with id %s and status %s",
-                    LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
+            String logMsg = String.format("GenerateReceipt function called at %s", LocalDateTime.now());
             logger.info(logMsg);
 
-            //Verify debtor's fiscal code is different from the payer's one
-            if (receipt.getEventData() != null) {
-                String debtorCF = receipt.getEventData().getDebtorFiscalCode();
-                String payerCF = receipt.getEventData().getPayerFiscalCode();
+            //Retrieve receipt's data from CosmosDB
+            Receipt receipt = null;
 
-                boolean payerDebtorEqual = payerCF.equals(debtorCF);
+            ReceiptCosmosClientImpl receiptCosmosClient = ReceiptCosmosClientImpl.getInstance();
 
-                PdfGeneration pdfGeneration = handlePdfsGeneration(payerDebtorEqual, receipt, bizEvent, debtorCF, payerCF);
-
-                //write pdf metadata on receipt
-                addPdfsMetadataToReceipt(receipt, pdfGeneration);
-
-                //Verify pdf generation success
-                verifyPdfGeneration(message, requeueMessage, logger, receipt, payerDebtorEqual, pdfGeneration);
-
-                itemsToNotify.add(receipt);
+            //Retrieve receipt from CosmosDB
+            try {
+                receipt = receiptCosmosClient.getReceiptDocument(bizEvent.getId());
+            } catch (ReceiptNotFoundException e) {
+                requeueMessage.setValue(message);
             }
-        }
 
-        if (!itemsToNotify.isEmpty()) {
-            documentdb.setValue(itemsToNotify);
+            int discarder = 0;
+            int numberOfSavedPdfs = 0;
+
+            //Verify receipt status
+            if (receipt != null && (receipt.getStatus().equals(ReceiptStatusType.INSERTED) || receipt.getStatus().equals(ReceiptStatusType.RETRY))) {
+
+                logMsg = String.format("GenerateReceipt function called at %s for event with id %s and status %s",
+                        LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
+                logger.info(logMsg);
+
+                //Verify if debtor's and payer's fiscal code are the same
+                if (receipt.getEventData() != null) {
+                    String debtorCF = receipt.getEventData().getDebtorFiscalCode();
+                    String payerCF = receipt.getEventData().getPayerFiscalCode();
+
+                    boolean payerDebtorEqual = payerCF.equals(debtorCF);
+
+                    //Generate and save PDF
+                    PdfGeneration pdfGeneration = handlePdfsGeneration(payerDebtorEqual, receipt, bizEvent, debtorCF, payerCF);
+
+                    //Write PDF blob storage metadata on receipt
+                    numberOfSavedPdfs = ReceiptPdfUtils.addPdfsMetadataToReceipt(receipt, pdfGeneration);
+
+                    //Verify PDF generation success
+                    ReceiptPdfUtils.verifyPdfGeneration(message, requeueMessage, logger, receipt, payerDebtorEqual, pdfGeneration);
+
+                    //Add receipt to items to be saved to CosmosDB
+                    itemsToNotify.add(receipt);
+                } else {
+                    discarder++;
+                }
+            }
+            //Discarder info
+            logMsg = String.format("itemsDone stat %s function - %d number of events in discarder  ", context.getInvocationId(), discarder);
+            logger.info(logMsg);
+
+            //Call to blob storage info
+            logMsg = String.format("itemsDone stat %s function - number of PDFs sent to the receipt blob storage %d", context.getInvocationId(), numberOfSavedPdfs);
+            logger.info(logMsg);
+
+            //Call to datastore info
+            logMsg = String.format("GenerateReceiptProcess stat %s function - number of receipt inserted on the datastore %d", context.getInvocationId(), itemsToNotify.size());
+            logger.info(logMsg);
+
+            if (!itemsToNotify.isEmpty()) {
+                documentdb.setValue(itemsToNotify);
+            }
+        } else {
+            requeueMessage.setValue(message);
         }
     }
 
+    /**
+     * Handles conditionally the generation of the PDFs based on the payerDebtorEqual boolean
+     *
+     * @param payerDebtorEqual -> boolean that verify if the payer and debtor have the same fiscal code
+     * @param receipt -> receipt from CosmosDB
+     * @param bizEvent -> biz-event from queue message
+     * @param debtorCF -> debtor fiscal code
+     * @param payerCF -> payer fiscal code
+     * @return PdfGeneration object with the PDF metadata from the Blob Storage or relatives error messages
+     */
     private PdfGeneration handlePdfsGeneration(boolean payerDebtorEqual, Receipt receipt, BizEvent bizEvent, String debtorCF, String payerCF) {
         PdfGeneration pdfGeneration = new PdfGeneration();
 
         if (payerDebtorEqual) {
+            //Generate debtor's complete PDF
             if (receipt.getMdAttach() == null || receipt.getMdAttach().getUrl() == null || receipt.getMdAttach().getUrl().isEmpty()) {
                 pdfGeneration.setDebtorMetadata(generatePdf(bizEvent, debtorCF, true));
             }
         } else {
-            //verify the debtor pdf hasn't already been generated
+            //Generate debtor's partial PDF
             if (receipt.getMdAttach() == null || receipt.getMdAttach().getUrl() == null || receipt.getMdAttach().getUrl().isEmpty()) {
                 pdfGeneration.setDebtorMetadata(generatePdf(bizEvent, debtorCF, false));
             }
-            //verify the payer pdf hasn't already been generated
+            //Generate payer's complete PDF
             if (receipt.getMdAttachPayer() == null || receipt.getMdAttachPayer().getUrl() == null || receipt.getMdAttachPayer().getUrl().isEmpty()) {
                 pdfGeneration.setPayerMetadata(generatePdf(bizEvent, payerCF, true));
             }
@@ -132,89 +187,47 @@ public class GenerateReceiptPdf {
         return pdfGeneration;
     }
 
-    private static void addPdfsMetadataToReceipt(Receipt receipt, PdfGeneration responseGen) {
-        PdfMetadata debtorMetadata = responseGen.getDebtorMetadata();
-        PdfMetadata payerMetadata = responseGen.getPayerMetadata();
-
-        if (debtorMetadata != null && debtorMetadata.getStatusCode() == HttpStatus.SC_OK) {
-            ReceiptMetadata receiptMetadata = new ReceiptMetadata();
-            receiptMetadata.setName(debtorMetadata.getDocumentName());
-            receiptMetadata.setUrl(debtorMetadata.getDocumentUrl());
-
-            receipt.setMdAttach(receiptMetadata);
-
-        }
-
-        if (payerMetadata != null && payerMetadata.getStatusCode() == HttpStatus.SC_OK) {
-            ReceiptMetadata receiptMetadata = new ReceiptMetadata();
-            receiptMetadata.setName(payerMetadata.getDocumentName());
-            receiptMetadata.setUrl(payerMetadata.getDocumentUrl());
-
-
-            receipt.setMdAttachPayer(receiptMetadata);
-        }
-    }
-
-    private void verifyPdfGeneration(String message, OutputBinding<String> requeueMessage, Logger logger, Receipt receipt, boolean payerDebtorEqual, PdfGeneration pdfGeneration) {
-        PdfMetadata responseDebtorGen = pdfGeneration.getDebtorMetadata();
-        PdfMetadata responsePayerGen = pdfGeneration.getPayerMetadata();
-
-        if (responseDebtorGen.getStatusCode() == HttpStatus.SC_OK && (payerDebtorEqual || responsePayerGen.getStatusCode() == HttpStatus.SC_OK)) {
-            receipt.setStatus(ReceiptStatusType.GENERATED);
-        } else {
-            if (receipt.getNumRetry() > maxNumberRetry) {
-                receipt.setStatus(ReceiptStatusType.FAILED);
-            } else {
-                receipt.setStatus(ReceiptStatusType.RETRY);
-            }
-
-            int errorStatusCode = responseDebtorGen.getStatusCode() == HttpStatus.SC_OK && responsePayerGen != null ? responsePayerGen.getStatusCode() : responseDebtorGen.getStatusCode();
-            String errorMessage = responseDebtorGen.getErrorMessage() == null && responsePayerGen != null ? responsePayerGen.getErrorMessage() : responseDebtorGen.getErrorMessage();
-            ReasonError reasonError = new ReasonError(errorStatusCode, errorMessage);
-            receipt.setReasonErr(reasonError);
-            receipt.setNumRetry(receipt.getNumRetry() + 1);
-
-            requeueMessage.setValue(message);
-            String logMessage = "Error generating PDF at " + LocalDateTime.now() + " : " + errorMessage;
-            logger.severe(logMessage);
-        }
-    }
-
+    /**
+     * Handles PDF generation and saving to storage
+     *
+     * @param bizEvent -> biz-event from queue message
+     * @param fiscalCode -> debtor or payer fiscal code
+     * @param completeTemplate -> boolean that indicates what template to use
+     * @return PDF metadata retrieved from Blob Storage or relative error message
+     */
     private PdfMetadata generatePdf(BizEvent bizEvent, String fiscalCode, boolean completeTemplate) {
         PdfEngineRequest request = new PdfEngineRequest();
         PdfMetadata response = new PdfMetadata();
 
-        String fileName = completeTemplate ? "complete_template.zip" : "partial_template.zip";
+        //Get filename
+        String completeTemplateFileName = System.getenv().getOrDefault("COMPLETE_TEMPLATE_FILE_NAME", "complete_template.zip");
+        String partialTemplateFileName = System.getenv().getOrDefault("PARTIAL_TEMPLATE_FILE_NAME", "partial_template.zip");
+
+        String fileName = completeTemplate ? completeTemplateFileName : partialTemplateFileName;
 
         try {
-            byte[] htmlTemplate = Objects.requireNonNull(GenerateReceiptPdf.class.getClassLoader().getResourceAsStream(fileName)).readAllBytes();
+            //File to byte[]
+            byte[] htmlTemplate = GenerateReceiptPdf.class.getClassLoader().getResourceAsStream(fileName).readAllBytes();
 
+            //Build the request
             request.setTemplate(htmlTemplate);
-            request.setData(ObjectMapperUtils.writeValueAsString(convertReceiptToPdfData(bizEvent)));
+            request.setData(ObjectMapperUtils.writeValueAsString(ReceiptPdfUtils.convertReceiptToPdfData(bizEvent)));
 
             request.setApplySignature(false);
 
             PdfEngineClientImpl pdfEngineClient = PdfEngineClientImpl.getInstance();
 
+            //Call the PDF Engine
             PdfEngineResponse pdfEngineResponse = pdfEngineClient.generatePDF(request);
 
             if (pdfEngineResponse.getStatusCode() == HttpStatus.SC_OK) {
-                ReceiptBlobClientImpl blobClient = ReceiptBlobClientImpl.getInstance();
+                //Save the PDF
                 String pdfFileName = bizEvent.getId() + fiscalCode;
 
-                BlobStorageResponse blobStorageResponse = blobClient.savePdfToBlobStorage(pdfEngineResponse.getPdf(), pdfFileName);
-
-                if (blobStorageResponse.getStatusCode() == com.microsoft.azure.functions.HttpStatus.CREATED.value()) {
-                    response.setDocumentName(blobStorageResponse.getDocumentName());
-                    response.setDocumentUrl(blobStorageResponse.getDocumentUrl());
-
-                    response.setStatusCode(HttpStatus.SC_OK);
-                } else {
-                    response.setStatusCode(ReasonErrorCode.ERROR_BLOB_STORAGE.getCode());
-                    response.setErrorMessage("Error saving pdf to blob storage");
-                }
+                handleSaveToBlobStorage(response, pdfEngineResponse, pdfFileName);
 
             } else {
+                //Handle PDF generation error
                 response.setStatusCode(ReasonErrorCode.ERROR_PDF_ENGINE.getCustomCode(pdfEngineResponse.getStatusCode()));
                 response.setErrorMessage(pdfEngineResponse.getErrorMessage());
             }
@@ -222,185 +235,46 @@ public class GenerateReceiptPdf {
             return response;
 
         } catch (Exception e) {
+            //Handle file not found error
             response.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            response.setErrorMessage("Generic error in pdf generation:" + e);
+            response.setErrorMessage("File template not found, error: " + e);
             return response;
         }
     }
 
-    private Map<String, Object> convertReceiptToPdfData(BizEvent bizEvent) {
-        Map<String, Object> map = new HashMap<>();
+    /**
+     * Handles saving PDF to Blob Storage
+     *
+     * @param response -> pdf metadata containing response
+     * @param pdfEngineResponse -> response from the pdf engine
+     * @param pdfFileName -> filename composed of biz-event id and user fiscal code
+     */
+    private static void handleSaveToBlobStorage(PdfMetadata response, PdfEngineResponse pdfEngineResponse, String pdfFileName) {
+        BlobStorageResponse blobStorageResponse;
 
-        TransactionDetails transactionDetails = bizEvent.getTransactionDetails();
-        Transaction transaction = transactionDetails != null ? transactionDetails.getTransaction() : null;
-        Info transactionInfo = transactionDetails != null && transactionDetails.getWallet() != null
-                ? transactionDetails.getWallet().getInfo() : null;
+        ReceiptBlobClientImpl blobClient = ReceiptBlobClientImpl.getInstance();
 
-        //transaction
-        Map<String, Object> transactionMap = getTransactionMap(bizEvent, transaction, transactionInfo);
+        //Save to Blob Storage
+        try {
+            blobStorageResponse = blobClient.savePdfToBlobStorage(pdfEngineResponse.getPdf(), pdfFileName);
 
-        //user
-        Map<String, Object> userMap = getUserMap(bizEvent, transactionDetails);
+            if (blobStorageResponse.getStatusCode() == com.microsoft.azure.functions.HttpStatus.CREATED.value()) {
+                //Update PDF metadata
+                response.setDocumentName(blobStorageResponse.getDocumentName());
+                response.setDocumentUrl(blobStorageResponse.getDocumentUrl());
 
-        //cart
-        Map<String, Object> cartMap = getCartMap(bizEvent);
+                response.setStatusCode(HttpStatus.SC_OK);
 
+            } else {
+                //Handle Blob storage error
+                response.setStatusCode(ReasonErrorCode.ERROR_BLOB_STORAGE.getCode());
+                response.setErrorMessage("Error saving pdf to blob storage");
+            }
 
-        map.put("transaction", transactionMap);
-        map.put("user", userMap);
-        map.put("cart", cartMap);
-        map.put("noticeCode", "");
-        map.put(KEY_AMOUNT, 0);
-
-        return map;
-    }
-
-    private static Map<String, Object> getTransactionMap(BizEvent bizEvent, Transaction transaction, Info transactionInfo) {
-        Map<String, Object> transactionMap = new HashMap<>();
-        //transaction.psp
-        Map<String, Object> transactionPspMap = new HashMap<>();
-        transactionPspMap.put(
-                "name",
-                transaction != null && transaction.getPsp() != null ? transaction.getPsp().getBusinessName() : ""
-        );
-        //transaction.psp.fee
-        Map<String, Object> transactionPspFeeMap = new HashMap<>();
-        transactionPspFeeMap.put(
-                KEY_AMOUNT,
-                transaction != null ? transaction.getFee() : ""
-        );
-        transactionPspMap.put(
-                "fee",
-                transactionPspFeeMap
-        );
-        //transaction.paymentMethod
-        Map<String, String> transactionPaymentMethod = new HashMap<>();
-        transactionPaymentMethod.put(
-                "name", bizEvent.getPaymentInfo() != null ? bizEvent.getPaymentInfo().getPaymentMethod() : ""
-        );
-        transactionPaymentMethod.put(
-                "logo", transactionInfo != null ? transactionInfo.getBrand() : ""
-        );
-        transactionPaymentMethod.put(
-                "accountHolder",
-                transactionInfo != null ? transactionInfo.getHolder() : ""
-        );
-        transactionPaymentMethod.put(
-                "extraFee",
-                "false"
-        );
-
-        transactionMap.put(
-                "id",
-                transaction != null ? transaction.getIdTransaction() : ""
-        );
-        transactionMap.put(
-                "timestamp",
-                bizEvent.getPaymentInfo() != null ? bizEvent.getPaymentInfo().getPaymentDateTime() : ""
-        );
-        transactionMap.put(
-                KEY_AMOUNT,
-                bizEvent.getPaymentInfo() != null ? bizEvent.getPaymentInfo().getAmount() : ""
-        );
-        transactionMap.put(
-                "psp",
-                transactionPspMap);
-        transactionMap.put(
-                "rrn",
-                transaction != null ? transaction.getRrn() : ""
-        );
-        transactionMap.put(
-                "paymentMethod",
-                transactionPaymentMethod
-        );
-        transactionMap.put(
-                "authCode",
-                transaction != null ? transaction.getAuthorizationCode() : ""
-        );
-        return transactionMap;
-    }
-
-    private static Map<String, Object> getUserMap(BizEvent bizEvent, TransactionDetails transactionDetails) {
-        Map<String, Object> userMap = new HashMap<>();
-        //user.data
-        Map<String, Object> userDataMap = new HashMap<>();
-        userDataMap.put(
-                "firstName",
-                transactionDetails != null && transactionDetails.getUser() != null ? transactionDetails.getUser().getFullName() : ""
-        );
-        userDataMap.put(
-                "lastName",
-                ""
-        );
-        userDataMap.put(
-                KEY_TAX_CODE,
-                transactionDetails != null && transactionDetails.getUser() != null ? transactionDetails.getUser().getFiscalCode() : ""
-        );
-
-        userMap.put(
-                "data",
-                userDataMap
-        );
-        userMap.put(
-                "mail",
-                bizEvent.getDebtor() != null ? bizEvent.getDebtor().getEMail() : ""
-        );
-        return userMap;
-    }
-
-    private static Map<String, Object> getCartMap(BizEvent bizEvent) {
-        //cart
-        Map<String, Object> cartMap = new HashMap<>();
-        //cart.items
-        ArrayList<Object> cartItemsArray = new ArrayList<>();
-        //cart.items[0]
-        Map<String, Object> cartItemMap = new HashMap<>();
-        //cart.items[0].refNumber
-        Map<String, Object> cartItemRefNumberMap = new HashMap<>();
-        cartItemRefNumberMap.put(
-                "type",
-                "CODICE AVVISO"
-        );
-        cartItemRefNumberMap.put(
-                "value",
-                bizEvent.getDebtorPosition() != null ? bizEvent.getDebtorPosition().getIuv() : "")
-        ;
-        //cart.items[0].debtor
-        Map<String, Object> cartItemDebtorMap = new HashMap<>();
-        cartItemDebtorMap.put(
-                "fullName",
-                bizEvent.getDebtor() != null ? bizEvent.getDebtor().getFullName() : ""
-        );
-        cartItemDebtorMap.put(
-                KEY_TAX_CODE,
-                bizEvent.getDebtor() != null ? bizEvent.getDebtor().getEntityUniqueIdentifierType() : ""
-        );
-        //cart.items[0].payee
-        Map<String, Object> cartItemPayeeMap = new HashMap<>();
-        cartItemPayeeMap.put(
-                "name",
-                bizEvent.getCreditor() != null ? bizEvent.getCreditor().getOfficeName() : ""
-        );
-        cartItemPayeeMap.put(
-                KEY_TAX_CODE,
-                bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : ""
-        );
-
-        cartItemMap.put("refNumber", cartItemRefNumberMap);
-        cartItemMap.put("debtor", cartItemDebtorMap);
-        cartItemMap.put("payee", cartItemPayeeMap);
-        cartItemMap.put(
-                "subject",
-                bizEvent.getPaymentInfo() != null ? bizEvent.getPaymentInfo().getRemittanceInformation() : ""
-        );
-        cartItemMap.put(
-                KEY_AMOUNT,
-                bizEvent.getPaymentInfo() != null ? bizEvent.getPaymentInfo().getAmount() : ""
-        );
-
-        cartItemsArray.add(cartItemMap);
-
-        cartMap.put("items", cartItemsArray);
-        return cartMap;
+        } catch (Exception e) {
+            //Handle Blob storage error
+            response.setStatusCode(ReasonErrorCode.ERROR_BLOB_STORAGE.getCode());
+            response.setErrorMessage("Error saving pdf to blob storage : " + e);
+        }
     }
 }

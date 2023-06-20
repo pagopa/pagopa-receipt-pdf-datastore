@@ -7,7 +7,7 @@ import lombok.Setter;
 import java.util.List;
 
 /**
- * Model class for HTTP error response
+ * Model class for PDF engine HTTP error response
  */
 @Getter
 @Setter

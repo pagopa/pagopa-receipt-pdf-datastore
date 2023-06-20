@@ -5,10 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
-
 public class ObjectMapperUtils {
 
     private static final ModelMapper modelMapper;
@@ -32,50 +28,33 @@ public class ObjectMapperUtils {
     }
 
     /**
-     * <p>Note: outClass object must have default constructor with no arguments</p>
+     * Encodes an object to a string
      *
-     * @param <D>      type of result object.
-     * @param <T>      type of source object to map from.
-     * @param entity   entity that needs to be mapped.
-     * @param outClass class of result object.
-     * @return new object of <code>outClass</code> type.
+     * @param value -> object to be encoded
+     * @return encoded string
      */
-    public static <D, T> D map(final T entity, Class<D> outClass) {
-        return modelMapper.map(entity, outClass);
+    public static String writeValueAsString(Object value) {
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (JsonProcessingException e) {
+            return null;
+        }
     }
 
     /**
-     * <p>Note: outClass object must have default constructor with no arguments</p>
+     * Maps string to object of defined Class
      *
-     * @param entityList list of entities that needs to be mapped
-     * @param outCLass   class of result list element
-     * @param <D>        type of objects in result list
-     * @param <T>        type of entity in <code>entityList</code>
-     * @return list of mapped object with <code><D></code> type.
+     * @param string -> string to map
+     * @param outClass -> Class to be mapped to
+     * @return object of the defined Class
+     * @param <T> -> defined Class
      */
-    public static <D, T> List<D> mapAll(final Collection<T> entityList, Class<D> outCLass) {
-        return entityList.stream()
-                .map(entity -> map(entity, outCLass))
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Maps {@code source} to {@code destination}.
-     *
-     * @param source      object to map from
-     * @param destination object to map to
-     */
-    public static <S, D> D map(final S source, D destination) {
-        modelMapper.map(source, destination);
-        return destination;
-    }
-
-    public static String writeValueAsString(Object value) throws JsonProcessingException {
-        return objectMapper.writeValueAsString(value);
-    }
-
-    public static <T>T mapString(final String string, Class<T> outClass) throws JsonProcessingException {
-        return objectMapper.readValue(string, outClass);
+    public static <T>T mapString(final String string, Class<T> outClass) {
+        try {
+            return objectMapper.readValue(string, outClass);
+        } catch (JsonProcessingException e) {
+            return null;
+        }
     }
 
 

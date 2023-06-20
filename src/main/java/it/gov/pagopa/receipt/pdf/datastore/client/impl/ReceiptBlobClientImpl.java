@@ -13,6 +13,9 @@ import it.gov.pagopa.receipt.pdf.datastore.model.response.BlobStorageResponse;
 
 import java.io.ByteArrayInputStream;
 
+/**
+ * Client for the Blob Storage
+ */
 public class ReceiptBlobClientImpl implements ReceiptBlobClient {
 
     private static ReceiptBlobClientImpl instance;
@@ -45,16 +48,23 @@ public class ReceiptBlobClientImpl implements ReceiptBlobClient {
         return instance;
     }
 
+    /**
+     * Handles saving the PDF to the blob storage
+     *
+     * @param pdf -> PDF file
+     * @param fileName -> filename to save the PDF with
+     * @return blob storage response with PDF metadata or error message and status
+     */
     public BlobStorageResponse savePdfToBlobStorage(byte[] pdf, String fileName) {
 
-        // Create the container and return a container client object
+        //Create the container and return a container client object
         BlobContainerClient blobContainerClient = this.blobServiceClient.getBlobContainerClient(containerName);
         String fileNamePdf = fileName + FILE_EXTENSION;
 
-        // Get a reference to a blob
+        //Get a reference to a blob
         BlobClient blobClient = blobContainerClient.getBlobClient(fileNamePdf);
 
-        // Upload the blob
+        //Upload the blob
         Response<BlockBlobItem> blockBlobItemResponse = blobClient.uploadWithResponse(
                 new BlobParallelUploadOptions(
                         new ByteArrayInputStream(pdf)
@@ -62,6 +72,7 @@ public class ReceiptBlobClientImpl implements ReceiptBlobClient {
 
         BlobStorageResponse blobStorageResponse = new BlobStorageResponse();
 
+        //Build response accordingly
         int statusCode = blockBlobItemResponse.getStatusCode();
 
         if (statusCode == HttpStatus.CREATED.value()) {
