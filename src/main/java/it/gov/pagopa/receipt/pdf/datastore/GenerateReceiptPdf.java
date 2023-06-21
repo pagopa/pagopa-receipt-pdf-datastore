@@ -153,8 +153,6 @@ public class GenerateReceiptPdf {
             if (!itemsToNotify.isEmpty()) {
                 documentdb.setValue(itemsToNotify);
             }
-        } else {
-            requeueMessage.setValue(message);
         }
     }
 
