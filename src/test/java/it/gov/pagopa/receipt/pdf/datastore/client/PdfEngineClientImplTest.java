@@ -12,13 +12,21 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class PdfEngineClientImplTest {
+
+    @Test
+    void testSingleton(){
+        Assertions.assertDoesNotThrow(PdfEngineClientImpl::getInstance);
+    }
 
     @Test
     void runOk() throws IOException {

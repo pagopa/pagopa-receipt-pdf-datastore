@@ -15,8 +15,19 @@ import java.util.Iterator;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariables;
 
 class ReceiptCosmosClientImplTest {
+
+    @Test
+    void testSingletonConnectionError() throws Exception {
+        String mockKey = "mockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeyMK==";
+        withEnvironmentVariables(
+                "COSMOS_RECEIPT_KEY", mockKey,
+                "COSMOS_RECEIPT_SERVICE_ENDPOINT", ""
+        ).execute(() -> Assertions.assertThrows(IllegalArgumentException.class, ReceiptCosmosClientImpl::getInstance)
+        );
+    }
 
     @Test
     void runOk() throws ReceiptNotFoundException {
