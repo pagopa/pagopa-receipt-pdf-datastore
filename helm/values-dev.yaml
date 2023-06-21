@@ -61,7 +61,7 @@ microservice-chart:
           type: Utilization # Allowed types are 'Utilization' or 'AverageValue'
           value: "75"
   envConfig:
-    WEBSITE_SITE_NAME: "pagopa-receipt-pdf-datastore" # required to show cloud role name in application insights
+    WEBSITE_SITE_NAME: "pagopareceiptpdfdatastore" # required to show cloud role name in application insights
     FUNCTIONS_WORKER_RUNTIME: "java"
     RECEIPT_QUEUE_TOPIC: "pagopa-d-weu-receipts-queue-receipt-waiting-4-gen"
     COSMOS_RECEIPT_QUEUE_MAX_RETRY: "5"
