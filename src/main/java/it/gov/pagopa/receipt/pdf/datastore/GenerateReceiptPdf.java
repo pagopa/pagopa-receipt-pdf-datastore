@@ -80,7 +80,7 @@ public class GenerateReceiptPdf {
                     queueName = "pagopa-d-weu-receipts-queue-receipt-waiting-4-gen",
                     connection = "RECEIPT_QUEUE_CONN_STRING")
             OutputBinding<String> requeueMessage,
-            final ExecutionContext context) throws BizEventNotValidException {
+            final ExecutionContext context) throws BizEventNotValidException, ReceiptNotFoundException {
 
         //Map queue message to BizEvent
         BizEvent bizEvent = ObjectMapperUtils.mapString(message, BizEvent.class);
@@ -101,7 +101,7 @@ public class GenerateReceiptPdf {
             try {
                 receipt = receiptCosmosClient.getReceiptDocument(bizEvent.getId());
             } catch (ReceiptNotFoundException e) {
-                requeueMessage.setValue(message);
+                throw new ReceiptNotFoundException("Receipt not found with the following biz-event id: "+bizEvent.getId());
             }
 
             int discarder = 0;
