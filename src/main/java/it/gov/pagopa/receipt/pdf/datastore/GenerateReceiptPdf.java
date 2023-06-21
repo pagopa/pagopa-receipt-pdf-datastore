@@ -10,6 +10,7 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReasonErrorCode;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventNotValidException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.model.PdfGeneration;
 import it.gov.pagopa.receipt.pdf.datastore.model.PdfMetadata;
@@ -79,7 +80,7 @@ public class GenerateReceiptPdf {
                     queueName = "pagopa-d-weu-receipts-queue-receipt-waiting-4-gen",
                     connection = "RECEIPT_QUEUE_CONN_STRING")
             OutputBinding<String> requeueMessage,
-            final ExecutionContext context) {
+            final ExecutionContext context) throws BizEventNotValidException {
 
         //Map queue message to BizEvent
         BizEvent bizEvent = ObjectMapperUtils.mapString(message, BizEvent.class);
@@ -153,6 +154,8 @@ public class GenerateReceiptPdf {
             if (!itemsToNotify.isEmpty()) {
                 documentdb.setValue(itemsToNotify);
             }
+        } else {
+            throw new BizEventNotValidException("The message coming from the queue is not a valid BizEvent message");
         }
     }
 
