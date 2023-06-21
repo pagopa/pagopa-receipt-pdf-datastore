@@ -132,9 +132,12 @@ public class GenerateReceiptPdf {
                     //Add receipt to items to be saved to CosmosDB
                     itemsToNotify.add(receipt);
                 } else {
-                    discarder++;
+                    requeueMessage.setValue(message);
                 }
+            } else {
+                discarder++;
             }
+
             //Discarder info
             logMsg = String.format("itemsDone stat %s function - %d number of events in discarder  ", context.getInvocationId(), discarder);
             logger.info(logMsg);
