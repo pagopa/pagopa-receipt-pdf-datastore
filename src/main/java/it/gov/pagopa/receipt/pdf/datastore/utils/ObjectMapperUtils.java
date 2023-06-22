@@ -30,7 +30,7 @@ public class ObjectMapperUtils {
     /**
      * Encodes an object to a string
      *
-     * @param value -> object to be encoded
+     * @param value Object to be encoded
      * @return encoded string
      */
     public static String writeValueAsString(Object value) {
@@ -44,13 +44,13 @@ public class ObjectMapperUtils {
     /**
      * Maps string to object of defined Class
      *
-     * @param string -> string to map
-     * @param outClass -> Class to be mapped to
+     * @param string   String to map
+     * @param outClass Class to be mapped to
+     * @param <T>      Defined Class
      * @return object of the defined Class
-     * @param <T> -> defined Class
      */
-    public static <T>T mapString(final String string, Class<T> outClass) throws JsonProcessingException {
-            return objectMapper.readValue(string, outClass);
+    public static <T> T mapString(final String string, Class<T> outClass) throws JsonProcessingException {
+        return objectMapper.readValue(string, outClass);
     }
 
 

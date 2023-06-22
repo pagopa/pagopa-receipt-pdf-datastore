@@ -38,11 +38,11 @@ public class PdfEngineClientImpl implements PdfEngineClient {
 
     private final HttpClientBuilder httpClientBuilder;
 
-    private PdfEngineClientImpl(){
+    private PdfEngineClientImpl() {
         this.httpClientBuilder = HttpClientBuilder.create();
     }
 
-    public PdfEngineClientImpl(HttpClientBuilder clientBuilder){
+    public PdfEngineClientImpl(HttpClientBuilder clientBuilder) {
         this.httpClientBuilder = clientBuilder;
     }
 
@@ -57,7 +57,7 @@ public class PdfEngineClientImpl implements PdfEngineClient {
     /**
      * Generate the client, builds the request and returns the response
      *
-     * @param pdfEngineRequest -> request to the client
+     * @param pdfEngineRequest Request to the client
      * @return response with the PDF or error message and the status
      */
     public PdfEngineResponse generatePDF(PdfEngineRequest pdfEngineRequest) {
@@ -93,9 +93,9 @@ public class PdfEngineClientImpl implements PdfEngineClient {
     /**
      * Calls the PDF Engine and handles its response, updating the PdfEngineResponse accordingly
      *
-     * @param pdfEngineResponse -> response output
-     * @param client -> the previously generated client
-     * @param request -> the request to the PDF engine
+     * @param pdfEngineResponse Response output
+     * @param client            The previously generated client
+     * @param request           The request to the PDF engine
      */
     private static void handlePdfEngineResponse(PdfEngineResponse pdfEngineResponse, CloseableHttpClient client, HttpPost request) {
         //Execute call
@@ -123,9 +123,9 @@ public class PdfEngineClientImpl implements PdfEngineClient {
     /**
      * Handles error response from the PDF Engine
      *
-     * @param pdfEngineResponse -> response to update
-     * @param response -> response from the PDF engine
-     * @param entityResponse -> response content from the PDF Engine
+     * @param pdfEngineResponse Response to update
+     * @param response          Response from the PDF engine
+     * @param entityResponse    Response content from the PDF Engine
      * @throws IOException in case of error encoding to string
      */
     private static void handleErrorResponse(PdfEngineResponse pdfEngineResponse, CloseableHttpResponse response, HttpEntity entityResponse) throws IOException {
