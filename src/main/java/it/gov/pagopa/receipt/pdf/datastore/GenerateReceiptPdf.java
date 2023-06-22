@@ -111,7 +111,8 @@ public class GenerateReceiptPdf {
         try {
             receipt = receiptCosmosClient.getReceiptDocument(bizEvent.getId());
         } catch (ReceiptNotFoundException e) {
-            throw new ReceiptNotFoundException("Receipt not found with the following biz-event id: " + bizEvent.getId());
+            String errorMsg = String.format("Receipt not found with the biz-event id %s", bizEvent.getId());
+            throw new ReceiptNotFoundException(errorMsg, e);
         }
 
         int discarder = 0;

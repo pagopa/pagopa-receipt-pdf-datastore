@@ -7,15 +7,6 @@ public class BizEventNotValidException extends Exception{
      * Constructs new exception with provided message and cause
      *
      * @param message Detail message
-     */
-    public BizEventNotValidException(String message) {
-        super(message);
-    }
-
-    /**
-     * Constructs new exception with provided message and cause
-     *
-     * @param message Detail message
      * @param cause Exception thrown
      */
     public BizEventNotValidException(String message, Throwable cause) {
