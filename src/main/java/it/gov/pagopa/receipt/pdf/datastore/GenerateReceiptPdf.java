@@ -1,5 +1,6 @@
 package it.gov.pagopa.receipt.pdf.datastore;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.OutputBinding;
 import com.microsoft.azure.functions.annotation.*;
@@ -87,99 +88,101 @@ public class GenerateReceiptPdf {
             final ExecutionContext context) throws BizEventNotValidException, ReceiptNotFoundException {
 
         //Map queue bizEventMessage to BizEvent
-        BizEvent bizEvent = ObjectMapperUtils.mapString(bizEventMessage, BizEvent.class);
+        BizEvent bizEvent;
 
-        if (bizEvent != null) {
-            List<Receipt> itemsToNotify = new ArrayList<>();
-            Logger logger = context.getLogger();
+        try {
+            bizEvent = ObjectMapperUtils.mapString(bizEventMessage, BizEvent.class);
+        } catch (JsonProcessingException e) {
+            throw new BizEventNotValidException("Error parsing the message coming from the queue", e);
+        }
 
-            String logMsg = String.format("GenerateReceipt function called at %s", LocalDateTime.now());
+        List<Receipt> itemsToNotify = new ArrayList<>();
+        Logger logger = context.getLogger();
+
+        String logMsg = String.format("GenerateReceipt function called at %s", LocalDateTime.now());
+        logger.info(logMsg);
+
+        //Retrieve receipt's data from CosmosDB
+        Receipt receipt;
+
+        ReceiptCosmosClientImpl receiptCosmosClient = ReceiptCosmosClientImpl.getInstance();
+
+        //Retrieve receipt from CosmosDB
+        try {
+            receipt = receiptCosmosClient.getReceiptDocument(bizEvent.getId());
+        } catch (ReceiptNotFoundException e) {
+            throw new ReceiptNotFoundException("Receipt not found with the following biz-event id: " + bizEvent.getId());
+        }
+
+        int discarder = 0;
+        int numberOfSavedPdfs = 0;
+
+        //Verify receipt status
+        if (receipt != null &&
+                receipt.getEventData() != null &&
+                (receipt.getStatus().equals(ReceiptStatusType.INSERTED) ||
+                        receipt.getStatus().equals(ReceiptStatusType.RETRY))
+        ) {
+
+            logMsg = String.format("GenerateReceipt function called at %s for event with id %s and status %s",
+                    LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
             logger.info(logMsg);
 
-            //Retrieve receipt's data from CosmosDB
-            Receipt receipt = null;
+            //Verify if debtor's and payer's fiscal code are the same
+            String debtorCF = receipt.getEventData().getDebtorFiscalCode();
+            String payerCF = receipt.getEventData().getPayerFiscalCode();
 
-            ReceiptCosmosClientImpl receiptCosmosClient = ReceiptCosmosClientImpl.getInstance();
+            if (debtorCF != null || payerCF != null) {
+                boolean generateOnlyDebtor = payerCF == null || payerCF.equals(debtorCF);
 
-            //Retrieve receipt from CosmosDB
-            try {
-                receipt = receiptCosmosClient.getReceiptDocument(bizEvent.getId());
-            } catch (ReceiptNotFoundException e) {
-                throw new ReceiptNotFoundException("Receipt not found with the following biz-event id: " + bizEvent.getId());
-            }
+                //Generate and save PDF
+                PdfGeneration pdfGeneration = handlePdfsGeneration(generateOnlyDebtor, receipt, bizEvent, debtorCF, payerCF);
 
-            int discarder = 0;
-            int numberOfSavedPdfs = 0;
+                //Write PDF blob storage metadata on receipt
+                numberOfSavedPdfs = ReceiptPdfUtils.addPdfsMetadataToReceipt(receipt, pdfGeneration);
 
-            //Verify receipt status
-            if (receipt != null &&
-                    receipt.getEventData() != null &&
-                    (receipt.getStatus().equals(ReceiptStatusType.INSERTED) ||
-                            receipt.getStatus().equals(ReceiptStatusType.RETRY))
-            ) {
+                //Verify PDF generation success
+                ReceiptPdfUtils.verifyPdfGeneration(bizEventMessage, requeueMessage, logger, receipt, generateOnlyDebtor, pdfGeneration);
 
-                logMsg = String.format("GenerateReceipt function called at %s for event with id %s and status %s",
-                        LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
-                logger.info(logMsg);
-
-                //Verify if debtor's and payer's fiscal code are the same
-                String debtorCF = receipt.getEventData().getDebtorFiscalCode();
-                String payerCF = receipt.getEventData().getPayerFiscalCode();
-
-                if (debtorCF != null || payerCF != null) {
-                    boolean generateOnlyDebtor = payerCF == null || payerCF.equals(debtorCF);
-
-                    //Generate and save PDF
-                    PdfGeneration pdfGeneration = handlePdfsGeneration(generateOnlyDebtor, receipt, bizEvent, debtorCF, payerCF);
-
-                    //Write PDF blob storage metadata on receipt
-                    numberOfSavedPdfs = ReceiptPdfUtils.addPdfsMetadataToReceipt(receipt, pdfGeneration);
-
-                    //Verify PDF generation success
-                    ReceiptPdfUtils.verifyPdfGeneration(bizEventMessage, requeueMessage, logger, receipt, generateOnlyDebtor, pdfGeneration);
-
-
-                } else {
-                    String errorMessage = String.format(
-                            "Error processing receipt with id %s : both debtor's and payer's fiscal code are null",
-                            receipt.getId()
-                    );
-
-                    ReceiptPdfUtils.handleErrorGeneratingReceipt(
-                            ReceiptStatusType.FAILED,
-                            HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                            errorMessage,
-                            bizEventMessage,
-                            receipt,
-                            requeueMessage,
-                            logger
-                    );
-                }
-
-                //Add receipt to items to be saved to CosmosDB
-                itemsToNotify.add(receipt);
 
             } else {
-                discarder++;
+                String errorMessage = String.format(
+                        "Error processing receipt with id %s : both debtor's and payer's fiscal code are null",
+                        receipt.getId()
+                );
+
+                ReceiptPdfUtils.handleErrorGeneratingReceipt(
+                        ReceiptStatusType.FAILED,
+                        HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                        errorMessage,
+                        bizEventMessage,
+                        receipt,
+                        requeueMessage,
+                        logger
+                );
             }
 
-            //Discarder info
-            logMsg = String.format("itemsDone stat %s function - %d number of events in discarder  ", context.getInvocationId(), discarder);
-            logger.info(logMsg);
+            //Add receipt to items to be saved to CosmosDB
+            itemsToNotify.add(receipt);
 
-            //Call to blob storage info
-            logMsg = String.format("itemsDone stat %s function - number of PDFs sent to the receipt blob storage %d", context.getInvocationId(), numberOfSavedPdfs);
-            logger.info(logMsg);
-
-            //Call to datastore info
-            logMsg = String.format("GenerateReceiptProcess stat %s function - number of receipt inserted on the datastore %d", context.getInvocationId(), itemsToNotify.size());
-            logger.info(logMsg);
-
-            if (!itemsToNotify.isEmpty()) {
-                documentdb.setValue(itemsToNotify);
-            }
         } else {
-            throw new BizEventNotValidException("The bizEventMessage coming from the queue is not a valid BizEvent bizEventMessage");
+            discarder++;
+        }
+
+        //Discarder info
+        logMsg = String.format("itemsDone stat %s function - %d number of events in discarder  ", context.getInvocationId(), discarder);
+        logger.info(logMsg);
+
+        //Call to blob storage info
+        logMsg = String.format("itemsDone stat %s function - number of PDFs sent to the receipt blob storage %d", context.getInvocationId(), numberOfSavedPdfs);
+        logger.info(logMsg);
+
+        //Call to datastore info
+        logMsg = String.format("GenerateReceiptProcess stat %s function - number of receipt inserted on the datastore %d", context.getInvocationId(), itemsToNotify.size());
+        logger.info(logMsg);
+
+        if (!itemsToNotify.isEmpty()) {
+            documentdb.setValue(itemsToNotify);
         }
     }
 

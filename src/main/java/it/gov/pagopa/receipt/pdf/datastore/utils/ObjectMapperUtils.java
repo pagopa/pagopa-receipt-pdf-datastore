@@ -49,12 +49,8 @@ public class ObjectMapperUtils {
      * @return object of the defined Class
      * @param <T> -> defined Class
      */
-    public static <T>T mapString(final String string, Class<T> outClass) {
-        try {
+    public static <T>T mapString(final String string, Class<T> outClass) throws JsonProcessingException {
             return objectMapper.readValue(string, outClass);
-        } catch (JsonProcessingException e) {
-            return null;
-        }
     }
 
 

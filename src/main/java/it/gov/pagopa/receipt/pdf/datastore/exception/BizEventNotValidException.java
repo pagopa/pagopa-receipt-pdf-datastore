@@ -11,4 +11,14 @@ public class BizEventNotValidException extends Exception{
     public BizEventNotValidException(String message) {
         super(message);
     }
+
+    /**
+     * Constructs new exception with provided message and cause
+     *
+     * @param message Detail message
+     * @param cause Exception thrown
+     */
+    public BizEventNotValidException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

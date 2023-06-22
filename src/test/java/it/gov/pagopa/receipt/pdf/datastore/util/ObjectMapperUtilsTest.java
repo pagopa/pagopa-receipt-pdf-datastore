@@ -13,7 +13,7 @@ class ObjectMapperUtilsTest {
     void returnNullAfterException() {
 
         Assertions.assertNull(ObjectMapperUtils.writeValueAsString(InputStream.nullInputStream()));
-        Assertions.assertNull(ObjectMapperUtils.mapString("", InputStream.class));
+        Assertions.assertThrows(JsonProcessingException.class, () -> ObjectMapperUtils.mapString("", InputStream.class));
 
     }
 }
