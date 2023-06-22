@@ -48,11 +48,14 @@ public class GenerateReceiptPdf {
      * If everything succeeded the receipt's status will be updated to GENERATED and saved to CosmosDB
      * #
      * The message is re-sent to the queue in case of errors like:
-     * the receipt is not found;
-     * the receipt has NOT status INSERTED or RETRY;
-     * there is an error generating at least one pdf;
-     * there is an error saving at least one pdf to blob storage;
-     * errors processing the data;
+     * - there is an error generating at least one pdf;
+     * - there is an error saving at least one pdf to blob storage;
+     * - errors processing the data;
+     * #
+     * The receipt is discarded in case of:
+     * - the receipt is null
+     * - the receipt has not valid event data
+     * - the receipt's status is not INSERTED or RETRY
      * #
      * After too many retry the receipt's status will be updated to FAILED
      *
