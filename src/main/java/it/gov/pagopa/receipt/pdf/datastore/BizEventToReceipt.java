@@ -1,9 +1,6 @@
 package it.gov.pagopa.receipt.pdf.datastore;
 
-import com.azure.core.http.rest.Response;
-import com.azure.storage.queue.models.SendMessageResult;
 import com.microsoft.azure.functions.ExecutionContext;
-import com.microsoft.azure.functions.HttpStatus;
 import com.microsoft.azure.functions.OutputBinding;
 import com.microsoft.azure.functions.annotation.CosmosDBOutput;
 import com.microsoft.azure.functions.annotation.CosmosDBTrigger;
@@ -12,18 +9,12 @@ import com.microsoft.azure.functions.annotation.FunctionName;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.enumeration.BizEventStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReasonError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReasonErrorCode;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
-import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptQueueClientImpl;
-import it.gov.pagopa.receipt.pdf.datastore.utils.ObjectMapperUtils;
+import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
-import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -42,9 +33,9 @@ public class BizEventToReceipt {
      * - NOT_QUEUE_SENT if sending the message to the queue failed
      * #
      *
-     * @param items      -> biz-events that triggered the function from the Cosmos database
-     * @param documentdb -> output binding that will save the receipt data retrieved from the biz-events
-     * @param context    -> function context
+     * @param items      Biz-events that triggered the function from the Cosmos database
+     * @param documentdb Output binding that will save the receipt data retrieved from the biz-events
+     * @param context    Function context
      */
     @FunctionName("BizEventToReceiptProcessor")
     @ExponentialBackoffRetry(maxRetryCount = 5, minimumInterval = "500", maximumInterval = "5000")
@@ -80,6 +71,7 @@ public class BizEventToReceipt {
             try {
                 //Process only biz-event in status DONE
                 if (bizEvent != null && bizEvent.getEventStatus().equals(BizEventStatusType.DONE)) {
+                    BizEventToReceiptService service = new BizEventToReceiptService();
 
                     Receipt receipt = new Receipt();
 
@@ -91,7 +83,7 @@ public class BizEventToReceipt {
                     eventData.setPayerFiscalCode(bizEvent.getPayer() != null ? bizEvent.getPayer().getEntityUniqueIdentifierValue() : null);
                     eventData.setDebtorFiscalCode(bizEvent.getDebtor() != null ? bizEvent.getDebtor().getEntityUniqueIdentifierValue() : null);
                     eventData.setTransactionCreationDate(
-                            getTransactionCreationDate(bizEvent)
+                            service.getTransactionCreationDate(bizEvent)
                     );
 
                     receipt.setEventData(eventData);
@@ -101,7 +93,7 @@ public class BizEventToReceipt {
                     logger.info(message);
 
                     //Send biz event as message to queue (to be processed from the other function)
-                    handleSendMessageToQueue(bizEvent, receipt, logger);
+                    service.handleSendMessageToQueue(bizEvent, receipt, logger);
 
                     //Add receipt to items to be saved on CosmosDB
                     itemsDone.add(receipt);
@@ -134,64 +126,5 @@ public class BizEventToReceipt {
         if (!itemsDone.isEmpty()) {
             documentdb.setValue(itemsDone);
         }
-    }
-
-
-    /**
-     * Handles sending biz-events as message to queue and updates receipt's status
-     *
-     * @param bizEvent -> biz-event from CosmosDB
-     * @param receipt  -> receipt to update
-     */
-    private static void handleSendMessageToQueue(BizEvent bizEvent, Receipt receipt, Logger logger) {
-        //Encode biz-event to base64 string
-        String messageText = Base64.getMimeEncoder().encodeToString(Objects.requireNonNull(ObjectMapperUtils.writeValueAsString(bizEvent)).getBytes());
-
-        ReceiptQueueClientImpl queueService = ReceiptQueueClientImpl.getInstance();
-
-        //Add message to the queue
-        try {
-            Response<SendMessageResult> sendMessageResult = queueService.sendMessageToQueue(messageText);
-
-            if (sendMessageResult.getStatusCode() == HttpStatus.CREATED.value()) {
-                receipt.setStatus(ReceiptStatusType.INSERTED);
-            } else {
-                handleError(receipt);
-            }
-        } catch (Exception e) {
-            handleError(receipt);
-
-            //Error info
-            String msg = String.format("Error sending to queue biz-event message with id %s", bizEvent.getId());
-            logger.log(Level.SEVERE, msg, e);
-        }
-    }
-
-    /**
-     * Handles errors for queue and updates receipt's status accordingly
-     *
-     * @param receipt -> receipt to update
-     */
-    private static void handleError(Receipt receipt) {
-        receipt.setStatus(ReceiptStatusType.NOT_QUEUE_SENT);
-        ReasonError reasonError = new ReasonError(ReasonErrorCode.ERROR_QUEUE.getCode(), "Error sending message to queue");
-        receipt.setReasonErr(reasonError);
-    }
-
-    /**
-     * Retrieve conditionally the transaction creation date from biz-event
-     *
-     * @param bizEvent -> biz-event from CosmosDB
-     * @return transaction date
-     */
-    private static String getTransactionCreationDate(BizEvent bizEvent) {
-        if (bizEvent.getTransactionDetails() != null && bizEvent.getTransactionDetails().getTransaction() != null) {
-            return bizEvent.getTransactionDetails().getTransaction().getCreationDate();
-
-        } else if (bizEvent.getPaymentInfo() != null) {
-            return bizEvent.getPaymentInfo().getPaymentDateTime();
-        }
-
-        return null;
     }
 }
