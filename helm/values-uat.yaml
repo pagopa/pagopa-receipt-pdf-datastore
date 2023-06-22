@@ -44,14 +44,14 @@ microservice-chart:
   resources:
     requests:
       memory: "512Mi"
-      cpu: "0.25"
+      cpu: "0.5"
     limits:
       memory: "512Mi"
-      cpu: "0.25"
+      cpu: "0.5"
   autoscaling:
     enable: true
     minReplica: 1
-    maxReplica: 10
+    maxReplica: 3
     pollingInterval: 10 # seconds
     cooldownPeriod: 50 # seconds
     triggers:
@@ -69,11 +69,11 @@ microservice-chart:
     COSMOS_RECEIPT_SERVICE_ENDPOINT: 'https://pagopa-u-weu-receipts-ds-cosmos-account.documents.azure.com:443/'
     COSMOS_RECEIPT_DB_NAME: 'db'
     COSMOS_RECEIPT_CONTAINER_NAME: 'receipts'
-    PDF_BLOB_STORAGE_ENDPOINT: 'https://pagopauweureceiptsfnsa.blob.core.windows.net'
-    PDF_BLOB_STORAGE_CONTAINER: 'pagopa-u-weu-receipts-azure-blob-receipt-st-attach'
+    BLOB_STORAGE_ACCOUNT_ENDPOINT: 'https://pagopauweureceiptsfnsa.blob.core.windows.net'
+    BLOB_STORAGE_CONTAINER_NAME: 'pagopa-u-weu-receipts-azure-blob-receipt-st-attach'
   envSecret:
     APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-u-connection-string'
-    PDF_BLOB_STORAGE_CONN_STRING: 'pdf-blob-storage-u-connection-string'
+    BLOB_STORAGE_CONN_STRING: 'blob-storage-u-connection-string'
     COSMOS_RECEIPTS_CONN_STRING: 'cosmos-receipt-u-connection-string'
     RECEIPT_QUEUE_CONN_STRING: 'receipt-queue-u-connection-string'
     COSMOS_BIZ_EVENT_CONN_STRING: 'cosmos-biz-event-u-connection-string'
