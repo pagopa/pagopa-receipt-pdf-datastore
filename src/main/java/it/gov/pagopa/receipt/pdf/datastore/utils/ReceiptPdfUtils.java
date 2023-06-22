@@ -74,15 +74,15 @@ public class ReceiptPdfUtils {
      * @param requeueMessage -> output binding for sending messages to the queue
      * @param logger -> function logger
      * @param receipt -> receipt to be updated
-     * @param payerDebtorEqual -> boolean to verify if debtor's and payer's fiscal code is the same
+     * @param generateOnlyDebtor -> boolean to verify if debtor's and payer's fiscal code is the same
      * @param pdfGeneration -> response from the PDF generation process
      */
-    public static void verifyPdfGeneration(String message, OutputBinding<String> requeueMessage, Logger logger, Receipt receipt, boolean payerDebtorEqual, PdfGeneration pdfGeneration) {
+    public static void verifyPdfGeneration(String message, OutputBinding<String> requeueMessage, Logger logger, Receipt receipt, boolean generateOnlyDebtor, PdfGeneration pdfGeneration) {
         PdfMetadata responseDebtorGen = pdfGeneration.getDebtorMetadata();
         PdfMetadata responsePayerGen = pdfGeneration.getPayerMetadata();
 
         //Verify if all the needed PDFs have been generated
-        if (responseDebtorGen.getStatusCode() == HttpStatus.SC_OK && (payerDebtorEqual || responsePayerGen.getStatusCode() == HttpStatus.SC_OK)) {
+        if (responseDebtorGen.getStatusCode() == HttpStatus.SC_OK && (generateOnlyDebtor || responsePayerGen.getStatusCode() == HttpStatus.SC_OK)) {
             receipt.setStatus(ReceiptStatusType.GENERATED);
         } else {
             //Verify if the max number of retry have been passed
@@ -93,6 +93,7 @@ public class ReceiptPdfUtils {
             }
 
             //Update the receipt's status and error message
+            //TODO replace with generic method
             int errorStatusCode = responseDebtorGen.getStatusCode() == HttpStatus.SC_OK && responsePayerGen != null ? responsePayerGen.getStatusCode() : responseDebtorGen.getStatusCode();
             String errorMessage = responseDebtorGen.getErrorMessage() == null && responsePayerGen != null ? responsePayerGen.getErrorMessage() : responseDebtorGen.getErrorMessage();
             ReasonError reasonError = new ReasonError(errorStatusCode, errorMessage);
@@ -104,6 +105,28 @@ public class ReceiptPdfUtils {
             String logMessage = "Error generating PDF at " + LocalDateTime.now() + " : " + errorMessage;
             logger.severe(logMessage);
         }
+    }
+
+    //TODO comment code
+    public static void handleErrorGeneratingReceipt(
+            ReceiptStatusType receiptStatusType,
+            int errorStatusCode,
+            String errorMessage,
+            String bizEventMessage,
+            Receipt receipt,
+            OutputBinding<String> requeueMessage,
+            Logger logger) {
+
+        receipt.setStatus(ReceiptStatusType.FAILED);
+        receipt.setNumRetry(receipt.getNumRetry() + 1);
+        //Update the receipt's status and error message
+        ReasonError reasonError = new ReasonError(errorStatusCode, errorMessage);
+        receipt.setReasonErr(reasonError);
+
+        //Re-queue the message
+        requeueMessage.setValue(bizEventMessage);
+        String logMessage = "Error generating PDF at " + LocalDateTime.now() + " : " + errorMessage;
+        logger.severe(logMessage);
     }
 
     /**

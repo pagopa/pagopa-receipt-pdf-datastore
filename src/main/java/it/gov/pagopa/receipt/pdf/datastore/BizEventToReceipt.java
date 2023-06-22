@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -37,12 +38,13 @@ public class BizEventToReceipt {
      * A receipt object is generated from the biz-event's data
      * The biz-event is encoded in a base64 string and sent as message to a queue
      * The receipt is saved to a specific Cosmos database with the following status:
-     *      - INSERTED if sending the message to the queue succeeded
-     *      - NOT_QUEUE_SENT if sending the message to the queue failed
+     * - INSERTED if sending the message to the queue succeeded
+     * - NOT_QUEUE_SENT if sending the message to the queue failed
      * #
-     * @param items -> biz-events that triggered the function from the Cosmos database
+     *
+     * @param items      -> biz-events that triggered the function from the Cosmos database
      * @param documentdb -> output binding that will save the receipt data retrieved from the biz-events
-     * @param context -> function context
+     * @param context    -> function context
      */
     @FunctionName("BizEventToReceiptProcessor")
     @ExponentialBackoffRetry(maxRetryCount = 5, minimumInterval = "500", maximumInterval = "5000")
@@ -75,38 +77,46 @@ public class BizEventToReceipt {
         //Retrieve receipt data from biz-event
         for (BizEvent bizEvent : items) {
 
-            //Process only biz-event in status DONE
-            if (bizEvent != null && bizEvent.getEventStatus().equals(BizEventStatusType.DONE)) {
+            try {
+                //Process only biz-event in status DONE
+                if (bizEvent != null && bizEvent.getEventStatus().equals(BizEventStatusType.DONE)) {
 
-                Receipt receipt = new Receipt();
+                    Receipt receipt = new Receipt();
 
-                //Insert biz-event data into receipt
-                receipt.setIdEvent(bizEvent.getId());
+                    //Insert biz-event data into receipt
+                    receipt.setIdEvent(bizEvent.getId());
 
-                EventData eventData = new EventData();
-                eventData.setPayerFiscalCode(bizEvent.getPayer().getEntityUniqueIdentifierValue());
-                eventData.setDebtorFiscalCode(bizEvent.getDebtor().getEntityUniqueIdentifierValue());
-                eventData.setTransactionCreationDate(
-                        getTransactionCreationDate(bizEvent)
-                );
+                    EventData eventData = new EventData();
+                    //TODO verify if payer's or debtor's CF can be null
+                    eventData.setPayerFiscalCode(bizEvent.getPayer() != null ? bizEvent.getPayer().getEntityUniqueIdentifierValue() : null);
+                    eventData.setDebtorFiscalCode(bizEvent.getDebtor() != null ? bizEvent.getDebtor().getEntityUniqueIdentifierValue() : null);
+                    eventData.setTransactionCreationDate(
+                            getTransactionCreationDate(bizEvent)
+                    );
 
-                receipt.setEventData(eventData);
+                    receipt.setEventData(eventData);
 
-                String message = String.format("BizEventToReceipt function called at %s for event with id %s and status %s",
-                        LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
-                logger.info(message);
+                    String message = String.format("BizEventToReceipt function called at %s for event with id %s and status %s",
+                            LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
+                    logger.info(message);
 
-                //Send biz event as message to queue (to be processed from the other function)
-                handleSendMessageToQueue(bizEvent, receipt);
+                    //Send biz event as message to queue (to be processed from the other function)
+                    handleSendMessageToQueue(bizEvent, receipt);
 
-                //Add receipt to items to be saved on CosmosDB
-                itemsDone.add(receipt);
+                    //Add receipt to items to be saved on CosmosDB
+                    itemsDone.add(receipt);
 
-            } else {
-                //Discard biz events not in status DONE
+                } else {
+                    //Discard biz events not in status DONE
+                    discarder++;
+                }
+            } catch (Exception e) {
                 discarder++;
-            }
 
+                //Error info
+                msg = String.format("Error to process event with id %s", bizEvent.getId());
+                logger.log(Level.SEVERE, msg , e);
+            }
         }
         //Discarder info
         msg = String.format("itemsDone stat %s function - %d number of events in discarder  ", context.getInvocationId(), discarder);
@@ -131,7 +141,7 @@ public class BizEventToReceipt {
      * Handles sending biz-events as message to queue and updates receipt's status
      *
      * @param bizEvent -> biz-event from CosmosDB
-     * @param receipt -> receipt to update
+     * @param receipt  -> receipt to update
      */
     private static void handleSendMessageToQueue(BizEvent bizEvent, Receipt receipt) {
         //Encode biz-event to base64 string
@@ -140,7 +150,7 @@ public class BizEventToReceipt {
         ReceiptQueueClientImpl queueService = ReceiptQueueClientImpl.getInstance();
 
         //Add message to the queue
-        try{
+        try {
             Response<SendMessageResult> sendMessageResult = queueService.sendMessageToQueue(messageText);
 
             if (sendMessageResult.getStatusCode() != HttpStatus.CREATED.value()) {
