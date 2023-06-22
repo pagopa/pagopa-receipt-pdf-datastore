@@ -7,7 +7,6 @@ import it.gov.pagopa.receipt.pdf.datastore.client.impl.PdfEngineClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptBlobClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReasonError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReasonErrorCode;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
@@ -23,7 +22,8 @@ import it.gov.pagopa.receipt.pdf.datastore.utils.ReceiptPdfUtils;
 import org.apache.http.HttpStatus;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -49,11 +49,14 @@ public class GenerateReceiptPdf {
      * If everything succeeded the receipt's status will be updated to GENERATED and saved to CosmosDB
      * #
      * The bizEventMessage is re-sent to the queue in case of errors like:
-     * the receipt is not found;
-     * the receipt has NOT status INSERTED or RETRY;
-     * there is an error generating at least one pdf;
-     * there is an error saving at least one pdf to blob storage;
-     * errors processing the data;
+     * - there is an error generating at least one pdf;
+     * - there is an error saving at least one pdf to blob storage;
+     * - errors processing the data;
+     * #
+     * The receipt is discarded in case of:
+     * - the receipt is null
+     * - the receipt has not valid event data
+     * - the receipt's status is not INSERTED or RETRY
      * #
      * After too many retry the receipt's status will be updated to FAILED
      *
@@ -109,53 +112,53 @@ public class GenerateReceiptPdf {
             int numberOfSavedPdfs = 0;
 
             //Verify receipt status
-            if (receipt != null && (receipt.getStatus().equals(ReceiptStatusType.INSERTED) || receipt.getStatus().equals(ReceiptStatusType.RETRY))) {
+            if (receipt != null &&
+                    receipt.getEventData() != null &&
+                    (receipt.getStatus().equals(ReceiptStatusType.INSERTED) ||
+                            receipt.getStatus().equals(ReceiptStatusType.RETRY))
+            ) {
 
                 logMsg = String.format("GenerateReceipt function called at %s for event with id %s and status %s",
                         LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
                 logger.info(logMsg);
 
                 //Verify if debtor's and payer's fiscal code are the same
-                if (receipt.getEventData() != null) {
-                    String debtorCF = receipt.getEventData().getDebtorFiscalCode();
-                    String payerCF = receipt.getEventData().getPayerFiscalCode();
+                String debtorCF = receipt.getEventData().getDebtorFiscalCode();
+                String payerCF = receipt.getEventData().getPayerFiscalCode();
 
-                    if (debtorCF != null || payerCF != null) {
-                        boolean generateOnlyDebtor = payerCF == null || payerCF.equals(debtorCF);
+                if (debtorCF != null || payerCF != null) {
+                    boolean generateOnlyDebtor = payerCF == null || payerCF.equals(debtorCF);
 
-                        //Generate and save PDF
-                        PdfGeneration pdfGeneration = handlePdfsGeneration(generateOnlyDebtor, receipt, bizEvent, debtorCF, payerCF);
+                    //Generate and save PDF
+                    PdfGeneration pdfGeneration = handlePdfsGeneration(generateOnlyDebtor, receipt, bizEvent, debtorCF, payerCF);
 
-                        //Write PDF blob storage metadata on receipt
-                        numberOfSavedPdfs = ReceiptPdfUtils.addPdfsMetadataToReceipt(receipt, pdfGeneration);
+                    //Write PDF blob storage metadata on receipt
+                    numberOfSavedPdfs = ReceiptPdfUtils.addPdfsMetadataToReceipt(receipt, pdfGeneration);
 
-                        //Verify PDF generation success
-                        ReceiptPdfUtils.verifyPdfGeneration(bizEventMessage, requeueMessage, logger, receipt, generateOnlyDebtor, pdfGeneration);
+                    //Verify PDF generation success
+                    ReceiptPdfUtils.verifyPdfGeneration(bizEventMessage, requeueMessage, logger, receipt, generateOnlyDebtor, pdfGeneration);
 
-
-                    } else {
-                        String errorMessage = String.format(
-                                "Error processing receipt with id %s : both debtor's and payer's fiscal code are null",
-                                receipt.getId()
-                        );
-
-                        ReceiptPdfUtils.handleErrorGeneratingReceipt(
-                                ReceiptStatusType.FAILED,
-                                HttpStatus.SC_INTERNAL_SERVER_ERROR,
-                                errorMessage,
-                                bizEventMessage,
-                                receipt,
-                                requeueMessage,
-                                logger
-                        );
-                    }
-
-                    //Add receipt to items to be saved to CosmosDB
-                    itemsToNotify.add(receipt);
 
                 } else {
-                    requeueMessage.setValue(bizEventMessage);
+                    String errorMessage = String.format(
+                            "Error processing receipt with id %s : both debtor's and payer's fiscal code are null",
+                            receipt.getId()
+                    );
+
+                    ReceiptPdfUtils.handleErrorGeneratingReceipt(
+                            ReceiptStatusType.FAILED,
+                            HttpStatus.SC_INTERNAL_SERVER_ERROR,
+                            errorMessage,
+                            bizEventMessage,
+                            receipt,
+                            requeueMessage,
+                            logger
+                    );
                 }
+
+                //Add receipt to items to be saved to CosmosDB
+                itemsToNotify.add(receipt);
+
             } else {
                 discarder++;
             }
