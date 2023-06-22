@@ -10,6 +10,7 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReasonErrorCode;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventNotValidException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.model.PdfGeneration;
 import it.gov.pagopa.receipt.pdf.datastore.model.PdfMetadata;
@@ -79,7 +80,7 @@ public class GenerateReceiptPdf {
                     queueName = "pagopa-d-weu-receipts-queue-receipt-waiting-4-gen",
                     connection = "RECEIPT_QUEUE_CONN_STRING")
             OutputBinding<String> requeueMessage,
-            final ExecutionContext context) {
+            final ExecutionContext context) throws BizEventNotValidException, ReceiptNotFoundException {
 
         //Map queue message to BizEvent
         BizEvent bizEvent = ObjectMapperUtils.mapString(message, BizEvent.class);
@@ -100,7 +101,7 @@ public class GenerateReceiptPdf {
             try {
                 receipt = receiptCosmosClient.getReceiptDocument(bizEvent.getId());
             } catch (ReceiptNotFoundException e) {
-                requeueMessage.setValue(message);
+                throw new ReceiptNotFoundException("Receipt not found with the following biz-event id: "+bizEvent.getId());
             }
 
             int discarder = 0;
@@ -132,9 +133,12 @@ public class GenerateReceiptPdf {
                     //Add receipt to items to be saved to CosmosDB
                     itemsToNotify.add(receipt);
                 } else {
-                    discarder++;
+                    requeueMessage.setValue(message);
                 }
+            } else {
+                discarder++;
             }
+
             //Discarder info
             logMsg = String.format("itemsDone stat %s function - %d number of events in discarder  ", context.getInvocationId(), discarder);
             logger.info(logMsg);
@@ -151,7 +155,7 @@ public class GenerateReceiptPdf {
                 documentdb.setValue(itemsToNotify);
             }
         } else {
-            requeueMessage.setValue(message);
+            throw new BizEventNotValidException("The message coming from the queue is not a valid BizEvent message");
         }
     }
 

@@ -7,6 +7,7 @@ import com.azure.storage.blob.BlobServiceClient;
 import com.microsoft.azure.functions.HttpStatus;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptBlobClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.model.response.BlobStorageResponse;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -18,8 +19,20 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariables;
 
 class ReceiptBlobClientImplTest {
+
+    @Test
+    void testSingleton() throws Exception {
+        @SuppressWarnings("secrets:S6338")
+        String mockKey = "mockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeyMK==";
+        withEnvironmentVariables(
+                "BLOB_STORAGE_CONN_STRING", "DefaultEndpointsProtocol=https;AccountName=samplestorage;AccountKey="+mockKey+";EndpointSuffix=core.windows.net",
+                "BLOB_STORAGE_ACCOUNT_ENDPOINT", "https://samplestorage.blob.core.windows.net"
+        ).execute(() -> Assertions.assertDoesNotThrow(ReceiptBlobClientImpl::getInstance)
+        );
+    }
 
     @Test
     void runOk() throws IOException {
