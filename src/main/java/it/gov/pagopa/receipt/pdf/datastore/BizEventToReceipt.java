@@ -84,7 +84,7 @@ public class BizEventToReceipt {
                     Receipt receipt = new Receipt();
 
                     //Insert biz-event data into receipt
-                    receipt.setIdEvent(bizEvent.getId());
+                    receipt.setEventId(bizEvent.getId());
 
                     EventData eventData = new EventData();
                     //TODO verify if payer's or debtor's CF can be null
@@ -101,7 +101,7 @@ public class BizEventToReceipt {
                     logger.info(message);
 
                     //Send biz event as message to queue (to be processed from the other function)
-                    handleSendMessageToQueue(bizEvent, receipt);
+                    handleSendMessageToQueue(bizEvent, receipt, logger);
 
                     //Add receipt to items to be saved on CosmosDB
                     itemsDone.add(receipt);
@@ -115,7 +115,7 @@ public class BizEventToReceipt {
 
                 //Error info
                 msg = String.format("Error to process event with id %s", bizEvent.getId());
-                logger.log(Level.SEVERE, msg , e);
+                logger.log(Level.SEVERE, msg, e);
             }
         }
         //Discarder info
@@ -143,7 +143,7 @@ public class BizEventToReceipt {
      * @param bizEvent -> biz-event from CosmosDB
      * @param receipt  -> receipt to update
      */
-    private static void handleSendMessageToQueue(BizEvent bizEvent, Receipt receipt) {
+    private static void handleSendMessageToQueue(BizEvent bizEvent, Receipt receipt, Logger logger) {
         //Encode biz-event to base64 string
         String messageText = Base64.getMimeEncoder().encodeToString(Objects.requireNonNull(ObjectMapperUtils.writeValueAsString(bizEvent)).getBytes());
 
@@ -153,13 +153,17 @@ public class BizEventToReceipt {
         try {
             Response<SendMessageResult> sendMessageResult = queueService.sendMessageToQueue(messageText);
 
-            if (sendMessageResult.getStatusCode() != HttpStatus.CREATED.value()) {
-                handleError(receipt);
-            } else {
+            if (sendMessageResult.getStatusCode() == HttpStatus.CREATED.value()) {
                 receipt.setStatus(ReceiptStatusType.INSERTED);
+            } else {
+                handleError(receipt);
             }
         } catch (Exception e) {
             handleError(receipt);
+
+            //Error info
+            String msg = String.format("Error sending to queue biz-event message with id %s", bizEvent.getId());
+            logger.log(Level.SEVERE, msg, e);
         }
     }
 
@@ -181,13 +185,11 @@ public class BizEventToReceipt {
      * @return transaction date
      */
     private static String getTransactionCreationDate(BizEvent bizEvent) {
-        if (bizEvent != null) {
-            if (bizEvent.getTransactionDetails() != null && bizEvent.getTransactionDetails().getTransaction() != null) {
-                return bizEvent.getTransactionDetails().getTransaction().getCreationDate();
+        if (bizEvent.getTransactionDetails() != null && bizEvent.getTransactionDetails().getTransaction() != null) {
+            return bizEvent.getTransactionDetails().getTransaction().getCreationDate();
 
-            } else if (bizEvent.getPaymentInfo() != null) {
-                return bizEvent.getPaymentInfo().getPaymentDateTime();
-            }
+        } else if (bizEvent.getPaymentInfo() != null) {
+            return bizEvent.getPaymentInfo().getPaymentDateTime();
         }
 
         return null;
