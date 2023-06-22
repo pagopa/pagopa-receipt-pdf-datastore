@@ -119,9 +119,6 @@ class BizEventToReceiptTest {
         when(context.getLogger()).thenReturn(logger);
 
         ReceiptQueueClientImpl serviceMock = mock(ReceiptQueueClientImpl.class);
-        Response<SendMessageResult> response = mock(Response.class);
-        when(response.getStatusCode()).thenReturn(400);
-        when(serviceMock.sendMessageToQueue(anyString())).thenReturn(response);
 
         BizEventToReceiptTest.setMock(serviceMock);
 
