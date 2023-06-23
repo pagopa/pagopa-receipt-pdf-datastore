@@ -22,7 +22,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
 
     private final CosmosClient cosmosClient;
 
-    private ReceiptCosmosClientImpl(){
+    private ReceiptCosmosClientImpl() {
         String azureKey = System.getenv("COSMOS_RECEIPT_KEY");
         String serviceEndpoint = System.getenv("COSMOS_RECEIPT_SERVICE_ENDPOINT");
 
@@ -32,12 +32,12 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
                 .buildClient();
     }
 
-    public ReceiptCosmosClientImpl(CosmosClient cosmosClient){
+    public ReceiptCosmosClientImpl(CosmosClient cosmosClient) {
         this.cosmosClient = cosmosClient;
     }
 
-    public static ReceiptCosmosClientImpl getInstance(){
-        if(instance == null){
+    public static ReceiptCosmosClientImpl getInstance() {
+        if (instance == null) {
             instance = new ReceiptCosmosClientImpl();
         }
 
@@ -47,7 +47,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
     /**
      * Retrieve receipt document from CosmosDB database
      *
-     * @param eventId -> biz-event id
+     * @param eventId Biz-event id
      * @return receipt document
      * @throws ReceiptNotFoundException in case no receipt has been found with the given idEvent
      */
@@ -57,13 +57,13 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
         //Build query
-        String query = "SELECT * FROM c WHERE c.idEvent = " + "'" + eventId + "'";
+        String query = "SELECT * FROM c WHERE c.eventId = " + "'" + eventId + "'";
 
         //Query the container
         CosmosPagedIterable<Receipt> queryResponse = cosmosContainer
                 .queryItems(query, new CosmosQueryRequestOptions(), Receipt.class);
 
-        if(queryResponse.iterator().hasNext()){
+        if (queryResponse.iterator().hasNext()) {
             return queryResponse.iterator().next();
         } else {
             throw new ReceiptNotFoundException("Document not found in the defined container");

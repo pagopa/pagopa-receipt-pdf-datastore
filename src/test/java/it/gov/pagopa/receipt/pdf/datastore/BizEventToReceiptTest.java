@@ -21,7 +21,6 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -30,7 +29,6 @@ import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariable;
 
 @ExtendWith(MockitoExtension.class)
 class BizEventToReceiptTest {
@@ -80,7 +78,7 @@ class BizEventToReceiptTest {
         verify(documentdb).setValue(receiptCaptor.capture());
         Receipt captured = receiptCaptor.getValue().get(0);
         assertEquals(ReceiptStatusType.INSERTED, captured.getStatus());
-        assertEquals(EVENT_ID, captured.getIdEvent());
+        assertEquals(EVENT_ID, captured.getEventId());
         assertEquals(PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
         assertEquals(DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
     }
@@ -110,7 +108,7 @@ class BizEventToReceiptTest {
         Receipt captured = receiptCaptor.getValue().get(0);
         assertEquals(ReceiptStatusType.NOT_QUEUE_SENT, captured.getStatus());
         assertEquals(ReasonErrorCode.ERROR_QUEUE.getCode(), captured.getReasonErr().getCode());
-        assertEquals(EVENT_ID, captured.getIdEvent());
+        assertEquals(EVENT_ID, captured.getEventId());
         assertEquals(PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
         assertEquals(DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
     }
@@ -121,9 +119,6 @@ class BizEventToReceiptTest {
         when(context.getLogger()).thenReturn(logger);
 
         ReceiptQueueClientImpl serviceMock = mock(ReceiptQueueClientImpl.class);
-        Response<SendMessageResult> response = mock(Response.class);
-        when(response.getStatusCode()).thenReturn(400);
-        when(serviceMock.sendMessageToQueue(anyString())).thenReturn(response);
 
         BizEventToReceiptTest.setMock(serviceMock);
 
@@ -143,7 +138,7 @@ class BizEventToReceiptTest {
         Receipt captured = receiptCaptor.getValue().get(0);
         assertEquals(ReceiptStatusType.NOT_QUEUE_SENT, captured.getStatus());
         assertEquals(ReasonErrorCode.ERROR_QUEUE.getCode(), captured.getReasonErr().getCode());
-        assertEquals(EVENT_ID, captured.getIdEvent());
+        assertEquals(EVENT_ID, captured.getEventId());
         assertEquals(PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
         assertEquals(DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
     }

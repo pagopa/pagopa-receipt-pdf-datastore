@@ -1,115 +1,29 @@
 package it.gov.pagopa.receipt.pdf.datastore.utils;
 
-import com.microsoft.azure.functions.OutputBinding;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.Info;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.Transaction;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.TransactionDetails;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReasonError;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReceiptMetadata;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
-import it.gov.pagopa.receipt.pdf.datastore.model.PdfGeneration;
-import it.gov.pagopa.receipt.pdf.datastore.model.PdfMetadata;
-import org.apache.http.HttpStatus;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Logger;
 
-public class ReceiptPdfUtils {
+public class TemplateMapperUtils {
 
     private static final String KEY_AMOUNT = "amount";
     private static final String KEY_TAX_CODE = "taxCode";
 
-    public static final int MAX_NUMBER_RETRY = Integer.parseInt(System.getenv().getOrDefault("COSMOS_RECEIPT_QUEUE_MAX_RETRY", "5"));
-
     /**
      * Hide from public usage.
      */
-    private ReceiptPdfUtils() {
-    }
-
-    /**
-     * Adds PDF metadata from the Blob Storage to the receipt to be saved on CosmosDB
-     *
-     * @param receipt -> receipt to be saved
-     * @param responseGen -> response from the PDF generation process
-     * @return number of pdfs saved to blob storage
-     */
-    public static int addPdfsMetadataToReceipt(Receipt receipt, PdfGeneration responseGen) {
-        PdfMetadata debtorMetadata = responseGen.getDebtorMetadata();
-        PdfMetadata payerMetadata = responseGen.getPayerMetadata();
-
-        int numberOfSavedPdfs = 0;
-
-        if (debtorMetadata != null && debtorMetadata.getStatusCode() == HttpStatus.SC_OK) {
-            ReceiptMetadata receiptMetadata = new ReceiptMetadata();
-            receiptMetadata.setName(debtorMetadata.getDocumentName());
-            receiptMetadata.setUrl(debtorMetadata.getDocumentUrl());
-
-            receipt.setMdAttach(receiptMetadata);
-            numberOfSavedPdfs++;
-        }
-
-        if (payerMetadata != null && payerMetadata.getStatusCode() == HttpStatus.SC_OK) {
-            ReceiptMetadata receiptMetadata = new ReceiptMetadata();
-            receiptMetadata.setName(payerMetadata.getDocumentName());
-            receiptMetadata.setUrl(payerMetadata.getDocumentUrl());
-
-            receipt.setMdAttachPayer(receiptMetadata);
-            numberOfSavedPdfs++;
-        }
-
-        return numberOfSavedPdfs;
-    }
-
-    /**
-     * Verifies if the PDF generation process succeeded
-     * In case of errors updates the receipt status and error message and re-sends the queue message to the queue
-     *
-     * @param message -> queue message
-     * @param requeueMessage -> output binding for sending messages to the queue
-     * @param logger -> function logger
-     * @param receipt -> receipt to be updated
-     * @param payerDebtorEqual -> boolean to verify if debtor's and payer's fiscal code is the same
-     * @param pdfGeneration -> response from the PDF generation process
-     */
-    public static void verifyPdfGeneration(String message, OutputBinding<String> requeueMessage, Logger logger, Receipt receipt, boolean payerDebtorEqual, PdfGeneration pdfGeneration) {
-        PdfMetadata responseDebtorGen = pdfGeneration.getDebtorMetadata();
-        PdfMetadata responsePayerGen = pdfGeneration.getPayerMetadata();
-
-        //Verify if all the needed PDFs have been generated
-        if (responseDebtorGen.getStatusCode() == HttpStatus.SC_OK && (payerDebtorEqual || responsePayerGen.getStatusCode() == HttpStatus.SC_OK)) {
-            receipt.setStatus(ReceiptStatusType.GENERATED);
-        } else {
-            //Verify if the max number of retry have been passed
-            if (receipt.getNumRetry() > MAX_NUMBER_RETRY) {
-                receipt.setStatus(ReceiptStatusType.FAILED);
-            } else {
-                receipt.setStatus(ReceiptStatusType.RETRY);
-            }
-
-            //Update the receipt's status and error message
-            int errorStatusCode = responseDebtorGen.getStatusCode() == HttpStatus.SC_OK && responsePayerGen != null ? responsePayerGen.getStatusCode() : responseDebtorGen.getStatusCode();
-            String errorMessage = responseDebtorGen.getErrorMessage() == null && responsePayerGen != null ? responsePayerGen.getErrorMessage() : responseDebtorGen.getErrorMessage();
-            ReasonError reasonError = new ReasonError(errorStatusCode, errorMessage);
-            receipt.setReasonErr(reasonError);
-            receipt.setNumRetry(receipt.getNumRetry() + 1);
-
-            //Re-queue the message
-            requeueMessage.setValue(message);
-            String logMessage = "Error generating PDF at " + LocalDateTime.now() + " : " + errorMessage;
-            logger.severe(logMessage);
-        }
+    private TemplateMapperUtils() {
     }
 
     /**
      * Converts the data from the biz-event to data compatible with the template to be given to the PDF engine
      *
-     * @param bizEvent -> biz-event from queue message
+     * @param bizEvent Biz-event from queue message
      * @return map of data
      */
     public static Map<String, Object> convertReceiptToPdfData(BizEvent bizEvent) {
@@ -139,8 +53,8 @@ public class ReceiptPdfUtils {
     /**
      * Retrieves transaction's data from the biz-event
      *
-     * @param bizEvent -> biz-event from queue message
-     * @param transactionDetails -> biz-event transaction details
+     * @param bizEvent           Biz-event from queue message
+     * @param transactionDetails Biz-event transaction details
      * @return map of the transaction's data
      */
     private static Map<String, Object> getTransactionMap(BizEvent bizEvent, TransactionDetails transactionDetails) {
@@ -216,8 +130,8 @@ public class ReceiptPdfUtils {
     /**
      * Retrieves user's data from the biz-event
      *
-     * @param bizEvent -> biz-event from queue message
-     * @param transactionDetails -> biz-event transaction details
+     * @param bizEvent           Biz-event from queue message
+     * @param transactionDetails Biz-event transaction details
      * @return map of the user's data
      */
     private static Map<String, Object> getUserMap(BizEvent bizEvent, TransactionDetails transactionDetails) {
@@ -251,7 +165,7 @@ public class ReceiptPdfUtils {
     /**
      * Retrieves items cart's data from the biz-event
      *
-     * @param bizEvent -> biz-event from queue message
+     * @param bizEvent Biz-event from queue message
      * @return map of items cart's data
      */
     private static Map<String, Object> getCartMap(BizEvent bizEvent) {

@@ -26,7 +26,7 @@ public class ReceiptBlobClientImpl implements ReceiptBlobClient {
 
     private final BlobServiceClient blobServiceClient;
 
-    private ReceiptBlobClientImpl(){
+    private ReceiptBlobClientImpl() {
         String connectionString = System.getenv("BLOB_STORAGE_CONN_STRING");
         String storageAccount = System.getenv("BLOB_STORAGE_ACCOUNT_ENDPOINT");
 
@@ -36,12 +36,12 @@ public class ReceiptBlobClientImpl implements ReceiptBlobClient {
                 .buildClient();
     }
 
-    public ReceiptBlobClientImpl(BlobServiceClient serviceClient){
+    public ReceiptBlobClientImpl(BlobServiceClient serviceClient) {
         this.blobServiceClient = serviceClient;
     }
 
-    public static ReceiptBlobClientImpl getInstance(){
-        if(instance == null){
+    public static ReceiptBlobClientImpl getInstance() {
+        if (instance == null) {
             instance = new ReceiptBlobClientImpl();
         }
 
@@ -51,8 +51,8 @@ public class ReceiptBlobClientImpl implements ReceiptBlobClient {
     /**
      * Handles saving the PDF to the blob storage
      *
-     * @param pdf -> PDF file
-     * @param fileName -> filename to save the PDF with
+     * @param pdf      PDF file
+     * @param fileName Filename to save the PDF with
      * @return blob storage response with PDF metadata or error message and status
      */
     public BlobStorageResponse savePdfToBlobStorage(byte[] pdf, String fileName) {

@@ -45,7 +45,7 @@ public class ReceiptQueueClientImpl implements ReceiptQueueClient {
     /**
      * Send string message to the queue
      *
-     * @param messageText -> biz-event encoded to base64 string
+     * @param messageText Biz-event encoded to base64 string
      * @return response from the queue
      */
     public Response<SendMessageResult> sendMessageToQueue(String messageText) {
