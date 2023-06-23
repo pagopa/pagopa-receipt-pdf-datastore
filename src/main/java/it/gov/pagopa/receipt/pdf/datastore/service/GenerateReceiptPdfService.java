@@ -20,6 +20,8 @@ import it.gov.pagopa.receipt.pdf.datastore.utils.TemplateMapperUtils;
 import lombok.NoArgsConstructor;
 import org.apache.http.HttpStatus;
 
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.logging.Logger;
 
@@ -90,9 +92,9 @@ public class GenerateReceiptPdfService {
 
         String fileName = completeTemplate ? completeTemplateFileName : partialTemplateFileName;
 
-        try {
+        try(InputStream templateStream = GenerateReceiptPdf.class.getClassLoader().getResourceAsStream(fileName)) {
             //File to byte[]
-            byte[] htmlTemplate = GenerateReceiptPdf.class.getClassLoader().getResourceAsStream(fileName).readAllBytes();
+            byte[] htmlTemplate = templateStream.readAllBytes();
 
             //Build the request
             request.setTemplate(htmlTemplate);

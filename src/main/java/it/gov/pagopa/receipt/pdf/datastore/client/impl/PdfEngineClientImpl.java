@@ -1,5 +1,6 @@
 package it.gov.pagopa.receipt.pdf.datastore.client.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import it.gov.pagopa.receipt.pdf.datastore.client.PdfEngineClient;
 import it.gov.pagopa.receipt.pdf.datastore.model.PdfEngineErrorResponse;
 import it.gov.pagopa.receipt.pdf.datastore.model.request.PdfEngineRequest;
@@ -105,10 +106,10 @@ public class PdfEngineClientImpl implements PdfEngineClient {
 
             //Handles response
             if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK && entityResponse != null) {
-                InputStream inputStream = entityResponse.getContent();
-
-                pdfEngineResponse.setStatusCode(HttpStatus.SC_OK);
-                pdfEngineResponse.setPdf(inputStream.readAllBytes());
+                try (InputStream inputStream = entityResponse.getContent()) {
+                    pdfEngineResponse.setStatusCode(HttpStatus.SC_OK);
+                    pdfEngineResponse.setPdf(inputStream.readAllBytes());
+                }
             } else {
                 pdfEngineResponse.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
 

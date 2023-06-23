@@ -102,7 +102,10 @@ class GenerateReceiptPdfTest {
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
-        byte[] pdf = new FileInputStream("src/test/resources/output.pdf").readAllBytes();
+        byte[] pdf;
+        try (FileInputStream inputStream = new FileInputStream("src/test/resources/output.pdf")) {
+            pdf = inputStream.readAllBytes();
+        }
         when(pdfEngineResponse.getPdf()).thenReturn(pdf);
         when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);
 
@@ -154,7 +157,10 @@ class GenerateReceiptPdfTest {
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
-        byte[] pdf = new FileInputStream("src/test/resources/output.pdf").readAllBytes();
+        byte[] pdf;
+        try (FileInputStream inputStream = new FileInputStream("src/test/resources/output.pdf")) {
+            pdf = inputStream.readAllBytes();
+        }
         when(pdfEngineResponse.getPdf()).thenReturn(pdf);
         when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);
 
@@ -206,7 +212,10 @@ class GenerateReceiptPdfTest {
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
-        byte[] pdf = new FileInputStream("src/test/resources/output.pdf").readAllBytes();
+        byte[] pdf;
+        try (FileInputStream inputStream = new FileInputStream("src/test/resources/output.pdf")) {
+            pdf = inputStream.readAllBytes();
+        }
         when(pdfEngineResponse.getPdf()).thenReturn(pdf);
         when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);
 
@@ -242,7 +251,7 @@ class GenerateReceiptPdfTest {
     }
 
     @Test
-    void runKoInvalidBizEventMessage(){
+    void runKoInvalidBizEventMessage() {
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
 
@@ -401,7 +410,10 @@ class GenerateReceiptPdfTest {
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
-        byte[] pdf = new FileInputStream("src/test/resources/output.pdf").readAllBytes();
+        byte[] pdf;
+        try (FileInputStream inputStream = new FileInputStream("src/test/resources/output.pdf")) {
+            pdf = inputStream.readAllBytes();
+        }
         when(pdfEngineResponse.getPdf()).thenReturn(pdf);
         when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);
 
@@ -450,7 +462,11 @@ class GenerateReceiptPdfTest {
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
-        byte[] pdf = new FileInputStream("src/test/resources/output.pdf").readAllBytes();
+
+        byte[] pdf;
+        try (FileInputStream inputStream = new FileInputStream("src/test/resources/output.pdf")) {
+            pdf = inputStream.readAllBytes();
+        }
         when(pdfEngineResponse.getPdf()).thenReturn(pdf);
         when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);
 

@@ -24,16 +24,19 @@ import static org.mockito.Mockito.when;
 class PdfEngineClientImplTest {
 
     @Test
-    void testSingleton(){
+    void testSingleton() {
         Assertions.assertDoesNotThrow(PdfEngineClientImpl::getInstance);
     }
 
     @Test
     void runOk() throws IOException {
+        byte[] template;
+        String data;
+        try (InputStream inputStream = FileInputStream.nullInputStream()) {
+            template = inputStream.readAllBytes();
 
-        byte[] template = FileInputStream.nullInputStream().readAllBytes();
-
-        String data = new String(FileInputStream.nullInputStream().readAllBytes());
+            data = new String(template);
+        }
 
         PdfEngineRequest pdfEngineRequest = new PdfEngineRequest();
         pdfEngineRequest.setTemplate(template);
@@ -65,9 +68,13 @@ class PdfEngineClientImplTest {
     @Test
     void runKoUnauthorized() throws IOException {
 
-        byte[] template = FileInputStream.nullInputStream().readAllBytes();
+        byte[] template;
+        String data;
+        try (InputStream inputStream = FileInputStream.nullInputStream()) {
+            template = inputStream.readAllBytes();
 
-        String data = new String(FileInputStream.nullInputStream().readAllBytes());
+            data = new String(template);
+        }
 
         PdfEngineRequest pdfEngineRequest = new PdfEngineRequest();
         pdfEngineRequest.setTemplate(template);
@@ -99,9 +106,13 @@ class PdfEngineClientImplTest {
     @Test
     void runKo400() throws IOException {
 
-        byte[] template = FileInputStream.nullInputStream().readAllBytes();
+        byte[] template;
+        String data;
+        try (InputStream inputStream = FileInputStream.nullInputStream()) {
+            template = inputStream.readAllBytes();
 
-        String data = new String(FileInputStream.nullInputStream().readAllBytes());
+            data = new String(template);
+        }
 
         PdfEngineRequest pdfEngineRequest = new PdfEngineRequest();
         pdfEngineRequest.setTemplate(template);
