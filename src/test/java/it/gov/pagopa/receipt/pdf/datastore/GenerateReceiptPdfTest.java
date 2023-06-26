@@ -102,11 +102,7 @@ class GenerateReceiptPdfTest {
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
-        byte[] pdf;
-        try (FileInputStream inputStream = new FileInputStream("src/test/resources/output.pdf")) {
-            pdf = inputStream.readAllBytes();
-        }
-        when(pdfEngineResponse.getPdf()).thenReturn(pdf);
+
         when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);
 
         GenerateReceiptPdfTest.setMock(PdfEngineClientImpl.class, pdfEngineClient);
@@ -115,7 +111,7 @@ class GenerateReceiptPdfTest {
         when(blobStorageResponse.getStatusCode()).thenReturn(com.microsoft.azure.functions.HttpStatus.CREATED.value());
         when(blobStorageResponse.getDocumentUrl()).thenReturn(VALID_BLOB_URL);
         when(blobStorageResponse.getDocumentName()).thenReturn(VALID_BLOB_NAME);
-        when(blobClient.savePdfToBlobStorage(eq(pdf), anyString())).thenReturn(blobStorageResponse);
+        when(blobClient.savePdfToBlobStorage(any(), anyString())).thenReturn(blobStorageResponse);
 
         GenerateReceiptPdfTest.setMock(ReceiptBlobClientImpl.class, blobClient);
 
@@ -157,11 +153,7 @@ class GenerateReceiptPdfTest {
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
-        byte[] pdf;
-        try (FileInputStream inputStream = new FileInputStream("src/test/resources/output.pdf")) {
-            pdf = inputStream.readAllBytes();
-        }
-        when(pdfEngineResponse.getPdf()).thenReturn(pdf);
+
         when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);
 
         GenerateReceiptPdfTest.setMock(PdfEngineClientImpl.class, pdfEngineClient);
@@ -170,7 +162,7 @@ class GenerateReceiptPdfTest {
         when(blobStorageResponse.getStatusCode()).thenReturn(com.microsoft.azure.functions.HttpStatus.CREATED.value());
         when(blobStorageResponse.getDocumentUrl()).thenReturn(VALID_BLOB_URL);
         when(blobStorageResponse.getDocumentName()).thenReturn(VALID_BLOB_NAME);
-        when(blobClient.savePdfToBlobStorage(eq(pdf), anyString())).thenReturn(blobStorageResponse);
+        when(blobClient.savePdfToBlobStorage(any(), anyString())).thenReturn(blobStorageResponse);
 
         GenerateReceiptPdfTest.setMock(ReceiptBlobClientImpl.class, blobClient);
 
@@ -212,11 +204,7 @@ class GenerateReceiptPdfTest {
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
-        byte[] pdf;
-        try (FileInputStream inputStream = new FileInputStream("src/test/resources/output.pdf")) {
-            pdf = inputStream.readAllBytes();
-        }
-        when(pdfEngineResponse.getPdf()).thenReturn(pdf);
+
         when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);
 
         GenerateReceiptPdfTest.setMock(PdfEngineClientImpl.class, pdfEngineClient);
@@ -225,7 +213,7 @@ class GenerateReceiptPdfTest {
         when(blobStorageResponse.getStatusCode()).thenReturn(com.microsoft.azure.functions.HttpStatus.CREATED.value());
         when(blobStorageResponse.getDocumentUrl()).thenReturn(VALID_BLOB_URL);
         when(blobStorageResponse.getDocumentName()).thenReturn(VALID_BLOB_NAME);
-        when(blobClient.savePdfToBlobStorage(eq(pdf), anyString())).thenReturn(blobStorageResponse);
+        when(blobClient.savePdfToBlobStorage(any(), anyString())).thenReturn(blobStorageResponse);
 
         GenerateReceiptPdfTest.setMock(ReceiptBlobClientImpl.class, blobClient);
 
@@ -410,18 +398,14 @@ class GenerateReceiptPdfTest {
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
-        byte[] pdf;
-        try (FileInputStream inputStream = new FileInputStream("src/test/resources/output.pdf")) {
-            pdf = inputStream.readAllBytes();
-        }
-        when(pdfEngineResponse.getPdf()).thenReturn(pdf);
+
         when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);
 
         GenerateReceiptPdfTest.setMock(PdfEngineClientImpl.class, pdfEngineClient);
 
         ReceiptBlobClientImpl blobClient = mock(ReceiptBlobClientImpl.class);
         when(blobStorageResponse.getStatusCode()).thenReturn(com.microsoft.azure.functions.HttpStatus.FORBIDDEN.value());
-        when(blobClient.savePdfToBlobStorage(eq(pdf), anyString())).thenReturn(blobStorageResponse);
+        when(blobClient.savePdfToBlobStorage(any(), anyString())).thenReturn(blobStorageResponse);
 
         GenerateReceiptPdfTest.setMock(ReceiptBlobClientImpl.class, blobClient);
 
@@ -463,18 +447,13 @@ class GenerateReceiptPdfTest {
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
 
-        byte[] pdf;
-        try (FileInputStream inputStream = new FileInputStream("src/test/resources/output.pdf")) {
-            pdf = inputStream.readAllBytes();
-        }
-        when(pdfEngineResponse.getPdf()).thenReturn(pdf);
         when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);
 
         GenerateReceiptPdfTest.setMock(PdfEngineClientImpl.class, pdfEngineClient);
 
         ReceiptBlobClientImpl blobClient = mock(ReceiptBlobClientImpl.class);
         when(blobStorageResponse.getStatusCode()).thenReturn(com.microsoft.azure.functions.HttpStatus.FORBIDDEN.value());
-        when(blobClient.savePdfToBlobStorage(eq(pdf), anyString())).thenReturn(blobStorageResponse);
+        when(blobClient.savePdfToBlobStorage(any(), anyString())).thenReturn(blobStorageResponse);
 
         GenerateReceiptPdfTest.setMock(ReceiptBlobClientImpl.class, blobClient);
 

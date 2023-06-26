@@ -20,6 +20,9 @@ import it.gov.pagopa.receipt.pdf.datastore.utils.TemplateMapperUtils;
 import lombok.NoArgsConstructor;
 import org.apache.http.HttpStatus;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.logging.Logger;
@@ -28,6 +31,8 @@ import java.util.logging.Logger;
 public class GenerateReceiptPdfService {
 
     private static final int MAX_NUMBER_RETRY = Integer.parseInt(System.getenv().getOrDefault("COSMOS_RECEIPT_QUEUE_MAX_RETRY", "5"));
+    private static final String TEMP_FILE_PATH = "src/main/resources/tempFile.pdf";
+
 
     /**
      * Handles conditionally the generation of the PDFs based on the generateOnlyDebtor boolean
@@ -107,7 +112,7 @@ public class GenerateReceiptPdfService {
                 //Save the PDF
                 String pdfFileName = bizEvent.getId() + fiscalCode;
 
-                handleSaveToBlobStorage(response, pdfEngineResponse, pdfFileName);
+                handleSaveToBlobStorage(response, pdfFileName);
 
             } else {
                 //Handle PDF generation error
@@ -127,18 +132,19 @@ public class GenerateReceiptPdfService {
     /**
      * Handles saving PDF to Blob Storage
      *
-     * @param response          Pdf metadata containing response
-     * @param pdfEngineResponse Response from the pdf engine
-     * @param pdfFileName       Filename composed of biz-event id and user fiscal code
+     * @param response    Pdf metadata containing response
+     * @param pdfFileName Filename composed of biz-event id and user fiscal code
      */
-    private void handleSaveToBlobStorage(PdfMetadata response, PdfEngineResponse pdfEngineResponse, String pdfFileName) {
+    private void handleSaveToBlobStorage(PdfMetadata response, String pdfFileName) {
         BlobStorageResponse blobStorageResponse;
 
         ReceiptBlobClientImpl blobClient = ReceiptBlobClientImpl.getInstance();
 
         //Save to Blob Storage
-        try {
-            blobStorageResponse = blobClient.savePdfToBlobStorage(pdfEngineResponse.getPdf(), pdfFileName);
+        File tempPdf = new File(TEMP_FILE_PATH);
+
+        try(BufferedInputStream pdfStream = new BufferedInputStream(new FileInputStream(tempPdf))) {
+            blobStorageResponse = blobClient.savePdfToBlobStorage(pdfStream, pdfFileName);
 
             if (blobStorageResponse.getStatusCode() == com.microsoft.azure.functions.HttpStatus.CREATED.value()) {
                 //Update PDF metadata

@@ -12,7 +12,6 @@ import lombok.Setter;
 @NoArgsConstructor
 public class PdfEngineResponse {
 
-    byte[] pdf;
     int statusCode;
     String errorMessage;
 

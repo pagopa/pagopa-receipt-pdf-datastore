@@ -5,6 +5,7 @@ import it.gov.pagopa.receipt.pdf.datastore.model.PdfEngineErrorResponse;
 import it.gov.pagopa.receipt.pdf.datastore.model.request.PdfEngineRequest;
 import it.gov.pagopa.receipt.pdf.datastore.model.response.PdfEngineResponse;
 import it.gov.pagopa.receipt.pdf.datastore.utils.ObjectMapperUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -17,6 +18,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -32,6 +34,7 @@ public class PdfEngineClientImpl implements PdfEngineClient {
     private final String ocpAimSubKey = System.getenv().getOrDefault("OCP_APIM_SUBSCRIPTION_KEY", "");
     private static final String HEADER_AUTH_KEY = "Ocp-Apim-Subscription-Key";
     private static final String ZIP_FILE_NAME = "template.zip";
+    private static final String TEMP_FILE_PATH = "src/main/resources/tempFile.pdf";
     private static final String TEMPLATE_KEY = "template";
     private static final String DATA_KEY = "data";
 
@@ -106,7 +109,9 @@ public class PdfEngineClientImpl implements PdfEngineClient {
             if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK && entityResponse != null) {
                 try (InputStream inputStream = entityResponse.getContent()) {
                     pdfEngineResponse.setStatusCode(HttpStatus.SC_OK);
-                    pdfEngineResponse.setPdf(inputStream.readAllBytes());
+                    File targetFile = new File(TEMP_FILE_PATH);
+
+                    FileUtils.copyInputStreamToFile(inputStream, targetFile);
                 }
             } else {
                 pdfEngineResponse.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);

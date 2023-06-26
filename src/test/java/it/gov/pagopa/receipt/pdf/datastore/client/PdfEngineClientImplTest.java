@@ -55,8 +55,6 @@ class PdfEngineClientImplTest {
         PdfEngineResponse pdfEngineResponse = client.generatePDF(pdfEngineRequest);
 
         Assertions.assertEquals(HttpStatus.SC_OK, pdfEngineResponse.getStatusCode());
-        Assertions.assertNotNull(pdfEngineResponse.getPdf());
-
     }
 
     @Test

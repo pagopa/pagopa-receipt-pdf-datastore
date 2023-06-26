@@ -12,6 +12,7 @@ import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptBlobClient;
 import it.gov.pagopa.receipt.pdf.datastore.model.response.BlobStorageResponse;
 
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 
 /**
  * Client for the Blob Storage
@@ -55,7 +56,7 @@ public class ReceiptBlobClientImpl implements ReceiptBlobClient {
      * @param fileName Filename to save the PDF with
      * @return blob storage response with PDF metadata or error message and status
      */
-    public BlobStorageResponse savePdfToBlobStorage(byte[] pdf, String fileName) {
+    public BlobStorageResponse savePdfToBlobStorage(InputStream pdf, String fileName) {
 
         //Create the container and return a container client object
         BlobContainerClient blobContainerClient = this.blobServiceClient.getBlobContainerClient(containerName);
@@ -67,7 +68,7 @@ public class ReceiptBlobClientImpl implements ReceiptBlobClient {
         //Upload the blob
         Response<BlockBlobItem> blockBlobItemResponse = blobClient.uploadWithResponse(
                 new BlobParallelUploadOptions(
-                        new ByteArrayInputStream(pdf)
+                        pdf
                 ), null, null);
 
         BlobStorageResponse blobStorageResponse = new BlobStorageResponse();
