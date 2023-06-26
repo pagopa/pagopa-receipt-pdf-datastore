@@ -11,7 +11,6 @@ import com.microsoft.azure.functions.HttpStatus;
 import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptBlobClient;
 import it.gov.pagopa.receipt.pdf.datastore.model.response.BlobStorageResponse;
 
-import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
 /**

@@ -21,7 +21,6 @@ import lombok.NoArgsConstructor;
 import org.apache.http.HttpStatus;
 
 import java.io.BufferedInputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.time.LocalDateTime;
@@ -31,8 +30,6 @@ import java.util.logging.Logger;
 public class GenerateReceiptPdfService {
 
     private static final int MAX_NUMBER_RETRY = Integer.parseInt(System.getenv().getOrDefault("COSMOS_RECEIPT_QUEUE_MAX_RETRY", "5"));
-    private static final String TEMP_FILE_PATH = "src/main/resources/tempFile.pdf";
-
 
     /**
      * Handles conditionally the generation of the PDFs based on the generateOnlyDebtor boolean
@@ -112,7 +109,7 @@ public class GenerateReceiptPdfService {
                 //Save the PDF
                 String pdfFileName = bizEvent.getId() + fiscalCode;
 
-                handleSaveToBlobStorage(response, pdfFileName);
+                handleSaveToBlobStorage(pdfEngineResponse, response, pdfFileName);
 
             } else {
                 //Handle PDF generation error
@@ -135,15 +132,13 @@ public class GenerateReceiptPdfService {
      * @param response    Pdf metadata containing response
      * @param pdfFileName Filename composed of biz-event id and user fiscal code
      */
-    private void handleSaveToBlobStorage(PdfMetadata response, String pdfFileName) {
+    private void handleSaveToBlobStorage(PdfEngineResponse pdfEngineResponse,PdfMetadata response, String pdfFileName) {
         BlobStorageResponse blobStorageResponse;
 
         ReceiptBlobClientImpl blobClient = ReceiptBlobClientImpl.getInstance();
 
         //Save to Blob Storage
-        File tempPdf = new File(TEMP_FILE_PATH);
-
-        try(BufferedInputStream pdfStream = new BufferedInputStream(new FileInputStream(tempPdf))) {
+        try(BufferedInputStream pdfStream = new BufferedInputStream(new FileInputStream(pdfEngineResponse.getTempPdfPath()))) {
             blobStorageResponse = blobClient.savePdfToBlobStorage(pdfStream, pdfFileName);
 
             if (blobStorageResponse.getStatusCode() == com.microsoft.azure.functions.HttpStatus.CREATED.value()) {

@@ -24,6 +24,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -48,6 +49,7 @@ class GenerateReceiptPdfTest {
     private final String VALID_BLOB_NAME = "a valid debtor blob name";
 
     private final String PDF_ENGINE_ERROR_MESSAGE = "pdf engine error message";
+    private final String OUTPUT_PDF = "src/test/resources/output.pdf";
 
     @Spy
     private GenerateReceiptPdf function;
@@ -102,6 +104,8 @@ class GenerateReceiptPdfTest {
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
+        File outputTemplate = new File(OUTPUT_PDF);
+        when(pdfEngineResponse.getTempPdfPath()).thenReturn(outputTemplate.getAbsolutePath());
 
         when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);
 
@@ -153,6 +157,8 @@ class GenerateReceiptPdfTest {
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
+        File outputTemplate = new File(OUTPUT_PDF);
+        when(pdfEngineResponse.getTempPdfPath()).thenReturn(outputTemplate.getAbsolutePath());
 
         when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);
 
@@ -204,6 +210,8 @@ class GenerateReceiptPdfTest {
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
+        File outputTemplate = new File(OUTPUT_PDF);
+        when(pdfEngineResponse.getTempPdfPath()).thenReturn(outputTemplate.getAbsolutePath());
 
         when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);
 
@@ -398,6 +406,8 @@ class GenerateReceiptPdfTest {
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
+        File outputTemplate = new File(OUTPUT_PDF);
+        when(pdfEngineResponse.getTempPdfPath()).thenReturn(outputTemplate.getAbsolutePath());
 
         when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);
 
@@ -446,6 +456,8 @@ class GenerateReceiptPdfTest {
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
+        File outputTemplate = new File(OUTPUT_PDF);
+        when(pdfEngineResponse.getTempPdfPath()).thenReturn(outputTemplate.getAbsolutePath());
 
         when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);
 

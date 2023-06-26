@@ -34,7 +34,6 @@ public class PdfEngineClientImpl implements PdfEngineClient {
     private final String ocpAimSubKey = System.getenv().getOrDefault("OCP_APIM_SUBSCRIPTION_KEY", "");
     private static final String HEADER_AUTH_KEY = "Ocp-Apim-Subscription-Key";
     private static final String ZIP_FILE_NAME = "template.zip";
-    private static final String TEMP_FILE_PATH = "src/main/resources/tempFile.pdf";
     private static final String TEMPLATE_KEY = "template";
     private static final String DATA_KEY = "data";
 
@@ -109,9 +108,13 @@ public class PdfEngineClientImpl implements PdfEngineClient {
             if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK && entityResponse != null) {
                 try (InputStream inputStream = entityResponse.getContent()) {
                     pdfEngineResponse.setStatusCode(HttpStatus.SC_OK);
-                    File targetFile = new File(TEMP_FILE_PATH);
+                    File targetFile = File.createTempFile("tempFile", ".pdf");
 
                     FileUtils.copyInputStreamToFile(inputStream, targetFile);
+
+                    pdfEngineResponse.setTempPdfPath(targetFile.getAbsolutePath());
+
+                    targetFile.deleteOnExit();
                 }
             } else {
                 pdfEngineResponse.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);

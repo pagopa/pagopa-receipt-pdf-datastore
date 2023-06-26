@@ -12,6 +12,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class PdfEngineResponse {
 
+    String tempPdfPath;
     int statusCode;
     String errorMessage;
 
