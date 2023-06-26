@@ -70,6 +70,12 @@ resource "azurerm_role_assignment" "environment_key_vault" {
   principal_id         = azuread_service_principal.action.object_id
 }
 
+resource "azurerm_role_assignment" "environment_receipts_sa_role" {
+  scope                = data.azurerm_storage_account.receipts_sa.id
+  role_definition_name = "Contributor"
+  principal_id         = azuread_service_principal.action.object_id
+}
+
 resource "azurerm_key_vault_access_policy" "ad_group_policy" {
   key_vault_id = data.azurerm_key_vault.key_vault.id
 
