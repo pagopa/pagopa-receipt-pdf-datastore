@@ -1,6 +1,5 @@
 package it.gov.pagopa.receipt.pdf.datastore.client.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import it.gov.pagopa.receipt.pdf.datastore.client.PdfEngineClient;
 import it.gov.pagopa.receipt.pdf.datastore.model.PdfEngineErrorResponse;
 import it.gov.pagopa.receipt.pdf.datastore.model.request.PdfEngineRequest;
@@ -13,7 +12,6 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
-import org.apache.http.entity.mime.content.ByteArrayBody;
 import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -68,13 +66,13 @@ public class PdfEngineClientImpl implements PdfEngineClient {
         //Generate client
         try (CloseableHttpClient client = this.httpClientBuilder.build()) {
             //Encode template and data
-            ByteArrayBody fileBody = new ByteArrayBody(pdfEngineRequest.getTemplate(), ZIP_FILE_NAME);
+
             StringBody dataBody = new StringBody(pdfEngineRequest.getData(), ContentType.APPLICATION_JSON);
 
             //Build the multipart request
             MultipartEntityBuilder builder = MultipartEntityBuilder.create();
             builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
-            builder.addPart(TEMPLATE_KEY, fileBody);
+            builder.addBinaryBody(TEMPLATE_KEY, pdfEngineRequest.getTemplate(), ContentType.create("application/zip"), ZIP_FILE_NAME);
             builder.addPart(DATA_KEY, dataBody);
             HttpEntity entity = builder.build();
 

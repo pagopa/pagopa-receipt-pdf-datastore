@@ -12,10 +12,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -31,16 +28,13 @@ class PdfEngineClientImplTest {
     @Test
     void runOk() throws IOException {
         byte[] template;
-        String data;
+        PdfEngineRequest pdfEngineRequest = new PdfEngineRequest();
         try (InputStream inputStream = FileInputStream.nullInputStream()) {
             template = inputStream.readAllBytes();
 
-            data = new String(template);
+            pdfEngineRequest.setTemplate(inputStream);
+            pdfEngineRequest.setData(new String(template));
         }
-
-        PdfEngineRequest pdfEngineRequest = new PdfEngineRequest();
-        pdfEngineRequest.setTemplate(template);
-        pdfEngineRequest.setData(data);
 
         HttpClientBuilder mockBuilder = mock(HttpClientBuilder.class);
         CloseableHttpClient mockClient = mock(CloseableHttpClient.class);
@@ -69,16 +63,13 @@ class PdfEngineClientImplTest {
     void runKoUnauthorized() throws IOException {
 
         byte[] template;
-        String data;
+        PdfEngineRequest pdfEngineRequest = new PdfEngineRequest();
         try (InputStream inputStream = FileInputStream.nullInputStream()) {
             template = inputStream.readAllBytes();
 
-            data = new String(template);
+            pdfEngineRequest.setTemplate(inputStream);
+            pdfEngineRequest.setData(new String(template));
         }
-
-        PdfEngineRequest pdfEngineRequest = new PdfEngineRequest();
-        pdfEngineRequest.setTemplate(template);
-        pdfEngineRequest.setData(data);
 
         HttpClientBuilder mockBuilder = mock(HttpClientBuilder.class);
         CloseableHttpClient mockClient = mock(CloseableHttpClient.class);
@@ -107,16 +98,13 @@ class PdfEngineClientImplTest {
     void runKo400() throws IOException {
 
         byte[] template;
-        String data;
+        PdfEngineRequest pdfEngineRequest = new PdfEngineRequest();
         try (InputStream inputStream = FileInputStream.nullInputStream()) {
             template = inputStream.readAllBytes();
 
-            data = new String(template);
+            pdfEngineRequest.setTemplate(inputStream);
+            pdfEngineRequest.setData(new String(template));
         }
-
-        PdfEngineRequest pdfEngineRequest = new PdfEngineRequest();
-        pdfEngineRequest.setTemplate(template);
-        pdfEngineRequest.setData(data);
 
         HttpClientBuilder mockBuilder = mock(HttpClientBuilder.class);
         CloseableHttpClient mockClient = mock(CloseableHttpClient.class);
