@@ -113,8 +113,6 @@ public class PdfEngineClientImpl implements PdfEngineClient {
                     FileUtils.copyInputStreamToFile(inputStream, targetFile);
 
                     pdfEngineResponse.setTempPdfPath(targetFile.getAbsolutePath());
-
-                    targetFile.deleteOnExit();
                 }
             } else {
                 pdfEngineResponse.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);

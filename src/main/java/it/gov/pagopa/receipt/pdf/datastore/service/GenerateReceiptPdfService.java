@@ -21,6 +21,7 @@ import lombok.NoArgsConstructor;
 import org.apache.http.HttpStatus;
 
 import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.time.LocalDateTime;
@@ -159,6 +160,9 @@ public class GenerateReceiptPdfService {
             response.setStatusCode(ReasonErrorCode.ERROR_BLOB_STORAGE.getCode());
             response.setErrorMessage("Error saving pdf to blob storage : " + e);
         }
+
+        File tempFile = new File(pdfEngineResponse.getTempPdfPath());
+        tempFile.delete();
     }
 
 
