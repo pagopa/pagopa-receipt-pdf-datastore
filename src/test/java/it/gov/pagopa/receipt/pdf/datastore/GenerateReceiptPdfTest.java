@@ -49,6 +49,7 @@ class GenerateReceiptPdfTest {
     private final String PDF_ENGINE_ERROR_MESSAGE = "pdf engine error message";
 
     private static File outputPdfDebtor;
+    private static File tempDirectoryDebtor;
 
     @Spy
     private GenerateReceiptPdf function;
@@ -73,6 +74,7 @@ class GenerateReceiptPdfTest {
 
     @BeforeEach
     public void createTemp() throws IOException {
+        tempDirectoryDebtor = Files.createTempDirectory("temp").toFile();
         outputPdfDebtor = File.createTempFile("outputDebtor", ".tmp", new File("src/test/resources"));
     }
 
@@ -83,9 +85,13 @@ class GenerateReceiptPdfTest {
         tearDownInstance(ReceiptBlobClientImpl.class);
         tearDownInstance(PdfEngineClientImpl.class);
 
+        if(tempDirectoryDebtor.exists()){
+            Files.delete(tempDirectoryDebtor.toPath());
+        }
         if(outputPdfDebtor.exists()){
             Files.delete(outputPdfDebtor.toPath());
         }
+        assertFalse(tempDirectoryDebtor.exists());
         assertFalse(outputPdfDebtor.exists());
     }
 
@@ -114,7 +120,10 @@ class GenerateReceiptPdfTest {
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
 
-        File outputPdfPayer = File.createTempFile("outputPayer", ".tmp", new File("src/test/resources"));
+        File tempDirectoryPayer = Files.createTempDirectory("temp").toFile();
+        File outputPdfPayer = File.createTempFile("outputPayer", ".tmp", tempDirectoryPayer);
+        when(pdfEngineResponse.getTempDirectoryPath())
+                .thenReturn(tempDirectoryDebtor.getAbsolutePath(), tempDirectoryPayer.getAbsolutePath());
         when(pdfEngineResponse.getTempPdfPath())
                 .thenReturn(outputPdfDebtor.getAbsolutePath(), outputPdfPayer.getAbsolutePath());
 
@@ -150,6 +159,7 @@ class GenerateReceiptPdfTest {
         assertEquals(VALID_BLOB_URL, capturedCosmos.getMdAttachPayer().getUrl());
         assertEquals(VALID_BLOB_NAME, capturedCosmos.getMdAttachPayer().getName());
 
+        assertFalse(tempDirectoryPayer.exists());
         assertFalse(outputPdfPayer.exists());
     }
 
@@ -170,6 +180,7 @@ class GenerateReceiptPdfTest {
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
+        when(pdfEngineResponse.getTempDirectoryPath()).thenReturn(tempDirectoryDebtor.getAbsolutePath());
         when(pdfEngineResponse.getTempPdfPath()).thenReturn(outputPdfDebtor.getAbsolutePath());
 
         when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);
@@ -222,6 +233,7 @@ class GenerateReceiptPdfTest {
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
+        when(pdfEngineResponse.getTempDirectoryPath()).thenReturn(tempDirectoryDebtor.getAbsolutePath());
         when(pdfEngineResponse.getTempPdfPath()).thenReturn(outputPdfDebtor.getAbsolutePath());
 
         when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);
@@ -464,6 +476,7 @@ class GenerateReceiptPdfTest {
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
+        when(pdfEngineResponse.getTempDirectoryPath()).thenReturn(tempDirectoryDebtor.getAbsolutePath());
         when(pdfEngineResponse.getTempPdfPath()).thenReturn(outputPdfDebtor.getAbsolutePath());
 
         when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);
@@ -513,6 +526,7 @@ class GenerateReceiptPdfTest {
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
+        when(pdfEngineResponse.getTempDirectoryPath()).thenReturn(tempDirectoryDebtor.getAbsolutePath());
         when(pdfEngineResponse.getTempPdfPath()).thenReturn(outputPdfDebtor.getAbsolutePath());
 
         when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);

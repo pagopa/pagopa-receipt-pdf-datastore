@@ -92,7 +92,7 @@ public class GenerateReceiptPdfService {
 
         String fileName = completeTemplate ? completeTemplateFileName : partialTemplateFileName;
 
-        try(InputStream templateStream = GenerateReceiptPdf.class.getClassLoader().getResourceAsStream(fileName)) {
+        try (InputStream templateStream = GenerateReceiptPdf.class.getClassLoader().getResourceAsStream(fileName)) {
             //Build the request
             request.setTemplate(templateStream);
             request.setData(ObjectMapperUtils.writeValueAsString(TemplateMapperUtils.convertReceiptToPdfData(bizEvent)));
@@ -131,14 +131,16 @@ public class GenerateReceiptPdfService {
      * @param response    Pdf metadata containing response
      * @param pdfFileName Filename composed of biz-event id and user fiscal code
      */
-    private void handleSaveToBlobStorage(PdfEngineResponse pdfEngineResponse,PdfMetadata response, String pdfFileName, Logger logger) {
+    private void handleSaveToBlobStorage(PdfEngineResponse pdfEngineResponse, PdfMetadata response, String pdfFileName, Logger logger) {
         BlobStorageResponse blobStorageResponse;
 
         ReceiptBlobClientImpl blobClient = ReceiptBlobClientImpl.getInstance();
 
         String tempPdfPath = pdfEngineResponse.getTempPdfPath();
+        String tempDirectoryPath = pdfEngineResponse.getTempDirectoryPath();
+
         //Save to Blob Storage
-        try(BufferedInputStream pdfStream = new BufferedInputStream(new FileInputStream(tempPdfPath))) {
+        try (BufferedInputStream pdfStream = new BufferedInputStream(new FileInputStream(tempPdfPath))) {
             blobStorageResponse = blobClient.savePdfToBlobStorage(pdfStream, pdfFileName);
 
             if (blobStorageResponse.getStatusCode() == com.microsoft.azure.functions.HttpStatus.CREATED.value()) {
@@ -160,12 +162,35 @@ public class GenerateReceiptPdfService {
             response.setErrorMessage("Error saving pdf to blob storage : " + e);
         }
 
+        deleteTempFolderAndFile(tempPdfPath, tempDirectoryPath, logger);
+    }
+
+    /**
+     * Delete temporary file and director created for the generated PDF
+     *
+     * @param tempPdfPath       Path to the temp PDF file
+     * @param tempDirectoryPath Path to the temp directory containing the PDF file
+     * @param logger            Logger
+     */
+    private static void deleteTempFolderAndFile(String tempPdfPath, String tempDirectoryPath, Logger logger) {
+        String logMsg;
+
         File tempFile = new File(tempPdfPath);
-        if(tempFile.exists()){
+        if (tempFile.exists()) {
             try {
                 Files.delete(tempFile.toPath());
             } catch (IOException e) {
-                String logMsg = String.format("Error deleting temporary pdf file from file system: %e", e);
+                logMsg = String.format("Error deleting temporary pdf file from file system: %s", e);
+                logger.warning(logMsg);
+            }
+        }
+
+        File tempDirectory = new File(tempDirectoryPath);
+        if (tempDirectory.exists()) {
+            try {
+                Files.delete(tempDirectory.toPath());
+            } catch (IOException e) {
+                logMsg = String.format("Error deleting temporary pdf directory from file system: %s", e);
                 logger.warning(logMsg);
             }
         }
