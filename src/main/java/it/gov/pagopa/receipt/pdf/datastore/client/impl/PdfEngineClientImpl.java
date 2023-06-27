@@ -110,13 +110,8 @@ public class PdfEngineClientImpl implements PdfEngineClient {
             if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK && entityResponse != null) {
                 try (InputStream inputStream = entityResponse.getContent()) {
                     pdfEngineResponse.setStatusCode(HttpStatus.SC_OK);
-                    File tempDirectory = Files.createTempDirectory("temp").toFile();
-                    File targetFile = File.createTempFile("tempFile", ".pdf", tempDirectory);
 
-                    FileUtils.copyInputStreamToFile(inputStream, targetFile);
-
-                    pdfEngineResponse.setTempPdfPath(targetFile.getAbsolutePath());
-                    pdfEngineResponse.setTempDirectoryPath(tempDirectory.getAbsolutePath());
+                    saveTempPdf(pdfEngineResponse, inputStream);
                 }
             } else {
                 pdfEngineResponse.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
@@ -130,6 +125,33 @@ public class PdfEngineClientImpl implements PdfEngineClient {
         return pdfEngineResponse;
     }
 
+    /**
+     * Saves pdf as temporary file
+     *
+     * @param pdfEngineResponse Pdf engine response
+     * @param inputStream       InputStream pdf
+     * @throws IOException In case of error to save
+     */
+    private static void saveTempPdf(PdfEngineResponse pdfEngineResponse, InputStream inputStream) throws IOException {
+        File tempDirectory = new File("temp");
+        if (!tempDirectory.exists()) {
+            Files.createDirectory(tempDirectory.toPath());
+        }
+
+        File targetFile = File.createTempFile("tempFile", ".pdf", tempDirectory);
+
+        FileUtils.copyInputStreamToFile(inputStream, targetFile);
+
+        pdfEngineResponse.setTempPdfPath(targetFile.getAbsolutePath());
+        pdfEngineResponse.setTempDirectoryPath(tempDirectory.getAbsolutePath());
+    }
+
+    /**
+     * Handles error message in case of error thrown
+     *
+     * @param pdfEngineResponse Pdf engine respone
+     * @param e                 Error thrown
+     */
     private static void handleExceptionErrorMessage(PdfEngineResponse pdfEngineResponse, Exception e) {
         pdfEngineResponse.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
         pdfEngineResponse.setErrorMessage(String.format("Exception thrown during pdf generation process: %s", e));
