@@ -54,6 +54,8 @@ class PdfEngineClientImplTest {
         PdfEngineClientImpl client = new PdfEngineClientImpl(mockBuilder);
         PdfEngineResponse pdfEngineResponse = client.generatePDF(pdfEngineRequest);
 
+        File tempPdf = new File(pdfEngineResponse.getTempPdfPath());
+        Assertions.assertTrue(tempPdf.delete());
         Assertions.assertEquals(HttpStatus.SC_OK, pdfEngineResponse.getStatusCode());
     }
 

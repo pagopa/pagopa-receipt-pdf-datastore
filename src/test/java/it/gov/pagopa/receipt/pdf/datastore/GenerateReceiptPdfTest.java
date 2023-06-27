@@ -14,20 +14,18 @@ import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.model.response.BlobStorageResponse;
 import it.gov.pagopa.receipt.pdf.datastore.model.response.PdfEngineResponse;
 import org.apache.http.HttpStatus;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -49,7 +47,8 @@ class GenerateReceiptPdfTest {
     private final String VALID_BLOB_NAME = "a valid debtor blob name";
 
     private final String PDF_ENGINE_ERROR_MESSAGE = "pdf engine error message";
-    private final String OUTPUT_PDF = "src/test/resources/output.pdf";
+
+    private static File outputPdfDebtor;
 
     @Spy
     private GenerateReceiptPdf function;
@@ -72,12 +71,22 @@ class GenerateReceiptPdfTest {
     @Captor
     private ArgumentCaptor<String> messageCaptor;
 
+    @BeforeEach
+    public void createTemp() throws IOException {
+        outputPdfDebtor = File.createTempFile("outputDebtor", ".tmp", new File("src/test/resources"));
+    }
+
     @AfterEach
-    public void teardown() throws Exception {
+    public void teardown() throws IOException, NoSuchFieldException, IllegalAccessException {
         // reset singleton
         tearDownInstance(ReceiptCosmosClientImpl.class);
         tearDownInstance(ReceiptBlobClientImpl.class);
         tearDownInstance(PdfEngineClientImpl.class);
+
+        if(outputPdfDebtor.exists()){
+            Files.delete(outputPdfDebtor.toPath());
+        }
+        assertFalse(outputPdfDebtor.exists());
     }
 
     private <T> void tearDownInstance(Class<T> classInstanced) throws IllegalAccessException, NoSuchFieldException {
@@ -104,8 +113,10 @@ class GenerateReceiptPdfTest {
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
-        File outputTemplate = new File(OUTPUT_PDF);
-        when(pdfEngineResponse.getTempPdfPath()).thenReturn(outputTemplate.getAbsolutePath());
+
+        File outputPdfPayer = File.createTempFile("outputPayer", ".tmp", new File("src/test/resources"));
+        when(pdfEngineResponse.getTempPdfPath())
+                .thenReturn(outputPdfDebtor.getAbsolutePath(), outputPdfPayer.getAbsolutePath());
 
         when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);
 
@@ -138,10 +149,12 @@ class GenerateReceiptPdfTest {
         assertEquals(VALID_BLOB_NAME, capturedCosmos.getMdAttach().getName());
         assertEquals(VALID_BLOB_URL, capturedCosmos.getMdAttachPayer().getUrl());
         assertEquals(VALID_BLOB_NAME, capturedCosmos.getMdAttachPayer().getName());
+
+        assertFalse(outputPdfPayer.exists());
     }
 
     @Test
-    void runOkReceiptStatusInsertedSameFiscalCode() throws ReceiptNotFoundException, IOException {
+    void runOkReceiptStatusInsertedSameFiscalCode() throws ReceiptNotFoundException {
         Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
         when(context.getLogger()).thenReturn(logger);
 
@@ -157,8 +170,7 @@ class GenerateReceiptPdfTest {
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
-        File outputTemplate = new File(OUTPUT_PDF);
-        when(pdfEngineResponse.getTempPdfPath()).thenReturn(outputTemplate.getAbsolutePath());
+        when(pdfEngineResponse.getTempPdfPath()).thenReturn(outputPdfDebtor.getAbsolutePath());
 
         when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);
 
@@ -194,7 +206,7 @@ class GenerateReceiptPdfTest {
     }
 
     @Test
-    void runOkReceiptStatusRetrySameFiscalCode() throws ReceiptNotFoundException, IOException {
+    void runOkReceiptStatusRetrySameFiscalCode() throws ReceiptNotFoundException {
         Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
         when(context.getLogger()).thenReturn(logger);
 
@@ -210,8 +222,7 @@ class GenerateReceiptPdfTest {
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
-        File outputTemplate = new File(OUTPUT_PDF);
-        when(pdfEngineResponse.getTempPdfPath()).thenReturn(outputTemplate.getAbsolutePath());
+        when(pdfEngineResponse.getTempPdfPath()).thenReturn(outputPdfDebtor.getAbsolutePath());
 
         when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);
 
@@ -244,6 +255,53 @@ class GenerateReceiptPdfTest {
                 capturedCosmos.getMdAttachPayer().getUrl() == null ||
                 capturedCosmos.getMdAttachPayer().getUrl().isEmpty()
         );
+    }
+
+    @Test
+    void runDiscarded() throws ReceiptNotFoundException {
+        Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
+        when(context.getLogger()).thenReturn(logger);
+
+        ReceiptCosmosClientImpl cosmosClient = mock(ReceiptCosmosClientImpl.class);
+        receiptMock.setStatus(ReceiptStatusType.NOT_QUEUE_SENT);
+        EventData eventDataMock = mock(EventData.class);
+
+        receiptMock.setEventData(eventDataMock);
+        when(cosmosClient.getReceiptDocument(any())).thenReturn(receiptMock);
+
+        GenerateReceiptPdfTest.setMock(ReceiptCosmosClientImpl.class, cosmosClient);
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<String> requeueMessage = (OutputBinding<String>) spy(OutputBinding.class);
+
+        // test execution
+        assertDoesNotThrow(() -> function.processGenerateReceipt(BIZ_EVENT_MESSAGE_SAME_CF, documentdb, requeueMessage, context));
+
+        verify(documentdb, never()).setValue(any());
+    }
+
+    @Test
+    void runReceiptNotFound() throws ReceiptNotFoundException {
+        Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
+        when(context.getLogger()).thenReturn(logger);
+
+        ReceiptCosmosClientImpl cosmosClient = mock(ReceiptCosmosClientImpl.class);
+        when(cosmosClient.getReceiptDocument(any()))
+                .thenThrow(ReceiptNotFoundException.class);
+        GenerateReceiptPdfTest.setMock(ReceiptCosmosClientImpl.class, cosmosClient);
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<String> requeueMessage = (OutputBinding<String>) spy(OutputBinding.class);
+
+        // test execution
+        Assertions.assertThrows(ReceiptNotFoundException.class,
+                () -> function.processGenerateReceipt(BIZ_EVENT_MESSAGE_SAME_CF, documentdb, requeueMessage, context));
     }
 
     @Test
@@ -390,7 +448,7 @@ class GenerateReceiptPdfTest {
     }
 
     @Test
-    void runKoBlobStorage() throws ReceiptNotFoundException, IOException {
+    void runKoBlobStorage() throws ReceiptNotFoundException {
         Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
         when(context.getLogger()).thenReturn(logger);
 
@@ -406,8 +464,7 @@ class GenerateReceiptPdfTest {
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
-        File outputTemplate = new File(OUTPUT_PDF);
-        when(pdfEngineResponse.getTempPdfPath()).thenReturn(outputTemplate.getAbsolutePath());
+        when(pdfEngineResponse.getTempPdfPath()).thenReturn(outputPdfDebtor.getAbsolutePath());
 
         when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);
 
@@ -456,8 +513,7 @@ class GenerateReceiptPdfTest {
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
-        File outputTemplate = new File(OUTPUT_PDF);
-        when(pdfEngineResponse.getTempPdfPath()).thenReturn(outputTemplate.getAbsolutePath());
+        when(pdfEngineResponse.getTempPdfPath()).thenReturn(outputPdfDebtor.getAbsolutePath());
 
         when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);
 
