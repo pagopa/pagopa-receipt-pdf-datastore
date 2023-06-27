@@ -108,7 +108,7 @@ public class PdfEngineClientImpl implements PdfEngineClient {
             if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK && entityResponse != null) {
                 try (InputStream inputStream = entityResponse.getContent()) {
                     pdfEngineResponse.setStatusCode(HttpStatus.SC_OK);
-                    File targetFile = File.createTempFile("tempFile", ".pdf");
+                    File targetFile = File.createTempFile("tempFile", ".pdf", new File("src/main/resources/temp"));
 
                     FileUtils.copyInputStreamToFile(inputStream, targetFile);
 

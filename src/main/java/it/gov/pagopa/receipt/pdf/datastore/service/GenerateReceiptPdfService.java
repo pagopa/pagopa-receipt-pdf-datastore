@@ -20,10 +20,8 @@ import it.gov.pagopa.receipt.pdf.datastore.utils.TemplateMapperUtils;
 import lombok.NoArgsConstructor;
 import org.apache.http.HttpStatus;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
+import java.io.*;
+import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.util.logging.Logger;
 
@@ -42,7 +40,7 @@ public class GenerateReceiptPdfService {
      * @param payerCF            Payer fiscal code
      * @return PdfGeneration object with the PDF metadata from the Blob Storage or relatives error messages
      */
-    public PdfGeneration handlePdfsGeneration(boolean generateOnlyDebtor, Receipt receipt, BizEvent bizEvent, String debtorCF, String payerCF) {
+    public PdfGeneration handlePdfsGeneration(boolean generateOnlyDebtor, Receipt receipt, BizEvent bizEvent, String debtorCF, String payerCF, Logger logger) {
         PdfGeneration pdfGeneration = new PdfGeneration();
 
         if (generateOnlyDebtor) {
@@ -52,7 +50,7 @@ public class GenerateReceiptPdfService {
                             receipt.getMdAttach().getUrl() == null ||
                             receipt.getMdAttach().getUrl().isEmpty())
             ) {
-                pdfGeneration.setDebtorMetadata(generatePdf(bizEvent, debtorCF, true));
+                pdfGeneration.setDebtorMetadata(generatePdf(bizEvent, debtorCF, true, logger));
             }
         } else {
             //Generate debtor's partial PDF
@@ -61,7 +59,7 @@ public class GenerateReceiptPdfService {
                             receipt.getMdAttach().getUrl() == null ||
                             receipt.getMdAttach().getUrl().isEmpty())
             ) {
-                pdfGeneration.setDebtorMetadata(generatePdf(bizEvent, debtorCF, false));
+                pdfGeneration.setDebtorMetadata(generatePdf(bizEvent, debtorCF, false, logger));
             }
             //Generate payer's complete PDF
             if (payerCF != null &&
@@ -69,7 +67,7 @@ public class GenerateReceiptPdfService {
                             receipt.getMdAttachPayer().getUrl() == null ||
                             receipt.getMdAttachPayer().getUrl().isEmpty())
             ) {
-                pdfGeneration.setPayerMetadata(generatePdf(bizEvent, payerCF, true));
+                pdfGeneration.setPayerMetadata(generatePdf(bizEvent, payerCF, true, logger));
             }
         }
 
@@ -84,7 +82,7 @@ public class GenerateReceiptPdfService {
      * @param completeTemplate Boolean that indicates what template to use
      * @return PDF metadata retrieved from Blob Storage or relative error message
      */
-    private PdfMetadata generatePdf(BizEvent bizEvent, String fiscalCode, boolean completeTemplate) {
+    private PdfMetadata generatePdf(BizEvent bizEvent, String fiscalCode, boolean completeTemplate, Logger logger) {
         PdfEngineRequest request = new PdfEngineRequest();
         PdfMetadata response = new PdfMetadata();
 
@@ -110,7 +108,7 @@ public class GenerateReceiptPdfService {
                 //Save the PDF
                 String pdfFileName = bizEvent.getId() + fiscalCode;
 
-                handleSaveToBlobStorage(pdfEngineResponse, response, pdfFileName);
+                handleSaveToBlobStorage(pdfEngineResponse, response, pdfFileName, logger);
 
             } else {
                 //Handle PDF generation error
@@ -133,13 +131,14 @@ public class GenerateReceiptPdfService {
      * @param response    Pdf metadata containing response
      * @param pdfFileName Filename composed of biz-event id and user fiscal code
      */
-    private void handleSaveToBlobStorage(PdfEngineResponse pdfEngineResponse,PdfMetadata response, String pdfFileName) {
+    private void handleSaveToBlobStorage(PdfEngineResponse pdfEngineResponse,PdfMetadata response, String pdfFileName, Logger logger) {
         BlobStorageResponse blobStorageResponse;
 
         ReceiptBlobClientImpl blobClient = ReceiptBlobClientImpl.getInstance();
 
+        String tempPdfPath = pdfEngineResponse.getTempPdfPath();
         //Save to Blob Storage
-        try(BufferedInputStream pdfStream = new BufferedInputStream(new FileInputStream(pdfEngineResponse.getTempPdfPath()))) {
+        try(BufferedInputStream pdfStream = new BufferedInputStream(new FileInputStream(tempPdfPath))) {
             blobStorageResponse = blobClient.savePdfToBlobStorage(pdfStream, pdfFileName);
 
             if (blobStorageResponse.getStatusCode() == com.microsoft.azure.functions.HttpStatus.CREATED.value()) {
@@ -161,8 +160,15 @@ public class GenerateReceiptPdfService {
             response.setErrorMessage("Error saving pdf to blob storage : " + e);
         }
 
-        File tempFile = new File(pdfEngineResponse.getTempPdfPath());
-        tempFile.delete();
+        File tempFile = new File(tempPdfPath);
+        if(tempFile.exists()){
+            try {
+                Files.delete(tempFile.toPath());
+            } catch (IOException e) {
+                String logMsg = String.format("Error deleting temporary pdf file from file system: %e", e);
+                logger.warning(logMsg);
+            }
+        }
     }
 
 
