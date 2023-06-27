@@ -1,6 +1,6 @@
 const { QueueServiceClient } = require("@azure/storage-queue");
 
-const connStr   = process.env.RECEIPT_QUEUE_CONN_STRING;
+const connStr   = process.env.RECEIPTS_STORAGE_CONN_STRING || "";
 const queueName = process.env.RECEIPT_QUEUE_NAME;
 
 async function putMessageOnQueue(message) {

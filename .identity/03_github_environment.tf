@@ -24,6 +24,9 @@ locals {
     "CLIENT_ID" : module.github_runner_app.application_id,
     "TENANT_ID" : data.azurerm_client_config.current.tenant_id,
     "SUBSCRIPTION_ID" : data.azurerm_subscription.current.subscription_id,
+    "RECEIPTS_STORAGE_CONN_STRING" : data.azurerm_storage_account.receipts_sa.primary_connection_string
+    "RECEIPTS_COSMOS_CONN_STRING" : data.azurerm_cosmosdb_account.receipts_cosmos.primary_connection_string
+    "BIZEVENTS_COSMOS_CONN_STRING" : data.azurerm_cosmosdb_account.bizevents_cosmos.primary_connection_string
   }
   env_variables = {
     "CONTAINER_APP_ENVIRONMENT_NAME" : local.container_app_environment.name,
