@@ -73,12 +73,12 @@ microservice-chart:
     BLOB_STORAGE_CONTAINER_NAME: 'pagopa-u-weu-receipts-azure-blob-receipt-st-attach'
   envSecret:
     APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-u-connection-string'
-    BLOB_STORAGE_CONN_STRING: 'blob-storage-u-connection-string'
-    COSMOS_RECEIPTS_CONN_STRING: 'cosmos-receipt-u-connection-string'
-    RECEIPT_QUEUE_CONN_STRING: 'receipt-queue-u-connection-string'
+    BLOB_STORAGE_CONN_STRING: "receipts-storage-account-connection-string"
+    COSMOS_RECEIPTS_CONN_STRING: "cosmos-receipt-connection-string"
+    RECEIPT_QUEUE_CONN_STRING: "receipts-storage-account-connection-string"
     COSMOS_BIZ_EVENT_CONN_STRING: 'cosmos-biz-event-u-connection-string'
     OCP_APIM_SUBSCRIPTION_KEY: 'shared-apim-u-subscription-key'
-    COSMOS_RECEIPT_KEY: 'cosmos-receipt-u-key'
+    COSMOS_RECEIPT_KEY: "cosmos-receipt-pkey"
   keyvault:
     name: "pagopa-u-receipts-kv"
     tenantId: "7788edaf-0346-4068-9d79-c868aed15b3d"
