@@ -60,7 +60,6 @@ public class GenerateReceiptPdf {
      * @param context         Function context
      */
     @FunctionName("GenerateReceiptProcess")
-    @ExponentialBackoffRetry(maxRetryCount = 5, minimumInterval = "500", maximumInterval = "5000")
     public void processGenerateReceipt(
             @QueueTrigger(
                     name = "QueueReceiptWaitingForGen",
