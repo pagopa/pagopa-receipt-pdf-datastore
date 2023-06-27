@@ -14,19 +14,18 @@ import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.model.response.BlobStorageResponse;
 import it.gov.pagopa.receipt.pdf.datastore.model.response.PdfEngineResponse;
 import org.apache.http.HttpStatus;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
-import java.io.FileInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -49,6 +48,9 @@ class GenerateReceiptPdfTest {
 
     private final String PDF_ENGINE_ERROR_MESSAGE = "pdf engine error message";
 
+    private static File outputPdfDebtor;
+    private static File tempDirectoryDebtor;
+
     @Spy
     private GenerateReceiptPdf function;
 
@@ -70,12 +72,27 @@ class GenerateReceiptPdfTest {
     @Captor
     private ArgumentCaptor<String> messageCaptor;
 
+    @BeforeEach
+    public void createTemp() throws IOException {
+        tempDirectoryDebtor = Files.createTempDirectory("temp").toFile();
+        outputPdfDebtor = File.createTempFile("outputDebtor", ".tmp", new File("src/test/resources"));
+    }
+
     @AfterEach
-    public void teardown() throws Exception {
+    public void teardown() throws IOException, NoSuchFieldException, IllegalAccessException {
         // reset singleton
         tearDownInstance(ReceiptCosmosClientImpl.class);
         tearDownInstance(ReceiptBlobClientImpl.class);
         tearDownInstance(PdfEngineClientImpl.class);
+
+        if(tempDirectoryDebtor.exists()){
+            Files.delete(tempDirectoryDebtor.toPath());
+        }
+        if(outputPdfDebtor.exists()){
+            Files.delete(outputPdfDebtor.toPath());
+        }
+        assertFalse(tempDirectoryDebtor.exists());
+        assertFalse(outputPdfDebtor.exists());
     }
 
     private <T> void tearDownInstance(Class<T> classInstanced) throws IllegalAccessException, NoSuchFieldException {
@@ -102,8 +119,14 @@ class GenerateReceiptPdfTest {
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
-        byte[] pdf = new FileInputStream("src/test/resources/output.pdf").readAllBytes();
-        when(pdfEngineResponse.getPdf()).thenReturn(pdf);
+
+        File tempDirectoryPayer = Files.createTempDirectory("temp").toFile();
+        File outputPdfPayer = File.createTempFile("outputPayer", ".tmp", tempDirectoryPayer);
+        when(pdfEngineResponse.getTempDirectoryPath())
+                .thenReturn(tempDirectoryDebtor.getAbsolutePath(), tempDirectoryPayer.getAbsolutePath());
+        when(pdfEngineResponse.getTempPdfPath())
+                .thenReturn(outputPdfDebtor.getAbsolutePath(), outputPdfPayer.getAbsolutePath());
+
         when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);
 
         GenerateReceiptPdfTest.setMock(PdfEngineClientImpl.class, pdfEngineClient);
@@ -112,7 +135,7 @@ class GenerateReceiptPdfTest {
         when(blobStorageResponse.getStatusCode()).thenReturn(com.microsoft.azure.functions.HttpStatus.CREATED.value());
         when(blobStorageResponse.getDocumentUrl()).thenReturn(VALID_BLOB_URL);
         when(blobStorageResponse.getDocumentName()).thenReturn(VALID_BLOB_NAME);
-        when(blobClient.savePdfToBlobStorage(eq(pdf), anyString())).thenReturn(blobStorageResponse);
+        when(blobClient.savePdfToBlobStorage(any(), anyString())).thenReturn(blobStorageResponse);
 
         GenerateReceiptPdfTest.setMock(ReceiptBlobClientImpl.class, blobClient);
 
@@ -135,10 +158,13 @@ class GenerateReceiptPdfTest {
         assertEquals(VALID_BLOB_NAME, capturedCosmos.getMdAttach().getName());
         assertEquals(VALID_BLOB_URL, capturedCosmos.getMdAttachPayer().getUrl());
         assertEquals(VALID_BLOB_NAME, capturedCosmos.getMdAttachPayer().getName());
+
+        assertFalse(tempDirectoryPayer.exists());
+        assertFalse(outputPdfPayer.exists());
     }
 
     @Test
-    void runOkReceiptStatusInsertedSameFiscalCode() throws ReceiptNotFoundException, IOException {
+    void runOkReceiptStatusInsertedSameFiscalCode() throws ReceiptNotFoundException {
         Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
         when(context.getLogger()).thenReturn(logger);
 
@@ -154,8 +180,9 @@ class GenerateReceiptPdfTest {
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
-        byte[] pdf = new FileInputStream("src/test/resources/output.pdf").readAllBytes();
-        when(pdfEngineResponse.getPdf()).thenReturn(pdf);
+        when(pdfEngineResponse.getTempDirectoryPath()).thenReturn(tempDirectoryDebtor.getAbsolutePath());
+        when(pdfEngineResponse.getTempPdfPath()).thenReturn(outputPdfDebtor.getAbsolutePath());
+
         when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);
 
         GenerateReceiptPdfTest.setMock(PdfEngineClientImpl.class, pdfEngineClient);
@@ -164,7 +191,7 @@ class GenerateReceiptPdfTest {
         when(blobStorageResponse.getStatusCode()).thenReturn(com.microsoft.azure.functions.HttpStatus.CREATED.value());
         when(blobStorageResponse.getDocumentUrl()).thenReturn(VALID_BLOB_URL);
         when(blobStorageResponse.getDocumentName()).thenReturn(VALID_BLOB_NAME);
-        when(blobClient.savePdfToBlobStorage(eq(pdf), anyString())).thenReturn(blobStorageResponse);
+        when(blobClient.savePdfToBlobStorage(any(), anyString())).thenReturn(blobStorageResponse);
 
         GenerateReceiptPdfTest.setMock(ReceiptBlobClientImpl.class, blobClient);
 
@@ -190,7 +217,7 @@ class GenerateReceiptPdfTest {
     }
 
     @Test
-    void runOkReceiptStatusRetrySameFiscalCode() throws ReceiptNotFoundException, IOException {
+    void runOkReceiptStatusRetrySameFiscalCode() throws ReceiptNotFoundException {
         Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
         when(context.getLogger()).thenReturn(logger);
 
@@ -206,8 +233,9 @@ class GenerateReceiptPdfTest {
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
-        byte[] pdf = new FileInputStream("src/test/resources/output.pdf").readAllBytes();
-        when(pdfEngineResponse.getPdf()).thenReturn(pdf);
+        when(pdfEngineResponse.getTempDirectoryPath()).thenReturn(tempDirectoryDebtor.getAbsolutePath());
+        when(pdfEngineResponse.getTempPdfPath()).thenReturn(outputPdfDebtor.getAbsolutePath());
+
         when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);
 
         GenerateReceiptPdfTest.setMock(PdfEngineClientImpl.class, pdfEngineClient);
@@ -216,7 +244,7 @@ class GenerateReceiptPdfTest {
         when(blobStorageResponse.getStatusCode()).thenReturn(com.microsoft.azure.functions.HttpStatus.CREATED.value());
         when(blobStorageResponse.getDocumentUrl()).thenReturn(VALID_BLOB_URL);
         when(blobStorageResponse.getDocumentName()).thenReturn(VALID_BLOB_NAME);
-        when(blobClient.savePdfToBlobStorage(eq(pdf), anyString())).thenReturn(blobStorageResponse);
+        when(blobClient.savePdfToBlobStorage(any(), anyString())).thenReturn(blobStorageResponse);
 
         GenerateReceiptPdfTest.setMock(ReceiptBlobClientImpl.class, blobClient);
 
@@ -242,7 +270,54 @@ class GenerateReceiptPdfTest {
     }
 
     @Test
-    void runKoInvalidBizEventMessage(){
+    void runDiscarded() throws ReceiptNotFoundException {
+        Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
+        when(context.getLogger()).thenReturn(logger);
+
+        ReceiptCosmosClientImpl cosmosClient = mock(ReceiptCosmosClientImpl.class);
+        receiptMock.setStatus(ReceiptStatusType.NOT_QUEUE_SENT);
+        EventData eventDataMock = mock(EventData.class);
+
+        receiptMock.setEventData(eventDataMock);
+        when(cosmosClient.getReceiptDocument(any())).thenReturn(receiptMock);
+
+        GenerateReceiptPdfTest.setMock(ReceiptCosmosClientImpl.class, cosmosClient);
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<String> requeueMessage = (OutputBinding<String>) spy(OutputBinding.class);
+
+        // test execution
+        assertDoesNotThrow(() -> function.processGenerateReceipt(BIZ_EVENT_MESSAGE_SAME_CF, documentdb, requeueMessage, context));
+
+        verify(documentdb, never()).setValue(any());
+    }
+
+    @Test
+    void runReceiptNotFound() throws ReceiptNotFoundException {
+        Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
+        when(context.getLogger()).thenReturn(logger);
+
+        ReceiptCosmosClientImpl cosmosClient = mock(ReceiptCosmosClientImpl.class);
+        when(cosmosClient.getReceiptDocument(any()))
+                .thenThrow(ReceiptNotFoundException.class);
+        GenerateReceiptPdfTest.setMock(ReceiptCosmosClientImpl.class, cosmosClient);
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<String> requeueMessage = (OutputBinding<String>) spy(OutputBinding.class);
+
+        // test execution
+        Assertions.assertThrows(ReceiptNotFoundException.class,
+                () -> function.processGenerateReceipt(BIZ_EVENT_MESSAGE_SAME_CF, documentdb, requeueMessage, context));
+    }
+
+    @Test
+    void runKoInvalidBizEventMessage() {
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
 
@@ -385,7 +460,7 @@ class GenerateReceiptPdfTest {
     }
 
     @Test
-    void runKoBlobStorage() throws ReceiptNotFoundException, IOException {
+    void runKoBlobStorage() throws ReceiptNotFoundException {
         Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
         when(context.getLogger()).thenReturn(logger);
 
@@ -401,15 +476,16 @@ class GenerateReceiptPdfTest {
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
-        byte[] pdf = new FileInputStream("src/test/resources/output.pdf").readAllBytes();
-        when(pdfEngineResponse.getPdf()).thenReturn(pdf);
+        when(pdfEngineResponse.getTempDirectoryPath()).thenReturn(tempDirectoryDebtor.getAbsolutePath());
+        when(pdfEngineResponse.getTempPdfPath()).thenReturn(outputPdfDebtor.getAbsolutePath());
+
         when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);
 
         GenerateReceiptPdfTest.setMock(PdfEngineClientImpl.class, pdfEngineClient);
 
         ReceiptBlobClientImpl blobClient = mock(ReceiptBlobClientImpl.class);
         when(blobStorageResponse.getStatusCode()).thenReturn(com.microsoft.azure.functions.HttpStatus.FORBIDDEN.value());
-        when(blobClient.savePdfToBlobStorage(eq(pdf), anyString())).thenReturn(blobStorageResponse);
+        when(blobClient.savePdfToBlobStorage(any(), anyString())).thenReturn(blobStorageResponse);
 
         GenerateReceiptPdfTest.setMock(ReceiptBlobClientImpl.class, blobClient);
 
@@ -450,15 +526,16 @@ class GenerateReceiptPdfTest {
 
         PdfEngineClientImpl pdfEngineClient = mock(PdfEngineClientImpl.class);
         when(pdfEngineResponse.getStatusCode()).thenReturn(HttpStatus.SC_OK);
-        byte[] pdf = new FileInputStream("src/test/resources/output.pdf").readAllBytes();
-        when(pdfEngineResponse.getPdf()).thenReturn(pdf);
+        when(pdfEngineResponse.getTempDirectoryPath()).thenReturn(tempDirectoryDebtor.getAbsolutePath());
+        when(pdfEngineResponse.getTempPdfPath()).thenReturn(outputPdfDebtor.getAbsolutePath());
+
         when(pdfEngineClient.generatePDF(any())).thenReturn(pdfEngineResponse);
 
         GenerateReceiptPdfTest.setMock(PdfEngineClientImpl.class, pdfEngineClient);
 
         ReceiptBlobClientImpl blobClient = mock(ReceiptBlobClientImpl.class);
         when(blobStorageResponse.getStatusCode()).thenReturn(com.microsoft.azure.functions.HttpStatus.FORBIDDEN.value());
-        when(blobClient.savePdfToBlobStorage(eq(pdf), anyString())).thenReturn(blobStorageResponse);
+        when(blobClient.savePdfToBlobStorage(any(), anyString())).thenReturn(blobStorageResponse);
 
         GenerateReceiptPdfTest.setMock(ReceiptBlobClientImpl.class, blobClient);
 

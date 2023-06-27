@@ -58,7 +58,7 @@ class ReceiptBlobClientImplTest {
 
         ReceiptBlobClientImpl receiptBlobClient = new ReceiptBlobClientImpl(mockServiceClient);
 
-        BlobStorageResponse response = receiptBlobClient.savePdfToBlobStorage(InputStream.nullInputStream().readAllBytes(), "filename");
+        BlobStorageResponse response = receiptBlobClient.savePdfToBlobStorage(InputStream.nullInputStream(), "filename");
 
         assertEquals(HttpStatus.CREATED.value(), response.getStatusCode());
         assertEquals(VALID_BLOB_NAME, response.getDocumentName());
@@ -90,7 +90,7 @@ class ReceiptBlobClientImplTest {
 
         ReceiptBlobClientImpl receiptBlobClient = new ReceiptBlobClientImpl(mockServiceClient);
 
-        BlobStorageResponse response = receiptBlobClient.savePdfToBlobStorage(InputStream.nullInputStream().readAllBytes(), "filename");
+        BlobStorageResponse response = receiptBlobClient.savePdfToBlobStorage(InputStream.nullInputStream(), "filename");
 
         assertEquals(HttpStatus.NO_CONTENT.value(), response.getStatusCode());
         assertNull(response.getDocumentName());

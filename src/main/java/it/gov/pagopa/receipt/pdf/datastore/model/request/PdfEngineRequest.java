@@ -4,6 +4,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.io.InputStream;
+
 /**
  * Model class for PDF engine request
  */
@@ -12,7 +14,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class PdfEngineRequest {
 
-    byte[] template;
+    InputStream template;
     String data;
     boolean applySignature;
 }

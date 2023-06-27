@@ -84,6 +84,23 @@ class BizEventToReceiptTest {
     }
 
     @Test
+    void runDiscarded() {
+        Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
+        when(context.getLogger()).thenReturn(logger);
+
+        List<BizEvent> bizEventItems = new ArrayList<>();
+        bizEventItems.add(generateNotDoneBizEvent());
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+
+        // test execution
+        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
+
+        verify(documentdb, never()).setValue(any());
+    }
+
+    @Test
     void errorAddingMessageToQueue() {
         Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
         when(context.getLogger()).thenReturn(logger);
@@ -171,6 +188,14 @@ class BizEventToReceiptTest {
         item.setPayer(payer);
         item.setDebtor(debtor);
         item.setTransactionDetails(transactionDetails);
+
+        return item;
+    }
+
+    private BizEvent generateNotDoneBizEvent(){
+        BizEvent item = new BizEvent();
+
+        item.setEventStatus(BizEventStatusType.NA);
 
         return item;
     }

@@ -132,7 +132,7 @@ public class GenerateReceiptPdf {
                 boolean generateOnlyDebtor = payerCF == null || payerCF.equals(debtorCF);
 
                 //Generate and save PDF
-                PdfGeneration pdfGeneration = service.handlePdfsGeneration(generateOnlyDebtor, receipt, bizEvent, debtorCF, payerCF);
+                PdfGeneration pdfGeneration = service.handlePdfsGeneration(generateOnlyDebtor, receipt, bizEvent, debtorCF, payerCF, logger);
 
                 //Write PDF blob storage metadata on receipt
                 numberOfSavedPdfs = service.addPdfsMetadataToReceipt(receipt, pdfGeneration);
