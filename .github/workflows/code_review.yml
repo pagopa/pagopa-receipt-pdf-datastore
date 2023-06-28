@@ -67,6 +67,7 @@ jobs:
        shell: bash
        id: run_service_docker
        run: |
+         echo "CICO = ${CICO}"
          cd ./docker
          chmod +x ./run_docker.sh
          ./run_docker.sh local
