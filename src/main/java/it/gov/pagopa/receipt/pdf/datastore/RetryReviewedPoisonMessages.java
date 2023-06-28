@@ -84,7 +84,7 @@ public class RetryReviewedPoisonMessages {
 
                     itemsDone.add(receiptError);
 
-              }
+               }
 
         }
 
