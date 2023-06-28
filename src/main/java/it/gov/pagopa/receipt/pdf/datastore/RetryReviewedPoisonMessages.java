@@ -60,29 +60,31 @@ public class RetryReviewedPoisonMessages {
         //Retrieve receipt data from biz-event
         for (ReceiptError receiptError : items) {
 
-            try {
                 //Process only errors in status REVIEWED
                 if (receiptError != null && receiptError.getStatus().equals(ReceiptErrorStatusType.REVIEWED)) {
-                    Response<SendMessageResult> sendMessageResult =
+
+                    try {
+
+                        Response<SendMessageResult> sendMessageResult =
                             queueService.sendMessageToQueue(receiptError.getMessagePayload());
-                    if (sendMessageResult.getStatusCode() != HttpStatus.CREATED.value()) {
-                        throw new UnableToQueueException("Unable to queue due to error: " +
-                                sendMessageResult.getStatusCode());
+                        if (sendMessageResult.getStatusCode() != HttpStatus.CREATED.value()) {
+                            throw new UnableToQueueException("Unable to queue due to error: " +
+                                    sendMessageResult.getStatusCode());
+                        }
+
+                        receiptError.setStatus(ReceiptErrorStatusType.REQUEUED);
+
+                    } catch (Exception e) {
+                        //Error info
+                        msg = String.format("Error to process receiptError with id %s", receiptError.getId());
+                        logger.log(Level.SEVERE, msg, e);
+                        receiptError.setMessageError(e.getMessage());
+                        receiptError.setStatus(ReceiptErrorStatusType.TO_REVIEW);
                     }
 
-                    receiptError.setStatus(ReceiptErrorStatusType.REQUEUED);
+                    itemsDone.add(receiptError);
 
-                }
-
-            } catch (Exception e) {
-                //Error info
-                msg = String.format("Error to process receiptError with id %s", receiptError.getId());
-                logger.log(Level.SEVERE, msg, e);
-                receiptError.setMessageError(e.getMessage());
-                receiptError.setStatus(ReceiptErrorStatusType.TO_REVIEW);
-            }
-
-            itemsDone.add(receiptError);
+              }
 
         }
 
