@@ -1,11 +1,13 @@
 const { CosmosClient } = require("@azure/cosmos");
 const {createEvent} = require("./common");
 
-const cosmos_db_conn_string  = process.env.BIZEVENTS_COSMOS_CONN_STRING || "";
+const cosmos_db_conn_string  = process.env.BIZEVENTS_COSMOS_CONN_STRING;
 const databaseId             = process.env.BIZ_EVENT_COSMOS_DB_NAME;  // es. db
 const containerId            = process.env.BIZ_EVENT_COSMOS_DB_CONTAINER_NAME; // es. biz-events
 
-console.log("CONN STRING" + cosmos_db_conn_string)
+console.log("CONN STRING " + cosmos_db_conn_string)
+console.log("CONN STRING " + process.env.RECEIPTS_STORAGE_CONN_STRING)
+console.log("CONN STRING " + process.env.RECEIPTS_COSMOS_CONN_STRING)
 const client = new CosmosClient(cosmos_db_conn_string);
 const container = client.database(databaseId).container(containerId);
 
