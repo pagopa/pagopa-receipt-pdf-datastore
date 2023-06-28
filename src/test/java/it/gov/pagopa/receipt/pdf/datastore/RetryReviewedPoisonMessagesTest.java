@@ -20,6 +20,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.lang.reflect.Field;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
@@ -77,7 +78,8 @@ class RetryReviewedPoisonMessagesTest {
                 Collections.singletonList(receiptError), errorToCosmos, context));
 
         verify(serviceMock).sendMessageToQueue(messageCaptor.capture());
-        BizEvent captured = ObjectMapperUtils.mapString(messageCaptor.getValue(), BizEvent.class);
+        BizEvent captured = ObjectMapperUtils.mapString(new String(Base64.getMimeDecoder()
+                .decode(messageCaptor.getValue())), BizEvent.class);
         assertEquals("variant062-a330-4210-9c67-465b7d641aVS", captured.getId());
 
         verify(errorToCosmos).setValue(documentCaptor.capture());
@@ -132,7 +134,8 @@ class RetryReviewedPoisonMessagesTest {
                 Collections.singletonList(receiptError), errorToCosmos, context));
 
         verify(serviceMock).sendMessageToQueue(messageCaptor.capture());
-        BizEvent captured = ObjectMapperUtils.mapString(messageCaptor.getValue(), BizEvent.class);
+        BizEvent captured = ObjectMapperUtils.mapString(new String(Base64.getMimeDecoder().decode(
+                messageCaptor.getValue())), BizEvent.class);
         assertEquals("variant062-a330-4210-9c67-465b7d641aVS", captured.getId());
 
         verify(errorToCosmos).setValue(documentCaptor.capture());

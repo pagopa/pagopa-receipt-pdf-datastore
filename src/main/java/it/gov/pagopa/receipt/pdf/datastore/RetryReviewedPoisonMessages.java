@@ -12,6 +12,7 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptErr
 import it.gov.pagopa.receipt.pdf.datastore.exception.UnableToQueueException;
 
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -66,7 +67,8 @@ public class RetryReviewedPoisonMessages {
                     try {
 
                         Response<SendMessageResult> sendMessageResult =
-                            queueService.sendMessageToQueue(receiptError.getMessagePayload());
+                            queueService.sendMessageToQueue(Base64.getMimeEncoder().encodeToString(
+                                    receiptError.getMessagePayload().getBytes()));
                         if (sendMessageResult.getStatusCode() != HttpStatus.CREATED.value()) {
                             throw new UnableToQueueException("Unable to queue due to error: " +
                                     sendMessageResult.getStatusCode());

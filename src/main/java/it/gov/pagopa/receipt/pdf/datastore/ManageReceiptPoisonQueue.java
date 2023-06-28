@@ -17,6 +17,8 @@ import it.gov.pagopa.receipt.pdf.datastore.exception.UnableToQueueException;
 import it.gov.pagopa.receipt.pdf.datastore.utils.ObjectMapperUtils;
 
 import java.time.LocalDateTime;
+import java.util.Base64;
+import java.util.Objects;
 import java.util.logging.Logger;
 
 /**
@@ -81,7 +83,9 @@ public class ManageReceiptPoisonQueue {
             ReceiptQueueClientImpl queueService = ReceiptQueueClientImpl.getInstance();
             try {
                 Response<SendMessageResult> sendMessageResult =
-                        queueService.sendMessageToQueue(ObjectMapperUtils.writeValueAsString(bizEvent));
+                        queueService.sendMessageToQueue(Base64.getMimeEncoder()
+                                .encodeToString(Objects.requireNonNull(ObjectMapperUtils.writeValueAsString(bizEvent))
+                                        .getBytes()));
                 if (sendMessageResult.getStatusCode() != HttpStatus.CREATED.value()) {
                     throw new UnableToQueueException("Unable to queue due to error: " +
                             sendMessageResult.getStatusCode());
