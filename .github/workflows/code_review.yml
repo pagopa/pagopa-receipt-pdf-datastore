@@ -67,7 +67,6 @@ jobs:
        shell: bash
        id: run_service_docker
        run: |
-         echo ${{secrets.RECEIPTS_STORAGE_CONN_STRING_BASE64}} | base64 --decode
          cd ./docker
          chmod +x ./run_docker.sh
          ./run_docker.sh ${{( github.event.inputs == null && 'dev') || inputs.environment }}
@@ -79,9 +78,9 @@ jobs:
          export SUBKEY=${{ secrets.SUBKEY }}
          export CANARY=${{ inputs.canary }}
          export CUCUMBER_PUBLISH_TOKEN=${{ secrets.CUCUMBER_PUBLISH_TOKEN }}
-         export RECEIPTS_STORAGE_CONN_STRING=${{ secrets.RECEIPTS_STORAGE_CONN_STRING }}
-         export RECEIPTS_COSMOS_CONN_STRING=${{ secrets.RECEIPTS_COSMOS_CONN_STRING }}
-         export BIZEVENTS_COSMOS_CONN_STRING=${{ secrets.BIZEVENTS_COSMOS_CONN_STRING }}
+         export RECEIPTS_STORAGE_CONN_STRING="${{ secrets.RECEIPTS_STORAGE_CONN_STRING }}"
+         export RECEIPTS_COSMOS_CONN_STRING="${{ secrets.RECEIPTS_COSMOS_CONN_STRING }}"
+         export BIZEVENTS_COSMOS_CONN_STRING="${{ secrets.BIZEVENTS_COSMOS_CONN_STRING }}"
 
          cd ./integration-test
          chmod +x ./run_integration_test.sh

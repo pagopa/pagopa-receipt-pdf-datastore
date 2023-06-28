@@ -70,6 +70,12 @@ resource "azurerm_role_assignment" "environment_key_vault" {
   principal_id         = azuread_service_principal.action.object_id
 }
 
+resource "azurerm_role_assignment" "environment_key_vault_domain" {
+  scope                = data.azurerm_key_vault.key_vault_domain.id
+  role_definition_name = "Reader"
+  principal_id         = azuread_service_principal.action.object_id
+}
+
 resource "azurerm_role_assignment" "environment_receipts_sa_role" {
   scope                = data.azurerm_storage_account.receipts_sa.id
   role_definition_name = "Contributor"
@@ -90,6 +96,17 @@ resource "azurerm_role_assignment" "environment_bizevents_cosmos_role" {
 
 resource "azurerm_key_vault_access_policy" "ad_group_policy" {
   key_vault_id = data.azurerm_key_vault.key_vault.id
+
+  tenant_id = data.azurerm_client_config.current.tenant_id
+  object_id = azuread_service_principal.action.object_id
+
+  key_permissions         = ["Get", "List", "Import" ]
+  secret_permissions      = ["Get", "List"]
+  storage_permissions     = []
+  certificate_permissions = []
+}
+resource "azurerm_key_vault_access_policy" "ad_group_policy_domain" {
+  key_vault_id = data.azurerm_key_vault.key_vault_domain.id
 
   tenant_id = data.azurerm_client_config.current.tenant_id
   object_id = azuread_service_principal.action.object_id

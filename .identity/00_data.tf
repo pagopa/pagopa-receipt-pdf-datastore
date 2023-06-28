@@ -12,6 +12,12 @@ data "github_organization_teams" "all" {
   summary_only    = true
 }
 
+data "azurerm_key_vault" "key_vault_domain" {
+
+  name = "pagopa-${var.env_short}-${local.domain}-kv"
+  resource_group_name = "pagopa-${var.env_short}-${local.domain}-sec-rg"
+}
+
 data "azurerm_key_vault" "key_vault" {
 
   name = "pagopa-${var.env_short}-kv"
