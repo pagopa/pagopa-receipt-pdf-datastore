@@ -46,7 +46,7 @@ done
 
 
 stack_name=$(cd .. && basename "$PWD")
-docker build -t pagopa-pdf-engine ../
+docker build -t receipt-pdf-datastore ../
 docker run -d -p 60486:80 --name="${stack_name}" receipt-pdf-datastore
 
 # waiting the containers
