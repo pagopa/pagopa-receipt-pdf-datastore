@@ -41,19 +41,20 @@ for line in $(echo $secret | jq -r '. | to_entries[] | select(.key) | "\(.key)=\
 #      echo "Set secret env ${array[0]}"
 #      echo "::add-mask::$value"
 #      echo AFM_SA_CONNECTION_STRING=$value >> $GITHUB_ENV
-#  fi 
+#  fi
 done
 
 
 stack_name=$(cd .. && basename "$PWD")
-docker build -t receipt-pdf-datastore ../
-docker run -d -p 60486:80 --name="${stack_name}" receipt-pdf-datastore
+docker compose -p "${stack_name}" up -d --remove-orphans --force-recreate --build
+#docker build -t receipt-pdf-datastore ../
+# docker run -d -p 60486:80 --name="${stack_name}" receipt-pdf-datastore
 
 # waiting the containers
 printf 'Waiting for the service'
 attempt_counter=0
 max_attempts=50
-until $(curl -s http://localhost:60486/info); do
+until [ $(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/info) -ne 200 ]; do
     if [ ${attempt_counter} -eq ${max_attempts} ];then
       echo "Max attempts reached"
       exit 1
