@@ -1,13 +1,15 @@
 package it.gov.pagopa.receipt.pdf.datastore;
 
+import com.azure.core.http.rest.Response;
+import com.azure.storage.queue.models.SendMessageResult;
 import com.microsoft.azure.functions.ExecutionContext;
+import com.microsoft.azure.functions.HttpStatus;
 import com.microsoft.azure.functions.OutputBinding;
-import com.microsoft.azure.functions.annotation.CosmosDBTrigger;
-import com.microsoft.azure.functions.annotation.ExponentialBackoffRetry;
-import com.microsoft.azure.functions.annotation.FunctionName;
-import com.microsoft.azure.functions.annotation.QueueOutput;
+import com.microsoft.azure.functions.annotation.*;
+import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptQueueClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReceiptError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptErrorStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.exception.UnableToQueueException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,44 +41,52 @@ public class RetryReviewedPoisonMessages {
                     maxItemsPerInvocation = 100,
                     connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING")
             List<ReceiptError> items,
-            @QueueOutput(
-                    name = "QueueReceiptWaitingForGenOutput",
-                    queueName = "%RECEIPT_QUEUE_TOPIC%",
-                    connection = "RECEIPT_QUEUE_CONN_STRING")
-            OutputBinding<List<String>> requeueMessage,
+            @CosmosDBOutput(
+                    name = "ReceiptMessageErrorsDatastoreOutput",
+                    databaseName = "db",
+                    collectionName = "receipts-message-errors",
+                    connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING")
+            OutputBinding<List<ReceiptError>> documentdb,
             final ExecutionContext context) {
 
-        List<String> itemsDone = new ArrayList<>();
+        List<ReceiptError> itemsDone = new ArrayList<>();
         Logger logger = context.getLogger();
 
-        String msg = String.format("BizEventEnrichment stat %s function - num events triggered %d", context.getInvocationId(), items.size());
+        String msg = String.format("documentCaptorValue stat %s function - num errors reviewed triggered %d", context.getInvocationId(), items.size());
         logger.info(msg);
-        int discarder = 0;
+
+        ReceiptQueueClientImpl queueService = ReceiptQueueClientImpl.getInstance();
 
         //Retrieve receipt data from biz-event
         for (ReceiptError receiptError : items) {
 
             try {
-                //Process only biz-event in status DONE
+                //Process only errors in status REVIEWED
                 if (receiptError != null && receiptError.getStatus().equals(ReceiptErrorStatusType.REVIEWED)) {
-                    itemsDone.add(receiptError.getMessagePayload());
-                } else {
-                    //Discard biz events not in status DONE
-                    discarder++;
-                }
-            } catch (Exception e) {
-                discarder++;
+                    Response<SendMessageResult> sendMessageResult =
+                            queueService.sendMessageToQueue(receiptError.getMessagePayload());
+                    if (sendMessageResult.getStatusCode() != HttpStatus.CREATED.value()) {
+                        throw new UnableToQueueException("Unable to queue due to error: " +
+                                sendMessageResult.getStatusCode());
+                    }
 
+                    receiptError.setStatus(ReceiptErrorStatusType.REQUEUED);
+
+                }
+
+            } catch (Exception e) {
                 //Error info
                 msg = String.format("Error to process receiptError with id %s", receiptError.getId());
                 logger.log(Level.SEVERE, msg, e);
+                receiptError.setMessageError(e.getMessage());
+                receiptError.setStatus(ReceiptErrorStatusType.TO_REVIEW);
             }
+
+            itemsDone.add(receiptError);
+
         }
 
-        //Save receipts data to CosmosDB
-        if (!itemsDone.isEmpty()) {
-            requeueMessage.setValue(itemsDone);
-        }
+        documentdb.setValue(itemsDone);
 
     }
 }

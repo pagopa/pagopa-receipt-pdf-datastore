@@ -1,26 +1,22 @@
 package it.gov.pagopa.receipt.pdf.datastore;
 
+import com.azure.core.http.rest.Response;
+import com.azure.storage.queue.models.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.ExecutionContext;
+import com.microsoft.azure.functions.HttpStatus;
 import com.microsoft.azure.functions.OutputBinding;
-import com.microsoft.azure.functions.annotation.*;
-import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
+import com.microsoft.azure.functions.annotation.CosmosDBOutput;
+import com.microsoft.azure.functions.annotation.FunctionName;
+import com.microsoft.azure.functions.annotation.QueueTrigger;
+import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptQueueClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReceiptError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptErrorStatusType;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
-import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventNotValidException;
-import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
-import it.gov.pagopa.receipt.pdf.datastore.model.PdfGeneration;
-import it.gov.pagopa.receipt.pdf.datastore.service.GenerateReceiptPdfService;
+import it.gov.pagopa.receipt.pdf.datastore.exception.UnableToQueueException;
 import it.gov.pagopa.receipt.pdf.datastore.utils.ObjectMapperUtils;
-import org.apache.http.HttpStatus;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -34,7 +30,6 @@ public class ManageReceiptPoisonQueue {
      *
      * @param errorMessage payload of the message sent to the poison queue, triggering the function
      * @param documentdb      Output binding that will insert/update data with the errors not to retry within the function
-     * @param requeueMessage  Output binding that will re-send the messages considered valid for retry
      * @param context         Function context
      */
     @FunctionName("ManageReceiptPoisonQueueProcessor")
@@ -49,13 +44,8 @@ public class ManageReceiptPoisonQueue {
                     databaseName = "db",
                     collectionName = "receipts-message-errors",
                     connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING")
-            OutputBinding<List<ReceiptError>> documentdb,
-            @QueueOutput(
-                    name = "QueueReceiptWaitingForGenOutput",
-                    queueName = "%RECEIPT_QUEUE_TOPIC%",
-                    connection = "RECEIPT_QUEUE_CONN_STRING")
-            OutputBinding<String> requeueMessage,
-            final ExecutionContext context) throws BizEventNotValidException, ReceiptNotFoundException {
+            OutputBinding<ReceiptError> documentdb,
+            final ExecutionContext context) {
 
         Logger logger = context.getLogger();
         BizEvent bizEvent = null;
@@ -87,11 +77,31 @@ public class ManageReceiptPoisonQueue {
         }
 
         if (retriableContent) {
-            requeueMessage.setValue(ObjectMapperUtils.writeValueAsString(bizEvent));
+            bizEvent.setAttemptedPoisonRetry(true);
+            ReceiptQueueClientImpl queueService = ReceiptQueueClientImpl.getInstance();
+            try {
+                Response<SendMessageResult> sendMessageResult =
+                        queueService.sendMessageToQueue(ObjectMapperUtils.writeValueAsString(bizEvent));
+                if (sendMessageResult.getStatusCode() != HttpStatus.CREATED.value()) {
+                    throw new UnableToQueueException("Unable to queue due to error: " +
+                            sendMessageResult.getStatusCode());
+                }
+            } catch (Exception e) {
+                logMsg = String.format("ManageReceiptPoisonQueueProcessor function called at %s met an error when attempting" +
+                                "to requeue BizEvent wit id %s, saving to cosmos for review. Call Error %s",
+                        LocalDateTime.now(), bizEvent.getId(), e.getMessage());
+                logger.info(logMsg);
+                saveToDocument(errorMessage, documentdb);
+            }
         } else {
-            documentdb.setValue(Collections.singletonList(ReceiptError.builder().messagePayload(errorMessage)
-                    .status(ReceiptErrorStatusType.TO_REVIEW).build()));
+            saveToDocument(errorMessage, documentdb);
         }
 
     }
+
+    private void saveToDocument(String errorMessage, OutputBinding<ReceiptError> documentdb) {
+        documentdb.setValue(ReceiptError.builder().messagePayload(errorMessage)
+                .status(ReceiptErrorStatusType.TO_REVIEW).build());
+    }
+
 }
