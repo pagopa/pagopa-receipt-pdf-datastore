@@ -67,9 +67,6 @@ jobs:
        shell: bash
        id: run_service_docker
        run: |
-         echo "ciao"
-         echo "${{secrets.CICO}}" | base64 --decode
-         echo "CICO = ${CICO}"
          cd ./docker
          chmod +x ./run_docker.sh
          ./run_docker.sh local
