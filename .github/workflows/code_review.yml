@@ -67,6 +67,7 @@ jobs:
        shell: bash
        id: run_service_docker
        run: |
+         echo ${{secrets.RECEIPTS_STORAGE_CONN_STRING_BASE64}} | base64 --decode
          cd ./docker
          chmod +x ./run_docker.sh
          ./run_docker.sh ${{( github.event.inputs == null && 'dev') || inputs.environment }}
