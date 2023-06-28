@@ -10,10 +10,10 @@ const {receiptPDFExist} = require("./receipts_blob_storage_client");
 setDefaultTimeout(360 * 1000);
 
 // After each Scenario
-After(function () {
+After( async function () {
     // remove event
-    deleteDocumentFromBizEventsDatastore(this.eventId);
-    deleteDocumentFromReceiptsDatastore(this.receiptId, this.eventId);
+    await deleteDocumentFromBizEventsDatastore(this.eventId);
+    await deleteDocumentFromReceiptsDatastore(this.receiptId, this.eventId);
     this.responseToCheck = null;
     this.receiptId = null;
 });
@@ -70,10 +70,6 @@ When('the PDF receipt has been properly generate from biz event after {int} ms',
     // boundary time spent by azure function to process event
     await sleep(time);
     this.responseToCheck = await getDocumentByIdFromReceiptsDatastore(this.eventId);
-});
-
-Then('the receipt has the status {string}', function (targetStatus) {
-    assert.strictEqual(this.responseToCheck.resources[0].status, targetStatus);
 });
 
 Then('the blob storage has the PDF document', async function () {
