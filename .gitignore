@@ -38,3 +38,5 @@ local.settings.json
 bin/
 obj/
 **/.terraform
+**/node_modules
+yarn.lock
