@@ -2,7 +2,9 @@
 
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=pagopa_pagopa-receipt-pdf-datastore&metric=alert_status)](https://sonarcloud.io/dashboard?id=pagopa_pagopa-receipt-pdf-datastore)
 
-Java Azure Function that exposes REST API to generate a PDFA/2a document based on the provided data and HTML template.
+Java Azure Functions that ingest a biz-event, save a receipt object on a CosmosDB,
+then generate a PDF based on specific templates using the [PDF-engine function](https://github.com/pagopa/pagopa-pdf-engine) and
+save it on an Azure Blob Storage.
 
 ---
 
@@ -71,6 +73,7 @@ then replace env variables with correct values
 | `RECEIPT_QUEUE_TOPIC`             | Topic name of the Receipt Queue                                                  |                         |
 | `RECEIPT_QUEUE_DELAY`             | Delay, in seconds, the visibility of the messages in the queue                   |           "1"           |
 | `RECEIPT_QUEUE_MAX_RETRY`         | Number of retry to complete the generation process before being tagged as FAILED |           "5"           |
+| `RECEIPT_QUEUE_TOPIC-POISON`      | Topic name of the Receipt Poison Queue                                           |                         |
 | `BLOB_STORAGE_ACCOUNT_ENDPOINT`   | Endpoint to the Receipt Blob Storage                                             |                         |
 | `BLOB_STORAGE_CONN_STRING`        | Connection string of the Receipt Blob Storage                                    |                         |
 | `BLOB_STORAGE_CONTAINER_NAME`     | Container name of the Receipt container in the Blob Storage                      |                         |

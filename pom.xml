@@ -5,7 +5,7 @@
 
     <groupId>it.gov.pagopa.receipt</groupId>
     <artifactId>receipt-pdf-datastore</artifactId>
-    <version>0.2.0</version>
+    <version>0.3.1-PRDP-56-feat-update-with-poison-queue-management</version>
     <packaging>jar</packaging>
 
     <name>pagopa-receipt-pdf-datastore</name>
