@@ -38,7 +38,7 @@ public class ManageReceiptPoisonQueue {
     public void processManageReceiptPoisonQueue(
             @QueueTrigger(
                     name = "QueueReceiptWaitingForGenPoison",
-                    queueName = "%RECEIPT_QUEUE_TOPIC-POISON%",
+                    queueName = "%RECEIPT_QUEUE_TOPIC_POISON%",
                     connection = "RECEIPT_QUEUE_CONN_STRING")
             String errorMessage,
             @CosmosDBOutput(
