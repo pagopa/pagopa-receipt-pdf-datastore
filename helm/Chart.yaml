@@ -2,8 +2,8 @@ apiVersion: v2
 name: pagopa-functions-template
 description: Microservice description
 type: application
-version: 0.14.0
-appVersion: 0.3.0-PRDP-56-feat-update-with-poison-queue-management
+version: 0.15.0
+appVersion: 0.3.1-PRDP-56-feat-update-with-poison-queue-management
 dependencies:
   - name: microservice-chart
     version: 1.21.0
