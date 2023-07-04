@@ -35,6 +35,9 @@ public class ManageReceiptPoisonQueue {
      * @param context         Function context
      */
     @FunctionName("ManageReceiptPoisonQueueProcessor")
+    //Deprecated annotation for queue function, to be managed through host.json,
+    // see https://learn.microsoft.com/en-us/azure/azure-functions/functions-bindings-storage-queue?tabs=in-process%2Cextensionv5%2Cextensionv3&pivots=programming-language-java#host-json
+    //@ExponentialBackoffRetry(maxRetryCount = 5, minimumInterval = "500", maximumInterval = "5000")
     public void processManageReceiptPoisonQueue(
             @QueueTrigger(
                     name = "QueueReceiptWaitingForGenPoison",

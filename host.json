@@ -9,12 +9,12 @@
       "routePrefix": ""
     },
     "queues": {
-      "maxPollingInterval": "00:00:02",
+      "maxPollingInterval": "00:01:00",
       "visibilityTimeout" : "00:00:30",
       "batchSize": 16,
       "maxDequeueCount": 5,
       "newBatchThreshold": 8,
-      "messageEncoding": "none"
+      "messageEncoding": "base64"
     }
   },
   "logging": {
