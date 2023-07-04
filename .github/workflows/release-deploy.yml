@@ -84,7 +84,7 @@ jobs:
     steps:
       - name: Make Release
         id: release
-        uses: pagopa/github-actions-template/maven-release@v1.5.2
+        uses: pagopa/github-actions-template/maven-release@v1.5.4
         with:
           semver: ${{ needs.setup.outputs.semver }}
           github_token: ${{ secrets.BOT_TOKEN_GITHUB }}
@@ -99,7 +99,7 @@ jobs:
     steps:
       - name: Build and Push
         id: semver
-        uses: pagopa/github-actions-template/ghcr-build-push@v1.4.2
+        uses: pagopa/github-actions-template/ghcr-build-push@v1.5.4
         with:
           branch: ${{ github.ref_name}}
           github_token: ${{ secrets.GITHUB_TOKEN }}

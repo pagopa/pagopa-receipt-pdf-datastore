@@ -38,4 +38,7 @@ public class BizEvent {
 	private Boolean eventTriggeredBySchedule = Boolean.FALSE;
 	private String eventErrorMessage;
 
+	@Builder.Default
+	private Boolean attemptedPoisonRetry = Boolean.FALSE;
+
 }
