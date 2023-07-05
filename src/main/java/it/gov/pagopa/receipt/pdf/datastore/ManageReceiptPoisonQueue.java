@@ -52,7 +52,7 @@ public class ManageReceiptPoisonQueue {
         Logger logger = context.getLogger();
         BizEvent bizEvent = null;
 
-        String logMsg = String.format("ManageReceiptPoisonQueueProcessor function called at %s for payload %s",
+        String logMsg = String.format("[ManageReceiptPoisonQueueProcessor] function called at %s for payload %s",
                 LocalDateTime.now(), errorMessage);
         logger.info(logMsg);
         boolean retriableContent = false;
@@ -91,19 +91,20 @@ public class ManageReceiptPoisonQueue {
                             sendMessageResult.getStatusCode());
                 }
             } catch (Exception e) {
-                logMsg = String.format("ManageReceiptPoisonQueueProcessor function called at %s met an error when attempting" +
+                logMsg = String.format("[ManageReceiptPoisonQueueProcessor] error for the function called at %s when attempting" +
                                 "to requeue BizEvent wit id %s, saving to cosmos for review. Call Error %s",
                         LocalDateTime.now(), bizEvent.getId(), e.getMessage());
                 logger.info(logMsg);
-                saveToDocument(errorMessage, documentdb);
+                saveToDocument(errorMessage, documentdb, logger);
             }
         } else {
-            saveToDocument(errorMessage, documentdb);
+            saveToDocument(errorMessage, documentdb, logger);
         }
 
     }
 
-    private void saveToDocument(String errorMessage, OutputBinding<ReceiptError> documentdb) {
+    private void saveToDocument(String errorMessage, OutputBinding<ReceiptError> documentdb, Logger logger) {
+        logger.info("[ManageReceiptPoisonQueueProcessor] saving new entry to the retry error to review");
         documentdb.setValue(ReceiptError.builder().messagePayload(errorMessage)
                 .status(ReceiptErrorStatusType.TO_REVIEW).build());
     }

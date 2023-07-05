@@ -91,7 +91,7 @@ public class GenerateReceiptPdf {
         List<Receipt> itemsToNotify = new ArrayList<>();
         Logger logger = context.getLogger();
 
-        String logMsg = String.format("GenerateReceipt function called at %s", LocalDateTime.now());
+        String logMsg = String.format("[GenerateReceiptProcess] function called at %s for bizEvent with id %s", LocalDateTime.now(), bizEvent.getId());
         logger.info(logMsg);
 
         //Retrieve receipt's data from CosmosDB
@@ -103,7 +103,7 @@ public class GenerateReceiptPdf {
         try {
             receipt = receiptCosmosClient.getReceiptDocument(bizEvent.getId());
         } catch (ReceiptNotFoundException e) {
-            String errorMsg = String.format("Receipt not found with the biz-event id %s", bizEvent.getId());
+            String errorMsg = String.format("[GenerateReceiptProcess] Receipt not found with the biz-event id %s", bizEvent.getId());
             throw new ReceiptNotFoundException(errorMsg, e);
         }
 
@@ -119,10 +119,6 @@ public class GenerateReceiptPdf {
 
             GenerateReceiptPdfService service = new GenerateReceiptPdfService();
 
-            logMsg = String.format("GenerateReceipt function called at %s for event with id %s and status %s",
-                    LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
-            logger.info(logMsg);
-
             //Verify if debtor's and payer's fiscal code are the same
             String debtorCF = receipt.getEventData().getDebtorFiscalCode();
             String payerCF = receipt.getEventData().getPayerFiscalCode();
@@ -130,8 +126,21 @@ public class GenerateReceiptPdf {
             if (debtorCF != null || payerCF != null) {
                 boolean generateOnlyDebtor = payerCF == null || payerCF.equals(debtorCF);
 
+                String log = String.format(
+                        "[GenerateReceiptProcess] Generating pdf for Receipt with id %s",
+                        receipt.getId()
+                );
+                logger.info(log);
+
                 //Generate and save PDF
                 PdfGeneration pdfGeneration = service.handlePdfsGeneration(generateOnlyDebtor, receipt, bizEvent, debtorCF, payerCF, logger);
+
+
+                log = String.format(
+                        "[GenerateReceiptProcess] Saving pdf for Receipt with id %s to the blob storage",
+                        receipt.getId()
+                );
+                logger.info(log);
 
                 //Write PDF blob storage metadata on receipt
                 numberOfSavedPdfs = service.addPdfsMetadataToReceipt(receipt, pdfGeneration);
@@ -161,22 +170,23 @@ public class GenerateReceiptPdf {
             itemsToNotify.add(receipt);
 
         } else {
-            discarder++;
+            String errorMessage = String.format(
+                    "[GenerateReceiptProcess] Receipt with id %s not in INSERTED or RETRY",
+                    receipt.getId()
+            );
+            logger.info(errorMessage);
         }
 
-        //Discarder info
-        logMsg = String.format("itemsDone stat %s function - %d number of events in discarder  ", context.getInvocationId(), discarder);
-        logger.info(logMsg);
 
-        //Call to blob storage info
-        logMsg = String.format("itemsDone stat %s function - number of PDFs sent to the receipt blob storage %d", context.getInvocationId(), numberOfSavedPdfs);
-        logger.info(logMsg);
-
-        //Call to datastore info
-        logMsg = String.format("GenerateReceiptProcess stat %s function - number of receipt inserted on the datastore %d", context.getInvocationId(), itemsToNotify.size());
-        logger.info(logMsg);
 
         if (!itemsToNotify.isEmpty()) {
+            String log = String.format(
+                    "[GenerateReceiptProcess] Receipt with id %s being saved with status %s and with %s pdfs",
+                    receipt.getId(),
+                    receipt.getStatus(),
+                    numberOfSavedPdfs
+            );
+            logger.info(log);
             documentdb.setValue(itemsToNotify);
         }
     }

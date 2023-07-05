@@ -61,7 +61,7 @@ public class BizEventToReceipt {
         List<Receipt> itemsDone = new ArrayList<>();
         Logger logger = context.getLogger();
 
-        String msg = String.format("BizEventEnrichment stat %s function - num events triggered %d", context.getInvocationId(), items.size());
+        String msg = String.format("BizEventToReceipt stat %s function - num events triggered %d", context.getInvocationId(), items.size());
         logger.info(msg);
         int discarder = 0;
 
@@ -88,7 +88,7 @@ public class BizEventToReceipt {
 
                     receipt.setEventData(eventData);
 
-                    String message = String.format("BizEventToReceipt function called at %s for event with id %s and status %s",
+                    String message = String.format("[BizEventToReceiptProcessor] function called at %s for event with id %s and status %s",
                             LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
                     logger.info(message);
 
@@ -106,7 +106,7 @@ public class BizEventToReceipt {
                 discarder++;
 
                 //Error info
-                msg = String.format("Error to process event with id %s", bizEvent.getId());
+                msg = String.format("[BizEventToReceiptProcessor] Error to process event with id %s", bizEvent.getId());
                 logger.log(Level.SEVERE, msg, e);
             }
         }

@@ -43,7 +43,6 @@ public class BizEventToReceiptService {
             }
         } catch (Exception e) {
             handleError(receipt);
-
             //Error info
             String msg = String.format("Error sending to queue biz-event message with id %s", bizEvent.getId());
             logger.log(Level.SEVERE, msg, e);
@@ -57,7 +56,9 @@ public class BizEventToReceiptService {
      */
     public void handleError(Receipt receipt) {
         receipt.setStatus(ReceiptStatusType.NOT_QUEUE_SENT);
-        ReasonError reasonError = new ReasonError(ReasonErrorCode.ERROR_QUEUE.getCode(), "Error sending message to queue");
+        ReasonError reasonError = new ReasonError(ReasonErrorCode.ERROR_QUEUE.getCode(),
+                String.format("[BizEventToReceiptService] Error sending message to queue" +
+                        " for receipt with eventId %s", receipt.getEventId()));
         receipt.setReasonErr(reasonError);
     }
 
