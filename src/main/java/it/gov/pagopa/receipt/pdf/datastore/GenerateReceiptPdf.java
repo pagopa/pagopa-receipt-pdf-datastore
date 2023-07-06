@@ -91,7 +91,8 @@ public class GenerateReceiptPdf {
         List<Receipt> itemsToNotify = new ArrayList<>();
         Logger logger = context.getLogger();
 
-        String logMsg = String.format("GenerateReceipt function called at %s", LocalDateTime.now());
+        String logMsg = String.format("[%s] function called at %s for bizEvent with id %s",
+                context.getFunctionName(), LocalDateTime.now(), bizEvent.getId());
         logger.info(logMsg);
 
         //Retrieve receipt's data from CosmosDB
@@ -103,11 +104,11 @@ public class GenerateReceiptPdf {
         try {
             receipt = receiptCosmosClient.getReceiptDocument(bizEvent.getId());
         } catch (ReceiptNotFoundException e) {
-            String errorMsg = String.format("Receipt not found with the biz-event id %s", bizEvent.getId());
+            String errorMsg = String.format("[%s] Receipt not found with the biz-event id %s",
+                    context.getFunctionName(), bizEvent.getId());
             throw new ReceiptNotFoundException(errorMsg, e);
         }
 
-        int discarder = 0;
         int numberOfSavedPdfs = 0;
 
         //Verify receipt status
@@ -119,10 +120,6 @@ public class GenerateReceiptPdf {
 
             GenerateReceiptPdfService service = new GenerateReceiptPdfService();
 
-            logMsg = String.format("GenerateReceipt function called at %s for event with id %s and status %s",
-                    LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
-            logger.info(logMsg);
-
             //Verify if debtor's and payer's fiscal code are the same
             String debtorCF = receipt.getEventData().getDebtorFiscalCode();
             String payerCF = receipt.getEventData().getPayerFiscalCode();
@@ -130,8 +127,23 @@ public class GenerateReceiptPdf {
             if (debtorCF != null || payerCF != null) {
                 boolean generateOnlyDebtor = payerCF == null || payerCF.equals(debtorCF);
 
+                String log = String.format(
+                        "[%s] Generating pdf for Receipt with id %s",
+                        context.getFunctionName(),
+                        receipt.getEventId()
+                );
+                logger.info(log);
+
                 //Generate and save PDF
                 PdfGeneration pdfGeneration = service.handlePdfsGeneration(generateOnlyDebtor, receipt, bizEvent, debtorCF, payerCF, logger);
+
+
+                log = String.format(
+                        "[%s] Saving pdf for Receipt with id %s to the blob storage",
+                        context.getFunctionName(),
+                        receipt.getEventId()
+                );
+                logger.info(log);
 
                 //Write PDF blob storage metadata on receipt
                 numberOfSavedPdfs = service.addPdfsMetadataToReceipt(receipt, pdfGeneration);
@@ -142,8 +154,9 @@ public class GenerateReceiptPdf {
 
             } else {
                 String errorMessage = String.format(
-                        "Error processing receipt with id %s : both debtor's and payer's fiscal code are null",
-                        receipt.getId()
+                        "[%s] Error processing receipt with id %s : both debtor's and payer's fiscal code are null",
+                        context.getFunctionName(),
+                        receipt.getEventId()
                 );
 
                 service.handleErrorGeneratingReceipt(
@@ -160,23 +173,26 @@ public class GenerateReceiptPdf {
             //Add receipt to items to be saved to CosmosDB
             itemsToNotify.add(receipt);
 
-        } else {
-            discarder++;
+        } else if (receipt != null) {
+            String errorMessage = String.format(
+                    "[%s] Receipt with id %s not in INSERTED or RETRY",
+                    context.getFunctionName(),
+                    receipt.getEventId()
+            );
+            logger.info(errorMessage);
         }
 
-        //Discarder info
-        logMsg = String.format("itemsDone stat %s function - %d number of events in discarder  ", context.getInvocationId(), discarder);
-        logger.info(logMsg);
 
-        //Call to blob storage info
-        logMsg = String.format("itemsDone stat %s function - number of PDFs sent to the receipt blob storage %d", context.getInvocationId(), numberOfSavedPdfs);
-        logger.info(logMsg);
-
-        //Call to datastore info
-        logMsg = String.format("GenerateReceiptProcess stat %s function - number of receipt inserted on the datastore %d", context.getInvocationId(), itemsToNotify.size());
-        logger.info(logMsg);
 
         if (!itemsToNotify.isEmpty()) {
+            String log = String.format(
+                    "[%s] Receipt with id %s being saved with status %s and with %s pdfs",
+                    context.getFunctionName(),
+                    receipt.getEventId(),
+                    receipt.getStatus(),
+                    numberOfSavedPdfs
+            );
+            logger.info(log);
             documentdb.setValue(itemsToNotify);
         }
     }

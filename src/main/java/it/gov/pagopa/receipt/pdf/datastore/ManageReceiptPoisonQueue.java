@@ -29,6 +29,9 @@ public class ManageReceiptPoisonQueue {
     /**
      * This function will be invoked when a Queue trigger occurs
      *
+     * Checks the queue message if it is a valid BizEvent event, and does not contains the attemptedPoisonRetry at true
+     * If it is valid and not retried updates the field and sends it back to the original queue
+     * If invalid or already retried saves on CosmosDB receipt-message-errors collection
      *
      * @param errorMessage payload of the message sent to the poison queue, triggering the function
      * @param documentdb      Output binding that will insert/update data with the errors not to retry within the function
@@ -52,29 +55,29 @@ public class ManageReceiptPoisonQueue {
         Logger logger = context.getLogger();
         BizEvent bizEvent = null;
 
-        String logMsg = String.format("ManageReceiptPoisonQueueProcessor function called at %s for payload %s",
-                LocalDateTime.now(), errorMessage);
+        String logMsg = String.format("[%s] function called at %s for payload %s",
+                context.getFunctionName(), LocalDateTime.now(), errorMessage);
         logger.info(logMsg);
         boolean retriableContent = false;
 
         try {
             //attempt to Map queue bizEventMessage to BizEvent
             bizEvent = ObjectMapperUtils.mapString(errorMessage, BizEvent.class);
-            logMsg = String.format("ManageReceiptPoisonQueueProcessor function called at %s recognized as valid BizEvent" +
+            logMsg = String.format("[%s] function called at %s recognized as valid BizEvent" +
                             "with id %s",
-                    LocalDateTime.now(), bizEvent.getId());
+                    context.getFunctionName(), LocalDateTime.now(), bizEvent.getId());
             logger.info(logMsg);
             if (bizEvent.getAttemptedPoisonRetry()) {
-                logMsg = String.format("ManageReceiptPoisonQueueProcessor function called at %s for event with id %s" +
+                logMsg = String.format("[%s] function called at %s for event with id %s" +
                                 " has ingestion already retried, sending to review",
-                        LocalDateTime.now(), bizEvent.getId());
+                        context.getFunctionName(), LocalDateTime.now(), bizEvent.getId());
                 logger.info(logMsg);
             } else {
                 retriableContent = true;
             }
         } catch (JsonProcessingException e) {
-            logMsg = String.format("ManageReceiptPoisonQueueProcessor received parsing error in the" +
-                    " function called at %s for payload %s", LocalDateTime.now(), errorMessage);
+            logMsg = String.format("[%s] received parsing error in the" +
+                    " function called at %s for payload %s", context.getFunctionName(), LocalDateTime.now(), errorMessage);
             logger.info(logMsg);
         }
 
@@ -91,19 +94,22 @@ public class ManageReceiptPoisonQueue {
                             sendMessageResult.getStatusCode());
                 }
             } catch (Exception e) {
-                logMsg = String.format("ManageReceiptPoisonQueueProcessor function called at %s met an error when attempting" +
+                logMsg = String.format("[%s] error for the function called at %s when attempting" +
                                 "to requeue BizEvent wit id %s, saving to cosmos for review. Call Error %s",
-                        LocalDateTime.now(), bizEvent.getId(), e.getMessage());
+                        context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), e.getMessage());
                 logger.info(logMsg);
-                saveToDocument(errorMessage, documentdb);
+                saveToDocument(context, errorMessage, documentdb, logger);
             }
         } else {
-            saveToDocument(errorMessage, documentdb);
+            saveToDocument(context, errorMessage, documentdb, logger);
         }
 
     }
 
-    private void saveToDocument(String errorMessage, OutputBinding<ReceiptError> documentdb) {
+    private void saveToDocument(ExecutionContext context, String errorMessage,
+                                OutputBinding<ReceiptError> documentdb, Logger logger) {
+        logger.info(String.format("[%s] saving new entry to the retry error to review with payload %s",
+                context.getFunctionName(), errorMessage));
         documentdb.setValue(ReceiptError.builder().messagePayload(errorMessage)
                 .status(ReceiptErrorStatusType.TO_REVIEW).build());
     }
