@@ -9,6 +9,13 @@ const { receiptPDFExist } = require("./receipts_blob_storage_client");
 // set timeout for Hooks function, it allows to wait for long task
 setDefaultTimeout(360 * 1000);
 
+// initialize variables
+this.eventId = null;
+this.responseToCheck = null;
+this.receiptId = null;
+this.errorReceiptId = null;
+this.event = null;
+
 // After each Scenario
 After(async function () {
     // remove event
@@ -21,6 +28,7 @@ After(async function () {
     if (this.errorReceiptId != null) {
         await deleteDocumentFromErrorReceiptsDatastore(this.errorReceiptId);
     }
+    this.eventId = null;
     this.responseToCheck = null;
     this.receiptId = null;
     this.errorReceiptId = null;
@@ -43,8 +51,9 @@ When('biz event has been properly stored into receipt datastore after {int} ms w
 });
 
 Then('the receipts datastore returns the receipt', async function () {
-    assert.strictEqual(this.responseToCheck.resources.length, 1);
+    assert.notStrictEqual(this.responseToCheck.resources.length, 0);
     this.receiptId = this.responseToCheck.resources[0].id;
+    assert.strictEqual(this.responseToCheck.resources.length, 1);
 });
 
 Then('the receipt has eventId {string}', function (targetId) {
@@ -100,8 +109,9 @@ When('the biz event has been properly stored on receipt-message-error datastore 
 });
 
 Then('the receipt-message-error datastore returns the error receipt', async function () {
-    assert.strictEqual(this.responseToCheck.resources.length, 1);
+    assert.notStrictEqual(this.responseToCheck.resources.length, 0);
     this.errorReceiptId = this.responseToCheck.resources[0].id;
+    assert.strictEqual(this.responseToCheck.resources.length, 1);
 });
 
 Then('the error receipt has the status {string}', function (targetStatus) {
