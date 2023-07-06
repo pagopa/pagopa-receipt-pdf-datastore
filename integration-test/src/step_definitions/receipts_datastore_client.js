@@ -1,8 +1,8 @@
 const { CosmosClient } = require("@azure/cosmos");
-const {createReceipt, createEventForPoisonQueue} = require("./common");
+const { createReceipt, createEventForPoisonQueue } = require("./common");
 
 const cosmos_db_conn_string     = process.env.RECEIPTS_COSMOS_CONN_STRING || "";
-const databaseId                = process.env.RECEIPT_COSMOS_DB_NAME; 
+const databaseId                = process.env.RECEIPT_COSMOS_DB_NAME;
 const receiptContainerId        = process.env.RECEIPT_COSMOS_DB_CONTAINER_NAME;
 const errorReceiptContainerId   = process.env.RECEIPT_MESSAGE_ERRORS_COSMOS_DB_CONTAINER_NAME;
 
@@ -12,14 +12,14 @@ const errorReceiptContainer = client.database(databaseId).container(errorReceipt
 
 async function getDocumentByIdFromReceiptsDatastore(id) {
     return await receiptContainer.items
-                    .query({
-                        query: "SELECT * from c WHERE c.eventId=@eventId",
-                        parameters: [{ name: "@eventId", value: id }]
-                      })
-                    .fetchNext();
+        .query({
+            query: "SELECT * from c WHERE c.eventId=@eventId",
+            parameters: [{ name: "@eventId", value: id }]
+        })
+        .fetchNext();
 }
 
-async function createDocumentInReceiptsDatastore(id) {  
+async function createDocumentInReceiptsDatastore(id) {
     let event = createReceipt(id);
     try {
         return await receiptContainer.items.create(event);
@@ -42,14 +42,14 @@ async function deleteDocumentFromReceiptsDatastore(id, partitionKey) {
 
 async function getDocumentByMessagePayloadFromErrorReceiptsDatastore(messagePayload) {
     return await errorReceiptContainer.items
-                    .query({
-                        query: "SELECT * from c WHERE c.messagePayload=@messagePayload",
-                        parameters: [{ name: "@messagePayload", value: JSON.stringify(messagePayload) }]
-                      })
-                    .fetchNext();
+        .query({
+            query: "SELECT * from c WHERE c.messagePayload=@messagePayload",
+            parameters: [{ name: "@messagePayload", value: JSON.stringify(messagePayload) }]
+        })
+        .fetchNext();
 }
 
-async function createDocumentInErrorReceiptsDatastore(id) {  
+async function createDocumentInErrorReceiptsDatastore(id) {
     let event = createEventForPoisonQueue(id, true);
     let payload = {
         "messagePayload": JSON.stringify(event),

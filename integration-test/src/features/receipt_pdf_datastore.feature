@@ -35,7 +35,7 @@ Feature: All about payment events consumed by Azure functions receipt-pdf-datast
 
   Scenario: a biz event stored on receipt-message-error datastore is enqueued on receipt queue that trigger the PDF receipt generation
     Given a receipt with id "receipt-datastore-test-id-5" stored into receipt datastore
-    And a error receipt with id "receipt-datastore-test-id-5" stored into receipt-message-error datastore
+    And a error receipt with id "receipt-datastore-test-id-5" stored into receipt-message-error datastore with status REVIEWED
     When the PDF receipt has been properly generate from biz event after 20000 ms
     Then the receipts datastore returns the receipt
     And the receipt has eventId "receipt-datastore-test-id-5"

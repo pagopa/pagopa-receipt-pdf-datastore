@@ -1,9 +1,9 @@
 function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+	return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function createEvent(id) {
-    let json_event = {
+	let json_event = {
 		"id": id,
 		"version": "2",
 		"complete": "false",
@@ -91,8 +91,8 @@ function createEvent(id) {
 		"_etag": "\"2400e1e4-0000-0d00-0000-6397ccb60000\"",
 		"_attachments": "attachments/",
 		"_ts": 1670892726
-    }
-    return json_event
+	}
+	return json_event
 }
 
 function createEventForQueue(id) {
@@ -100,7 +100,7 @@ function createEventForQueue(id) {
 }
 
 function createEventForPoisonQueue(id, attemptedPoisonRetry) {
-    let json_event = {
+	let json_event = {
 		"id": id,
 		"version": "2",
 		"complete": "false",
@@ -183,12 +183,12 @@ function createEventForPoisonQueue(id, attemptedPoisonRetry) {
 			}
 		],
 		"eventStatus": "DONE"
-    }
-    return json_event
+	}
+	return json_event
 }
 
 function createReceipt(id) {
-    let receipt = 
+	let receipt =
 	{
 		"eventId": id,
 		"eventData": {
@@ -204,9 +204,9 @@ function createReceipt(id) {
 		"_attachments": "attachments/",
 		"_ts": 1686838865
 	}
-    return receipt
+	return receipt
 }
 
 module.exports = {
-    createEvent, sleep, createReceipt, createEventForPoisonQueue, createEventForQueue
+	createEvent, sleep, createReceipt, createEventForPoisonQueue, createEventForQueue
 }
