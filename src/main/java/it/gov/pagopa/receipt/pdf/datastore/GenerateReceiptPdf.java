@@ -91,7 +91,8 @@ public class GenerateReceiptPdf {
         List<Receipt> itemsToNotify = new ArrayList<>();
         Logger logger = context.getLogger();
 
-        String logMsg = String.format("[GenerateReceiptProcess] function called at %s for bizEvent with id %s", LocalDateTime.now(), bizEvent.getId());
+        String logMsg = String.format("[%s] function called at %s for bizEvent with id %s",
+                context.getFunctionName(), LocalDateTime.now(), bizEvent.getId());
         logger.info(logMsg);
 
         //Retrieve receipt's data from CosmosDB
@@ -103,11 +104,11 @@ public class GenerateReceiptPdf {
         try {
             receipt = receiptCosmosClient.getReceiptDocument(bizEvent.getId());
         } catch (ReceiptNotFoundException e) {
-            String errorMsg = String.format("[GenerateReceiptProcess] Receipt not found with the biz-event id %s", bizEvent.getId());
+            String errorMsg = String.format("[%s] Receipt not found with the biz-event id %s",
+                    context.getFunctionName(), bizEvent.getId());
             throw new ReceiptNotFoundException(errorMsg, e);
         }
 
-        int discarder = 0;
         int numberOfSavedPdfs = 0;
 
         //Verify receipt status
@@ -127,8 +128,9 @@ public class GenerateReceiptPdf {
                 boolean generateOnlyDebtor = payerCF == null || payerCF.equals(debtorCF);
 
                 String log = String.format(
-                        "[GenerateReceiptProcess] Generating pdf for Receipt with id %s",
-                        receipt.getId()
+                        "[%s] Generating pdf for Receipt with id %s",
+                        context.getFunctionName(),
+                        receipt.getEventId()
                 );
                 logger.info(log);
 
@@ -137,8 +139,9 @@ public class GenerateReceiptPdf {
 
 
                 log = String.format(
-                        "[GenerateReceiptProcess] Saving pdf for Receipt with id %s to the blob storage",
-                        receipt.getId()
+                        "[%s] Saving pdf for Receipt with id %s to the blob storage",
+                        context.getFunctionName(),
+                        receipt.getEventId()
                 );
                 logger.info(log);
 
@@ -151,8 +154,9 @@ public class GenerateReceiptPdf {
 
             } else {
                 String errorMessage = String.format(
-                        "Error processing receipt with id %s : both debtor's and payer's fiscal code are null",
-                        receipt.getId()
+                        "[%s] Error processing receipt with id %s : both debtor's and payer's fiscal code are null",
+                        context.getFunctionName(),
+                        receipt.getEventId()
                 );
 
                 service.handleErrorGeneratingReceipt(
@@ -169,10 +173,11 @@ public class GenerateReceiptPdf {
             //Add receipt to items to be saved to CosmosDB
             itemsToNotify.add(receipt);
 
-        } else {
+        } else if (receipt != null) {
             String errorMessage = String.format(
-                    "[GenerateReceiptProcess] Receipt with id %s not in INSERTED or RETRY",
-                    receipt.getId()
+                    "[%s] Receipt with id %s not in INSERTED or RETRY",
+                    context.getFunctionName(),
+                    receipt.getEventId()
             );
             logger.info(errorMessage);
         }
@@ -181,8 +186,9 @@ public class GenerateReceiptPdf {
 
         if (!itemsToNotify.isEmpty()) {
             String log = String.format(
-                    "[GenerateReceiptProcess] Receipt with id %s being saved with status %s and with %s pdfs",
-                    receipt.getId(),
+                    "[%s] Receipt with id %s being saved with status %s and with %s pdfs",
+                    context.getFunctionName(),
+                    receipt.getEventId(),
                     receipt.getStatus(),
                     numberOfSavedPdfs
             );
