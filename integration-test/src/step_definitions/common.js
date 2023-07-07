@@ -1,9 +1,9 @@
 function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+	return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function createEvent(id, status) {
-    let json_event = {
+function createEvent(id) {
+	let json_event = {
 		"id": id,
 		"version": "2",
 		"complete": "false",
@@ -84,23 +84,28 @@ function createEvent(id, status) {
 				"remittanceInformation": "TARI Comune EC_TE"
 			}
 		],
-		"eventStatus": status,
+		"eventStatus": "DONE",
 		"eventRetryEnrichmentCount": 0,
 		"_rid": "sMJGAMl3HZnqAQAAAAAAAA==",
 		"_self": "dbs/sMJGAA==/colls/sMJGAMl3HZk=/docs/sMJGAMl3HZnqAQAAAAAAAA==/",
 		"_etag": "\"2400e1e4-0000-0d00-0000-6397ccb60000\"",
 		"_attachments": "attachments/",
 		"_ts": 1670892726
-    }
-    return json_event
+	}
+	return json_event
 }
 
 function createEventForQueue(id) {
-    let json_event = {
+	return createEventForPoisonQueue(id, false);
+}
+
+function createEventForPoisonQueue(id, attemptedPoisonRetry) {
+	let json_event = {
 		"id": id,
 		"version": "2",
 		"complete": "false",
 		"receiptId": "0095ff2bafec4bc0a719c9bf003aee4a",
+		"attemptedPoisonRetry": attemptedPoisonRetry,
 		"missingInfo": [
 			"idPaymentManager",
 			"psp.pspPartitaIVA",
@@ -178,12 +183,12 @@ function createEventForQueue(id) {
 			}
 		],
 		"eventStatus": "DONE"
-    }
-    return json_event
+	}
+	return json_event
 }
 
 function createReceipt(id) {
-    let receipt = 
+	let receipt =
 	{
 		"eventId": id,
 		"eventData": {
@@ -199,9 +204,9 @@ function createReceipt(id) {
 		"_attachments": "attachments/",
 		"_ts": 1686838865
 	}
-    return receipt
+	return receipt
 }
 
 module.exports = {
-    createEvent, sleep, createEventForQueue, createReceipt
+	createEvent, sleep, createReceipt, createEventForPoisonQueue, createEventForQueue
 }

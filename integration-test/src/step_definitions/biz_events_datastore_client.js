@@ -1,26 +1,24 @@
 const { CosmosClient } = require("@azure/cosmos");
-const {createEvent} = require("./common");
+const { createEvent } = require("./common");
 
-const cosmos_db_conn_string  = process.env.BIZEVENTS_COSMOS_CONN_STRING;
-const databaseId             = process.env.BIZ_EVENT_COSMOS_DB_NAME;  // es. db
-const containerId            = process.env.BIZ_EVENT_COSMOS_DB_CONTAINER_NAME; // es. biz-events
-
-console.log(`cosmos_db_conn_string > ${cosmos_db_conn_string}`);
+const cosmos_db_conn_string = process.env.BIZEVENTS_COSMOS_CONN_STRING;
+const databaseId            = process.env.BIZ_EVENT_COSMOS_DB_NAME;  // es. db
+const containerId           = process.env.BIZ_EVENT_COSMOS_DB_CONTAINER_NAME; // es. biz-events
 
 const client = new CosmosClient(cosmos_db_conn_string);
 const container = client.database(databaseId).container(containerId);
 
 async function getDocumentByIdFromBizEventsDatastore(id) {
     return await container.items
-                    .query({
-                        query: "SELECT * from c WHERE c.id=@id",
-                        parameters: [{ name: "@id", value: id }]
-                      })
-                    .fetchAll();
+        .query({
+            query: "SELECT * from c WHERE c.id=@id",
+            parameters: [{ name: "@id", value: id }]
+        })
+        .fetchAll();
 }
 
-async function createDocumentInBizEventsDatastore(id, status) {
-    let event = createEvent(id, status);
+async function createDocumentInBizEventsDatastore(id) {
+    let event = createEvent(id);
     try {
         return await container.items.create(event);
     } catch (err) {
