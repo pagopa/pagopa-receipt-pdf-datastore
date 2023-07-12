@@ -44,10 +44,10 @@ microservice-chart:
   resources:
     requests:
       memory: "1512Mi"
-      cpu: "0.5"
+      cpu: "0.75"
     limits:
       memory: "1512Mi"
-      cpu: "0.5"
+      cpu: "0.75"
   autoscaling:
     enable: true
     minReplica: 1
@@ -59,7 +59,12 @@ microservice-chart:
         metadata:
           # Required
           type: Utilization # Allowed types are 'Utilization' or 'AverageValue'
-          value: "75"
+          value: "70"
+      - type: memory
+        metadata:
+          # Required
+          type: Utilization # Allowed types are 'Utilization' or 'AverageValue'
+          value: "70"
   envConfig:
     WEBSITE_SITE_NAME: "pagopareceiptpdfdatastore" # required to show cloud role name in application insights
     FUNCTIONS_WORKER_RUNTIME: "java"
