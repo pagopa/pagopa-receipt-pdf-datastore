@@ -4,7 +4,7 @@ microservice-chart:
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-receipt-pdf-datastore
-    tag: "0.3.5-feat_update_helm_resources"
+    tag: "0.3.6-feat_update_helm_resources"
     pullPolicy: Always
   # https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script.WebHost/Controllers/HostController.cs
   livenessProbe:
@@ -108,7 +108,7 @@ microservice-chart:
       create: true
       image:
         repository: ghcr.io/pagopa/pagopa-receipt-pdf-datastore
-        tag: "0.3.5-feat_update_helm_resources"
+        tag: "0.3.6-feat_update_helm_resources"
         pullPolicy: Always
       envConfig:
       envSecret:
