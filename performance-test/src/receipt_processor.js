@@ -53,7 +53,10 @@ function postcondition(id) {
 		"Assert published receipt is in the datastore and with status GENERATED": (_r) => r.json()._count === 1 r.json()[0].status === "GENERATED",
 	}, tag);
 
+	let receiptId = r.json()[0].id;
+
 	deleteDocument(cosmosDBURI, databaseID, containerID, cosmosDBPrimaryKey, id);
+	deleteDocument(receiptCosmosDBURI, receiptDatabaseID, receiptContainerID, receiptCosmosDBPrimaryKey, receiptId);
 }
 
 export default function() {
