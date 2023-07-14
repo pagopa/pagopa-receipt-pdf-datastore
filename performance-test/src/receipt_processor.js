@@ -2,8 +2,7 @@ import { sleep, check } from 'k6';
 import { SharedArray } from 'k6/data';
 
 import { randomString, createEvent } from './modules/common.js'
-import { getDocumentById, deleteDocument } from "./modules/datastore_client.js";
-import { publishEvent } from "./modules/event_hub_client.js";
+import { createDocument, deleteDocument, getDocumentByEventId } from "./modules/datastore_client.js";
 
 export let options = JSON.parse(open(__ENV.TEST_TYPE));
 
@@ -50,7 +49,7 @@ function postcondition(id) {
 	console.log("GetDocumentByEventId call, Status " + r.status);
 
 	check(r, {
-		"Assert published receipt is in the datastore and with status GENERATED": (_r) => r.json()._count === 1 r.json()[0].status === "GENERATED",
+		"Assert published receipt is in the datastore and with status GENERATED": (_r) => r.json()._count === 1 && r.json()[0].status === "GENERATED",
 	}, tag);
 
 	let receiptId = r.json()[0].id;

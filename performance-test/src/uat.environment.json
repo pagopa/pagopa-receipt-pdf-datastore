@@ -1,13 +1,13 @@
 {
   "environment": [
     {
-      "env": "uat",
-      "cosmosDBURI": "https://pagopa-u-weu-bizevents-ds-cosmos-account.documents.azure.com:443/",
-      "databaseID":"db",
-      "containerID":"biz-events",
-      "eventHubNamespace":"pagopa-u-evh-ns01",
-      "eventHubName":"nodo-dei-pagamenti-biz-evt",
-      "eventHubSender":"pagopa-biz-evt-tx",
+      "env": "local",
+      "bizEventCosmosDBURI": "https://pagopa-u-weu-bizevents-ds-cosmos-account.documents.azure.com:443/",
+      "bizEventDatabaseID":"db",
+      "bizEventContainerID":"biz-events",
+      "receiptCosmosDBURI": "https://pagopa-u-weu-receipts-ds-cosmos-account.documents.azure.com:443/",
+      "receiptDatabaseID":"db",
+      "receiptContainerID":"receipts",
       "processTime":"3"
     }
   ]

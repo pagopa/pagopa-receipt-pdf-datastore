@@ -65,7 +65,7 @@ export function createDocument(cosmosDbURI, databaseId, containerId, authorizati
 	let resourceType = "docs"
 	let date = new Date().toUTCString();
 	// request method (a.k.a. verb) to build text for authorization token
-  let verb = 'post';
+    let verb = 'post';
 	let authorizationToken = getCosmosDBAuthorizationToken(verb,authorizationType,authorizationVersion,authorizationSignature,resourceType,resourceLink,date);
 
 	let partitionKeyArray = "[\""+pk+"\"]";
@@ -73,11 +73,7 @@ export function createDocument(cosmosDbURI, databaseId, containerId, authorizati
 
 	const body = JSON.stringify(document);
 
-	let params = {
-		headers: headers,
-	};
-
-  return http.post(cosmosDbURI+path, body, params)
+    return http.post(cosmosDbURI+path, body, {headers});
 }
 
 export function deleteDocument(cosmosDbURI, databaseId, containerId, authorizationSignature, id) {

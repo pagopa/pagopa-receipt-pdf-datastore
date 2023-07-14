@@ -41,7 +41,7 @@ export function createEvent(id) {
 		"debtor": {
 			"fullName": "John Doe",
 			"entityUniqueIdentifierType": "F",
-            "entityUniqueIdentifierValue": randomString(11, "0123456789")
+            "entityUniqueIdentifierValue": randomString(11, "0123456789"),
 			"streetName": "street",
 			"civicNumber": "12",
 			"postalCode": "89020",
@@ -93,12 +93,7 @@ export function createEvent(id) {
             }
 		],
 		"eventStatus": "DONE",
-		"eventRetryEnrichmentCount": 0,
-		"_rid": "sMJGAMl3HZnqAQAAAAAAAA==",
-		"_self": "dbs/sMJGAA==/colls/sMJGAMl3HZk=/docs/sMJGAMl3HZnqAQAAAAAAAA==/",
-		"_etag": "\"2400e1e4-0000-0d00-0000-6397ccb60000\"",
-		"_attachments": "attachments/",
-		"_ts": 1670892726
+		"eventRetryEnrichmentCount": 0
 	}
     return json_event;
 }
