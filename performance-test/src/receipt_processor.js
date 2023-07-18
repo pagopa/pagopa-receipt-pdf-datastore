@@ -14,6 +14,7 @@ const varsArray = new SharedArray('vars', function() {
 });
 // workaround to use shared array (only array should be used)
 const vars = varsArray[0];
+const cosmosServiceURI = `${vars.cosmosServiceURI}`;
 const bizEventCosmosDBURI = `${vars.bizEventCosmosDBURI}`;
 const bizEventDatabaseID = `${vars.bizEventDatabaseID}`;
 const bizEventContainerID = `${vars.bizEventContainerID}`;
@@ -64,7 +65,8 @@ export default function() {
 	const id = randomString(15, "abcdefghijklmnopqrstuvwxyz0123456789");
 	let event = createEvent(id);
 
-	let r = createDocument(bizEventCosmosDBURI, bizEventDatabaseID, bizEventContainerID, bizEventCosmosDBPrimaryKey, event, id);
+	//	let r = createDocument(bizEventCosmosDBURI, bizEventDatabaseID, bizEventContainerID, bizEventCosmosDBPrimaryKey, event, id);
+	let r = createDocument(cosmosServiceURI, bizEventCosmosDBURI, bizEventDatabaseID, bizEventContainerID, bizEventCosmosDBPrimaryKey, event);
 
 	console.log("PublishEvent call, Status " + r.status);
 

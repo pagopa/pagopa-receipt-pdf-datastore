@@ -58,6 +58,7 @@ export function getDocumentByEventId(cosmosDbURI, databaseId, containerId, autho
     return http.post(cosmosDbURI+path, body, {headers});
 }
 
+/*
 export function createDocument(cosmosDbURI, databaseId, containerId, authorizationSignature, document, pk) {
 	let path = `dbs/${databaseId}/colls/${containerId}/docs`;
 	let resourceLink = `dbs/${databaseId}/colls/${containerId}`;
@@ -75,6 +76,27 @@ export function createDocument(cosmosDbURI, databaseId, containerId, authorizati
 
     return http.post(cosmosDbURI+path, body, {headers});
 }
+*/
+
+export function createDocument(cosmosServiceURI, cosmosDbURI, databaseId, containerId, authorizationSignature, document) {
+    let headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+    }
+
+	const body = {
+        endpoint: cosmosDbURI,
+        databaseId: databaseId,
+        containerId: containerId,
+        key: authorizationSignature,
+        document: document
+    };
+
+    let response = http.post(`${cosmosServiceURI}/createDocument`, JSON.stringify(body), {headers});
+
+    return response;
+}
+
 
 export function deleteDocument(cosmosDbURI, databaseId, containerId, authorizationSignature, id) {
     const path = `dbs/${databaseId}/colls/${containerId}/docs/${id}`;
