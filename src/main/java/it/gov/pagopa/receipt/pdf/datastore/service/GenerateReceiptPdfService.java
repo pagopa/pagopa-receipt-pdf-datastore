@@ -140,7 +140,8 @@ public class GenerateReceiptPdfService {
         String tempDirectoryPath = pdfEngineResponse.getTempDirectoryPath();
 
         //Save to Blob Storage
-        try (BufferedInputStream pdfStream = new BufferedInputStream(new FileInputStream(tempPdfPath))) {
+        try (FileInputStream fis = new FileInputStream(tempPdfPath);
+             BufferedInputStream pdfStream = new BufferedInputStream(fis)) {
             blobStorageResponse = blobClient.savePdfToBlobStorage(pdfStream, pdfFileName);
 
             if (blobStorageResponse.getStatusCode() == com.microsoft.azure.functions.HttpStatus.CREATED.value()) {

@@ -128,7 +128,7 @@ public class GenerateReceiptPdf {
                 boolean generateOnlyDebtor = payerCF == null || payerCF.equals(debtorCF);
 
                 String log = String.format(
-                        "[%s] Generating pdf for Receipt with id %s",
+                        "[%s] [TEST1807] Generating pdf for Receipt with id %s",
                         context.getFunctionName(),
                         receipt.getEventId()
                 );
