@@ -1,4 +1,4 @@
-# K6 tests for _BizEventsToDatastore_ project
+# K6 tests for _ReceiptsToDatastore_ project
 
 [k6](https://k6.io/) is a load testing tool. 👀 See [here](https://k6.io/docs/get-started/installation/) to install it.
 
