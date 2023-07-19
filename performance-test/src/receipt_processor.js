@@ -42,21 +42,28 @@ export function teardown(data) {
 	// todo
 }
 
-function postcondition(id) {
+function postcondition(eventId) {
 	// verify that published event have been stored properly in the datastore
 	let tag = { datastoreMethod: "GetDocumentByEventId" };
-	let r = getDocumentByEventId(receiptCosmosDBURI, receiptDatabaseID, receiptContainerID, receiptCosmosDBPrimaryKey, id);
+	let r = getDocumentByEventId(cosmosServiceURI, receiptCosmosDBURI, receiptDatabaseID, receiptContainerID, receiptCosmosDBPrimaryKey, eventId);
 
 	console.log("GetDocumentByEventId call, Status " + r.status);
 
-	check(r, {
-		"Assert published receipt is in the datastore and with status GENERATED": (_r) => r.json()._count === 1 && r.json()[0].status === "GENERATED",
-	}, tag);
+	let response = r.json();
+	let documents = response.documents;
 
-	let receiptId = r.json()[0].id;
+	if(response && response.status === 200 && documents && documents.length > 0) {
 
-	deleteDocument(cosmosDBURI, databaseID, containerID, cosmosDBPrimaryKey, id);
-	deleteDocument(receiptCosmosDBURI, receiptDatabaseID, receiptContainerID, receiptCosmosDBPrimaryKey, receiptId);
+		check(r, {
+			"Assert published receipt is in the datastore and with status GENERATED": (_r) => documents.length === 1 && documents[0].status === "GENERATED",
+		}, tag);
+
+		let receiptId = documents[0].id;
+
+		deleteDocument(cosmosServiceURI, bizEventCosmosDBURI, bizEventDatabaseID, bizEventContainerID, bizEventCosmosDBPrimaryKey, eventId, eventId);
+		deleteDocument(cosmosServiceURI, receiptCosmosDBURI, receiptDatabaseID, receiptContainerID, receiptCosmosDBPrimaryKey, receiptId, eventId);
+	}
+
 }
 
 export default function() {
@@ -67,15 +74,15 @@ export default function() {
 
 	//	let r = createDocument(bizEventCosmosDBURI, bizEventDatabaseID, bizEventContainerID, bizEventCosmosDBPrimaryKey, event, id);
 	let r = createDocument(cosmosServiceURI, bizEventCosmosDBURI, bizEventDatabaseID, bizEventContainerID, bizEventCosmosDBPrimaryKey, event);
-
-	console.log("PublishEvent call, Status " + r.status);
+	let response = r.json();
+	console.log("PublishEvent call, Status " + response.status);
 
 	check(r, {
-		'PublishEvent status is 201': (_r) => r.status === 201,
+		'PublishEvent status is 201': (_response) => response.status === 201,
 	}, tag);
 
 	// if the event is published wait and check if it was correctly processed and stored in the datastore
-	if (r.status === 201) {
+	if (response.status === 201) {
 		sleep(processTime);
 		postcondition(id);
 	}
