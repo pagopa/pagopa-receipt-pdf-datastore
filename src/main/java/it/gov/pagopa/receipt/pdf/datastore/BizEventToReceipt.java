@@ -59,8 +59,8 @@ public class BizEventToReceipt {
             final ExecutionContext context) {
 
         List<Receipt> itemsDone = new ArrayList<>();
-        Logger logger = context.getLogger();
-        String msg;
+//        Logger logger = context.getLogger();
+//        String msg;
 
 //        String msg = String.format("[%s] stat %s function - num events triggered %d", context.getFunctionName(),
 //                context.getInvocationId(), items.size());
@@ -75,10 +75,10 @@ public class BizEventToReceipt {
                 if (bizEvent != null && bizEvent.getEventStatus().equals(BizEventStatusType.DONE)) {
                     //BizEventToReceiptService service = new BizEventToReceiptService();
 
-                    Receipt receipt = new Receipt();
+                    //Receipt receipt = new Receipt();
 
                     //Insert biz-event data into receipt
-                    receipt.setEventId(bizEvent.getId());
+                    //receipt.setEventId(bizEvent.getId());
 
 //                    EventData eventData = new EventData();
 //                    //TODO verify if payer's or debtor's CF can be null
@@ -90,15 +90,15 @@ public class BizEventToReceipt {
 //
 //                    receipt.setEventData(eventData);
 
-                    String message = String.format("[%s] [TEST1907-03] function called at %s for event with id %s and status %s",
-                            context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
-                    logger.info(message);
+//                    String message = String.format("[%s] [TEST1907-03] function called at %s for event with id %s and status %s",
+//                            context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
+//                    logger.info(message);
 
                     //Send biz event as message to queue (to be processed from the other function)
                     //service.handleSendMessageToQueue(bizEvent, receipt, logger);
 
                     //Add receipt to items to be saved on CosmosDB
-                    itemsDone.add(receipt);
+                    //itemsDone.add(receipt);
 
                 } else {
                     //Discard biz events not in status DONE
