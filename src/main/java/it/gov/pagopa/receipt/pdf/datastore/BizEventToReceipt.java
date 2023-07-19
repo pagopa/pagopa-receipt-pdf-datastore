@@ -43,18 +43,18 @@ public class BizEventToReceipt {
             @CosmosDBTrigger(
                     name = "BizEventDatastore",
                     databaseName = "db",
-                    collectionName = "biz-events",
-                    leaseCollectionName = "biz-events-leases",
-                    leaseCollectionPrefix = "materialized",
-                    createLeaseCollectionIfNotExists = true,
+                    containerName = "biz-events",
+                    leaseContainerName = "biz-events-leases",
+                    leaseContainerPrefix = "materialized",
+                    createLeaseContainerIfNotExists = true,
                     maxItemsPerInvocation = 100,
-                    connectionStringSetting = "COSMOS_BIZ_EVENT_CONN_STRING")
+                    connection = "COSMOS_BIZ_EVENT_CONN_STRING")
             List<BizEvent> items,
             @CosmosDBOutput(
                     name = "ReceiptDatastore",
                     databaseName = "db",
-                    collectionName = "receipts",
-                    connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING")
+                    containerName = "receipts",
+                    connection = "COSMOS_RECEIPTS_CONN_STRING")
             OutputBinding<List<Receipt>> documentdb,
             final ExecutionContext context) {
 
