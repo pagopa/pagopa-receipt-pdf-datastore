@@ -20,62 +20,62 @@ import java.util.logging.Logger;
 @NoArgsConstructor
 public class BizEventToReceiptService {
 
-    /**
-     * Handles sending biz-events as message to queue and updates receipt's status
-     *
-     * @param bizEvent Biz-event from CosmosDB
-     * @param receipt  Receipt to update
-     */
+//    /**
+//     * Handles sending biz-events as message to queue and updates receipt's status
+//     *
+//     * @param bizEvent Biz-event from CosmosDB
+//     * @param receipt  Receipt to update
+//     */
     public void handleSendMessageToQueue(BizEvent bizEvent, Receipt receipt, Logger logger) {
-        //Encode biz-event to base64 string
-        String messageText = Base64.getMimeEncoder().encodeToString(Objects.requireNonNull(ObjectMapperUtils.writeValueAsString(bizEvent)).getBytes());
-
-        ReceiptQueueClientImpl queueService = ReceiptQueueClientImpl.getInstance();
-
-        //Add message to the queue
-        try {
-            Response<SendMessageResult> sendMessageResult = queueService.sendMessageToQueue(messageText);
-
-            if (sendMessageResult.getStatusCode() == HttpStatus.CREATED.value()) {
-                receipt.setStatus(ReceiptStatusType.INSERTED);
-            } else {
-                handleError(receipt);
-            }
-        } catch (Exception e) {
-            handleError(receipt);
-            //Error info
-            String msg = String.format("Error sending to queue biz-event message with id %s", bizEvent.getId());
-            logger.log(Level.SEVERE, msg, e);
-        }
+//        //Encode biz-event to base64 string
+//        String messageText = Base64.getMimeEncoder().encodeToString(Objects.requireNonNull(ObjectMapperUtils.writeValueAsString(bizEvent)).getBytes());
+//
+//        ReceiptQueueClientImpl queueService = ReceiptQueueClientImpl.getInstance();
+//
+//        //Add message to the queue
+//        try {
+//            Response<SendMessageResult> sendMessageResult = queueService.sendMessageToQueue(messageText);
+//
+//            if (sendMessageResult.getStatusCode() == HttpStatus.CREATED.value()) {
+//                receipt.setStatus(ReceiptStatusType.INSERTED);
+//            } else {
+//                handleError(receipt);
+//            }
+//        } catch (Exception e) {
+//            handleError(receipt);
+//            //Error info
+//            String msg = String.format("Error sending to queue biz-event message with id %s", bizEvent.getId());
+//            logger.log(Level.SEVERE, msg, e);
+//        }
     }
-
-    /**
-     * Handles errors for queue and updates receipt's status accordingly
-     *
-     * @param receipt Receipt to update
-     */
-    public void handleError(Receipt receipt) {
-        receipt.setStatus(ReceiptStatusType.NOT_QUEUE_SENT);
-        ReasonError reasonError = new ReasonError(ReasonErrorCode.ERROR_QUEUE.getCode(),
-                String.format("[BizEventToReceiptService] Error sending message to queue" +
-                        " for receipt with eventId %s", receipt.getEventId()));
-        receipt.setReasonErr(reasonError);
-    }
-
-    /**
-     * Retrieve conditionally the transaction creation date from biz-event
-     *
-     * @param bizEvent Biz-event from CosmosDB
-     * @return transaction date
-     */
-    public String getTransactionCreationDate(BizEvent bizEvent) {
-        if (bizEvent.getTransactionDetails() != null && bizEvent.getTransactionDetails().getTransaction() != null) {
-            return bizEvent.getTransactionDetails().getTransaction().getCreationDate();
-
-        } else if (bizEvent.getPaymentInfo() != null) {
-            return bizEvent.getPaymentInfo().getPaymentDateTime();
-        }
-
-        return null;
-    }
+//
+//    /**
+//     * Handles errors for queue and updates receipt's status accordingly
+//     *
+//     * @param receipt Receipt to update
+//     */
+//    public void handleError(Receipt receipt) {
+//        receipt.setStatus(ReceiptStatusType.NOT_QUEUE_SENT);
+//        ReasonError reasonError = new ReasonError(ReasonErrorCode.ERROR_QUEUE.getCode(),
+//                String.format("[BizEventToReceiptService] Error sending message to queue" +
+//                        " for receipt with eventId %s", receipt.getEventId()));
+//        receipt.setReasonErr(reasonError);
+//    }
+//
+//    /**
+//     * Retrieve conditionally the transaction creation date from biz-event
+//     *
+//     * @param bizEvent Biz-event from CosmosDB
+//     * @return transaction date
+//     */
+//    public String getTransactionCreationDate(BizEvent bizEvent) {
+//        if (bizEvent.getTransactionDetails() != null && bizEvent.getTransactionDetails().getTransaction() != null) {
+//            return bizEvent.getTransactionDetails().getTransaction().getCreationDate();
+//
+//        } else if (bizEvent.getPaymentInfo() != null) {
+//            return bizEvent.getPaymentInfo().getPaymentDateTime();
+//        }
+//
+//        return null;
+//    }
 }

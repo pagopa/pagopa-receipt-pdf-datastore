@@ -60,12 +60,13 @@ public class BizEventToReceipt {
 
         List<Receipt> itemsDone = new ArrayList<>();
         Logger logger = context.getLogger();
+        String msg;
 
-        String msg = String.format("[%s] stat %s function - num events triggered %d", context.getFunctionName(),
-                context.getInvocationId(), items.size());
-        logger.fine(msg);
-        int discarder = 0;
-
+//        String msg = String.format("[%s] stat %s function - num events triggered %d", context.getFunctionName(),
+//                context.getInvocationId(), items.size());
+//        logger.fine(msg);
+//        int discarder = 0;
+//
         //Retrieve receipt data from biz-event
         for (BizEvent bizEvent : items) {
 
@@ -83,9 +84,9 @@ public class BizEventToReceipt {
                     //TODO verify if payer's or debtor's CF can be null
                     eventData.setPayerFiscalCode(bizEvent.getPayer() != null ? bizEvent.getPayer().getEntityUniqueIdentifierValue() : null);
                     eventData.setDebtorFiscalCode(bizEvent.getDebtor() != null ? bizEvent.getDebtor().getEntityUniqueIdentifierValue() : null);
-                    eventData.setTransactionCreationDate(
-                            service.getTransactionCreationDate(bizEvent)
-                    );
+//                    eventData.setTransactionCreationDate(
+//                            service.getTransactionCreationDate(bizEvent)
+//                    );
 
                     receipt.setEventData(eventData);
 
@@ -101,32 +102,32 @@ public class BizEventToReceipt {
 
                 } else {
                     //Discard biz events not in status DONE
-                    discarder++;
-                    msg = String.format("[%s] event with id %s discarded because in status %s",
-                            context.getFunctionName(), bizEvent.getId(), bizEvent.getEventStatus());
-                    logger.fine(msg);
+                    //discarder++;
+//                    msg = String.format("[%s] event with id %s discarded because in status %s",
+//                            context.getFunctionName(), bizEvent.getId(), bizEvent.getEventStatus());
+//                    logger.fine(msg);
                 }
             } catch (Exception e) {
-                discarder++;
+                //discarder++;
                 //Error info
-                msg = String.format("[%s] Error to process event with id %s", context.getFunctionName(), bizEvent.getId());
-                logger.log(Level.SEVERE, msg, e);
+//                msg = String.format("[%s] Error to process event with id %s", context.getFunctionName(), bizEvent.getId());
+//                logger.log(Level.SEVERE, msg, e);
             }
         }
-        //Discarder info
-        msg = String.format("[%s] itemsDone stat %s function - %d number of events in discarder", context.getFunctionName(),
-                context.getInvocationId(), discarder);
-        logger.fine(msg);
-
-        //Call to queue info
-        msg = String.format("[%s] itemsDone stat %s function - number of events in DONE sent to the receipt queue %d",
-                context.getFunctionName(), context.getInvocationId(), itemsDone.size());
-        logger.fine(msg);
-
-        //Call to datastore info
-        msg = String.format("[%s] stat %s function - number of receipts inserted on the datastore %d", context.getFunctionName(),
-                context.getInvocationId(), itemsDone.size());
-        logger.fine(msg);
+//        //Discarder info
+//        msg = String.format("[%s] itemsDone stat %s function - %d number of events in discarder", context.getFunctionName(),
+//                context.getInvocationId(), discarder);
+//        logger.fine(msg);
+//
+//        //Call to queue info
+//        msg = String.format("[%s] itemsDone stat %s function - number of events in DONE sent to the receipt queue %d",
+//                context.getFunctionName(), context.getInvocationId(), itemsDone.size());
+//        logger.fine(msg);
+//
+//        //Call to datastore info
+//        msg = String.format("[%s] stat %s function - number of receipts inserted on the datastore %d", context.getFunctionName(),
+//                context.getInvocationId(), itemsDone.size());
+//        logger.fine(msg);
 
         //Save receipts data to CosmosDB
         if (!itemsDone.isEmpty()) {
