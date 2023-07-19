@@ -45,28 +45,21 @@ export function teardown(data) {
 function postcondition(eventId) {
 	// verify that published event have been stored properly in the datastore
 	let tag = { datastoreMethod: "GetDocumentByEventId" };
-	let r = getDocumentByEventId(cosmosServiceURI, receiptCosmosDBURI, receiptDatabaseID, receiptContainerID, receiptCosmosDBPrimaryKey, eventId);
+	let r = getDocumentByEventId(receiptCosmosDBURI, receiptDatabaseID, receiptContainerID, receiptCosmosDBPrimaryKey, eventId);
 
 	console.log("GetDocumentByEventId call, Status " + r.status);
 
-	let response = r.json();
-	let documents = response.documents;
+	let {_count, Documents} = r.json();
+	check(r, {
+		"Assert published receipt is in the datastore and with status GENERATED": (_r) => _count === 1 && Documents[0].status === "GENERATED",
+	}, tag);
 
-	if(response && response.status === 200 && documents && documents.length > 0) {
-		let document = documents[0];
+	if(_count){
+		let receiptId = Documents[0].id;
 
-		check(r, {
-			"Assert published receipt is in the datastore and with status GENERATED": (_r) => documents.length === 1 && document.status === "GENERATED",
-		}, tag);
-
-		console.log("Document with status " + r.status);
-
-		let receiptId = document.id;
-
-		deleteDocument(cosmosServiceURI, bizEventCosmosDBURI, bizEventDatabaseID, bizEventContainerID, bizEventCosmosDBPrimaryKey, eventId, eventId);
-		deleteDocument(cosmosServiceURI, receiptCosmosDBURI, receiptDatabaseID, receiptContainerID, receiptCosmosDBPrimaryKey, receiptId, eventId);
+		deleteDocument(bizEventCosmosDBURI, bizEventDatabaseID, bizEventContainerID, bizEventCosmosDBPrimaryKey, eventId);
+		deleteDocument(receiptCosmosDBURI, receiptDatabaseID, receiptContainerID, receiptCosmosDBPrimaryKey, receiptId);
 	}
-
 }
 
 export default function() {
@@ -76,16 +69,16 @@ export default function() {
 	let event = createEvent(id);
 
 	//	let r = createDocument(bizEventCosmosDBURI, bizEventDatabaseID, bizEventContainerID, bizEventCosmosDBPrimaryKey, event, id);
-	let r = createDocument(cosmosServiceURI, bizEventCosmosDBURI, bizEventDatabaseID, bizEventContainerID, bizEventCosmosDBPrimaryKey, event);
-	let response = r.json();
-	console.log("PublishEvent call, Status " + response.status);
+	let r = createDocument(bizEventCosmosDBURI, bizEventDatabaseID, bizEventContainerID, bizEventCosmosDBPrimaryKey, event, id);
+
+	console.log("PublishEvent call, Status " + r.status);
 
 	check(r, {
-		'PublishEvent status is 201': (_response) => response.status === 201,
+		'PublishEvent status is 201': (_response) => r.status === 201,
 	}, tag);
 
 	// if the event is published wait and check if it was correctly processed and stored in the datastore
-	if (response.status === 201) {
+	if (r.status === 201) {
 		sleep(processTime);
 		postcondition(id);
 	}

@@ -15,7 +15,7 @@ export function getDocumentById(cosmosDbURI, databaseId, containerId, authorizat
     const authorizationToken = getCosmosDBAuthorizationToken(verb,authorizationType,authorizationVersion,authorizationSignature,resourceType,resourceLink,date);
 
     let partitionKeyArray = [];
-    let headers = getCosmosDBAPIHeaders(authorizationToken, date, partitionKeyArray, 'application/query+json');
+    let headers = getCosmosDBAPIHeaders(authorizationToken, date, partitionKeyArray, 'application/query+json', "true");
 
     const query = {
         "query": "SELECT * FROM c where c.id=@id",
@@ -34,7 +34,7 @@ export function getDocumentById(cosmosDbURI, databaseId, containerId, authorizat
     return resp;
 }
 
-/*
+
 export function getDocumentByEventId(cosmosDbURI, databaseId, containerId, authorizationSignature, id) {
     const path = `dbs/${databaseId}/colls/${containerId}/docs`;
     const resourceLink = `dbs/${databaseId}/colls/${containerId}`;
@@ -44,7 +44,7 @@ export function getDocumentByEventId(cosmosDbURI, databaseId, containerId, autho
     const authorizationToken = getCosmosDBAuthorizationToken(verb,authorizationType,authorizationVersion,authorizationSignature,resourceType,resourceLink,date);
 
     let partitionKeyArray = [];
-    let headers = getCosmosDBAPIHeaders(authorizationToken, date, partitionKeyArray, 'application/query+json');
+    let headers = getCosmosDBAPIHeaders(authorizationToken, date, partitionKeyArray, 'application/query+json', "true");
 
     const query = {
         "query": "SELECT * FROM c WHERE c.eventId = @id",
@@ -60,8 +60,8 @@ export function getDocumentByEventId(cosmosDbURI, databaseId, containerId, autho
 
     return http.post(cosmosDbURI+path, body, {headers});
 }
-*/
 
+/*
 export function getDocumentByEventId(cosmosServiceURI,cosmosDbURI, databaseId, containerId, authorizationSignature, eventId) {
     let headers = {
         'Accept': 'application/json',
@@ -81,8 +81,9 @@ export function getDocumentByEventId(cosmosServiceURI,cosmosDbURI, databaseId, c
 
     return response;
 }
+*/
 
-/*
+
 export function createDocument(cosmosDbURI, databaseId, containerId, authorizationSignature, document, pk) {
 	let path = `dbs/${databaseId}/colls/${containerId}/docs`;
 	let resourceLink = `dbs/${databaseId}/colls/${containerId}`;
@@ -98,10 +99,12 @@ export function createDocument(cosmosDbURI, databaseId, containerId, authorizati
 
 	const body = JSON.stringify(document);
 
-    return http.post(cosmosDbURI+path, body, {headers});
-}
-*/
+    let resp = http.post(cosmosDbURI+path, body, {headers});
 
+    return resp;
+}
+
+/*
 export function createDocument(cosmosServiceURI, cosmosDbURI, databaseId, containerId, authorizationSignature, document) {
     let headers = {
         'Accept': 'application/json',
@@ -120,8 +123,8 @@ export function createDocument(cosmosServiceURI, cosmosDbURI, databaseId, contai
 
     return response;
 }
+*/
 
-/*
 export function deleteDocument(cosmosDbURI, databaseId, containerId, authorizationSignature, id) {
     const path = `dbs/${databaseId}/colls/${containerId}/docs/${id}`;
     const resourceLink = path;
@@ -134,10 +137,11 @@ export function deleteDocument(cosmosDbURI, databaseId, containerId, authorizati
     let headers = getCosmosDBAPIHeaders(authorizationToken, date, partitionKeyArray, 'application/json');
 
     let resp = http.del(cosmosDbURI+path, null, {headers});
-    console.log("DELETE", resp);
+
     return resp;
 }
-*/
+
+/*
 export function deleteDocument(cosmosServiceURI, cosmosDbURI, databaseId, containerId, authorizationSignature, id, eventId){
     let headers = {
         'Accept': 'application/json',
@@ -158,19 +162,21 @@ export function deleteDocument(cosmosServiceURI, cosmosDbURI, databaseId, contai
     return response;
 
 }
+*/
 
-function getCosmosDBAPIHeaders(authorizationToken, date, partitionKeyArray, contentType){
+function getCosmosDBAPIHeaders(authorizationToken, date, partitionKeyArray, contentType, isQuery){
 
     return {'Accept': 'application/json',
         'Content-Type': contentType,
         'Authorization': authorizationToken,
         'x-ms-version': cosmosDBApiVersion,
         'x-ms-date': date,
-        'x-ms-documentdb-isquery': 'true',
+        'x-ms-documentdb-isquery': isQuery ? isQuery : "false",
         'x-ms-query-enable-crosspartition': 'true',
         'x-ms-documentdb-partitionkey': partitionKeyArray
     };
 }
+
 
 function getCosmosDBAuthorizationToken(verb, autorizationType, autorizationVersion, authorizationSignature, resourceType, resourceLink, dateUtc) {
     // Decode authorization signature

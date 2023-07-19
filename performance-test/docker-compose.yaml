@@ -1,14 +1,5 @@
 version: '3.3'
 services:
-  cosmosapi:
-    build: .
-    command: node server.js
-    ports:
-      - "8079:8079"
-    volumes:
-      - ./src/cosmos-service
-      - ./src/cosmos-service/node_modules
-
   k6:
     image: grafana/k6
     container_name: k6

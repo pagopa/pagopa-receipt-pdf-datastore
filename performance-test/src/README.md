@@ -14,13 +14,7 @@ To invoke k6 test passing parameter use -e (or --env) flag:
 
 ## 01. Receipt datastore function
 
-Start CosmosDB service server:
-
-```
-node src/cosmos-service/server.js
-```
-
-Open another terminal and test the receipt datastore function:
+Test the receipt datastore function:
 
 ```
 k6 run --env VARS=local.environment.json --env TEST_TYPE=./test-types/load.json --env BIZEVENT_COSMOS_DB_SUBSCRIPTION_KEY=<your-secret> --env RECEIPT_COSMOS_DB_SUBSCRIPTION_KEY=<your-secret> receipt_processor.js
@@ -44,7 +38,7 @@ where the mean of the environment variables is:
   ]
 ```
 
-`cosmosServiceURI`: CosmosDB service server URI to access create/delete/get document APIs
+`cosmosServiceURI`: CosmosDB service server URI to access create/delete/get document APIs (deprecated)
 
 `bizEventCosmosDBURI`: CosmosDB url to access Biz-events CosmosDB REST API
 
@@ -59,4 +53,3 @@ where the mean of the environment variables is:
 `receiptContainerID`: collection name to access Receipts Cosmos DB REST API
 
 `processTime`: boundary time taken by azure function to fetch the payment event and save it in the datastore
-
