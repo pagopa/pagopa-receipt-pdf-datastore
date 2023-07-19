@@ -90,7 +90,7 @@ public class BizEventToReceipt {
 
                     receipt.setEventData(eventData);
 
-                    String message = String.format("[%s] [TEST1907] function called at %s for event with id %s and status %s",
+                    String message = String.format("[%s] [TEST1907-02] function called at %s for event with id %s and status %s",
                             context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
                     logger.info(message);
 
