@@ -73,24 +73,24 @@ public class BizEventToReceipt {
             try {
                 //Process only biz-event in status DONE
                 if (bizEvent != null && bizEvent.getEventStatus().equals(BizEventStatusType.DONE)) {
-                    BizEventToReceiptService service = new BizEventToReceiptService();
+                    //BizEventToReceiptService service = new BizEventToReceiptService();
 
                     Receipt receipt = new Receipt();
 
                     //Insert biz-event data into receipt
                     receipt.setEventId(bizEvent.getId());
 
-                    EventData eventData = new EventData();
-                    //TODO verify if payer's or debtor's CF can be null
-                    eventData.setPayerFiscalCode(bizEvent.getPayer() != null ? bizEvent.getPayer().getEntityUniqueIdentifierValue() : null);
-                    eventData.setDebtorFiscalCode(bizEvent.getDebtor() != null ? bizEvent.getDebtor().getEntityUniqueIdentifierValue() : null);
-//                    eventData.setTransactionCreationDate(
-//                            service.getTransactionCreationDate(bizEvent)
-//                    );
+//                    EventData eventData = new EventData();
+//                    //TODO verify if payer's or debtor's CF can be null
+//                    eventData.setPayerFiscalCode(bizEvent.getPayer() != null ? bizEvent.getPayer().getEntityUniqueIdentifierValue() : null);
+//                    eventData.setDebtorFiscalCode(bizEvent.getDebtor() != null ? bizEvent.getDebtor().getEntityUniqueIdentifierValue() : null);
+////                    eventData.setTransactionCreationDate(
+////                            service.getTransactionCreationDate(bizEvent)
+////                    );
+//
+//                    receipt.setEventData(eventData);
 
-                    receipt.setEventData(eventData);
-
-                    String message = String.format("[%s] [TEST1907-02] function called at %s for event with id %s and status %s",
+                    String message = String.format("[%s] [TEST1907-03] function called at %s for event with id %s and status %s",
                             context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
                     logger.info(message);
 
