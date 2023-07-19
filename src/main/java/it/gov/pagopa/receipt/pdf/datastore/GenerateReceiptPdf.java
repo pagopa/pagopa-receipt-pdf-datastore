@@ -135,7 +135,7 @@ public class GenerateReceiptPdf {
                 logger.info(log);
 
                 //Generate and save PDF
-                PdfGeneration pdfGeneration = service.handlePdfsGeneration(generateOnlyDebtor, receipt, bizEvent, debtorCF, payerCF, logger);
+                //PdfGeneration pdfGeneration = service.handlePdfsGeneration(generateOnlyDebtor, receipt, bizEvent, debtorCF, payerCF, logger);
 
 
                 log = String.format(
@@ -146,10 +146,10 @@ public class GenerateReceiptPdf {
                 logger.info(log);
 
                 //Write PDF blob storage metadata on receipt
-                numberOfSavedPdfs = service.addPdfsMetadataToReceipt(receipt, pdfGeneration);
+                //numberOfSavedPdfs = service.addPdfsMetadataToReceipt(receipt, pdfGeneration);
 
                 //Verify PDF generation success
-                service.verifyPdfGeneration(bizEventMessage, requeueMessage, logger, receipt, generateOnlyDebtor, pdfGeneration);
+                //service.verifyPdfGeneration(bizEventMessage, requeueMessage, logger, receipt, generateOnlyDebtor, pdfGeneration);
 
 
             } else {
