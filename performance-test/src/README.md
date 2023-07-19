@@ -45,10 +45,18 @@ where the mean of the environment variables is:
 ```
 
 `cosmosServiceURI`: CosmosDB service server URI to access create/delete/get document APIs
+
 `bizEventCosmosDBURI`: CosmosDB url to access Biz-events CosmosDB REST API
+
 `bizEventDatabaseID`: database name to access Biz-events Cosmos DB REST API
+
 `bizEventContainerID`: collection name to access Biz-events Cosmos DB REST API
+
 `receiptCosmosDBURI`: CosmosDB url to access Receipts CosmosDB REST API
+
 `receiptDatabaseID`: database name to access Receipts Cosmos DB REST API
+
 `receiptContainerID`: collection name to access Receipts Cosmos DB REST API
+
 `processTime`: boundary time taken by azure function to fetch the payment event and save it in the datastore
+
