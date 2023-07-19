@@ -108,7 +108,7 @@ microservice-chart:
       create: true
       image:
         repository: ghcr.io/pagopa/pagopa-receipt-pdf-datastore
-        tag: "0.5.1-feat-changes-for-memory-management"
+        tag: "0.6.0-feat-changes-for-memory-management"
         pullPolicy: Always
       envConfig:
       envSecret:
