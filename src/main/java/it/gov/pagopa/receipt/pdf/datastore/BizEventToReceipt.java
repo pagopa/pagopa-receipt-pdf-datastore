@@ -94,7 +94,7 @@ public class BizEventToReceipt {
                     logger.info(message);
 
                     //Send biz event as message to queue (to be processed from the other function)
-                    service.handleSendMessageToQueue(bizEvent, receipt, logger);
+                    //service.handleSendMessageToQueue(bizEvent, receipt, logger);
 
                     //Add receipt to items to be saved on CosmosDB
                     itemsDone.add(receipt);
