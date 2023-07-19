@@ -5,7 +5,7 @@
 
     <groupId>it.gov.pagopa.receipt</groupId>
     <artifactId>receipt-pdf-datastore</artifactId>
-    <version>0.10.4-feat-changes-for-memory-management</version>
+    <version>0.10.5-feat-changes-for-memory-management</version>
     <packaging>jar</packaging>
 
     <name>pagopa-receipt-pdf-datastore</name>
