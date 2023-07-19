@@ -2,7 +2,6 @@
   "environment": [
     {
       "env": "local",
-      "cosmosServiceURI": "http://localhost:8079",
       "bizEventCosmosDBURI": "https://pagopa-u-weu-bizevents-ds-cosmos-account.documents.azure.com:443/",
       "bizEventDatabaseID":"db",
       "bizEventContainerID":"biz-events",

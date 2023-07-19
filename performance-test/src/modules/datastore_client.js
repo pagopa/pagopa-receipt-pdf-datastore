@@ -61,28 +61,6 @@ export function getDocumentByEventId(cosmosDbURI, databaseId, containerId, autho
     return http.post(cosmosDbURI+path, body, {headers});
 }
 
-/*
-export function getDocumentByEventId(cosmosServiceURI,cosmosDbURI, databaseId, containerId, authorizationSignature, eventId) {
-    let headers = {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-    }
-
-	const body = {
-        endpoint: cosmosDbURI,
-        databaseId: databaseId,
-        containerId: containerId,
-        key: authorizationSignature,
-        partitionName: "eventId",
-        partitionId: eventId
-    };
-
-    let response = http.post(`${cosmosServiceURI}/getDocument`, JSON.stringify(body), {headers});
-
-    return response;
-}
-*/
-
 
 export function createDocument(cosmosDbURI, databaseId, containerId, authorizationSignature, document, pk) {
 	let path = `dbs/${databaseId}/colls/${containerId}/docs`;
@@ -104,27 +82,6 @@ export function createDocument(cosmosDbURI, databaseId, containerId, authorizati
     return resp;
 }
 
-/*
-export function createDocument(cosmosServiceURI, cosmosDbURI, databaseId, containerId, authorizationSignature, document) {
-    let headers = {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-    }
-
-	const body = {
-        endpoint: cosmosDbURI,
-        databaseId: databaseId,
-        containerId: containerId,
-        key: authorizationSignature,
-        document: document
-    };
-
-    let response = http.post(`${cosmosServiceURI}/create`, JSON.stringify(body), {headers});
-
-    return response;
-}
-*/
-
 export function deleteDocument(cosmosDbURI, databaseId, containerId, authorizationSignature, id) {
     const path = `dbs/${databaseId}/colls/${containerId}/docs/${id}`;
     const resourceLink = path;
@@ -140,29 +97,6 @@ export function deleteDocument(cosmosDbURI, databaseId, containerId, authorizati
 
     return resp;
 }
-
-/*
-export function deleteDocument(cosmosServiceURI, cosmosDbURI, databaseId, containerId, authorizationSignature, id, eventId){
-    let headers = {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-    }
-
-	const body = {
-        endpoint: cosmosDbURI,
-        databaseId: databaseId,
-        containerId: containerId,
-        key: authorizationSignature,
-        id: id,
-        eventId: eventId
-    };
-
-    let response = http.post(`${cosmosServiceURI}/delete`, JSON.stringify(body), {headers});
-
-    return response;
-
-}
-*/
 
 function getCosmosDBAPIHeaders(authorizationToken, date, partitionKeyArray, contentType, isQuery){
 

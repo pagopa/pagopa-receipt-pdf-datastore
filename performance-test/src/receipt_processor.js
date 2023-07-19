@@ -14,7 +14,6 @@ const varsArray = new SharedArray('vars', function() {
 });
 // workaround to use shared array (only array should be used)
 const vars = varsArray[0];
-const cosmosServiceURI = `${vars.cosmosServiceURI}`;
 const bizEventCosmosDBURI = `${vars.bizEventCosmosDBURI}`;
 const bizEventDatabaseID = `${vars.bizEventDatabaseID}`;
 const bizEventContainerID = `${vars.bizEventContainerID}`;

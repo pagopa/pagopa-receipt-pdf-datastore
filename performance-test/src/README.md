@@ -26,7 +26,6 @@ where the mean of the environment variables is:
   "environment": [
     {
       "env": "local",
-      "cosmosServiceURI": "http://localhost:8079",
       "bizEventCosmosDBURI": "",
       "bizEventDatabaseID":"",
       "bizEventContainerID":"",
@@ -37,8 +36,6 @@ where the mean of the environment variables is:
     }
   ]
 ```
-
-`cosmosServiceURI`: CosmosDB service server URI to access create/delete/get document APIs (deprecated)
 
 `bizEventCosmosDBURI`: CosmosDB url to access Biz-events CosmosDB REST API
 
