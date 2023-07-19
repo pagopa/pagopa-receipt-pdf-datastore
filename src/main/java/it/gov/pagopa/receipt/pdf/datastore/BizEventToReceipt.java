@@ -130,8 +130,8 @@ public class BizEventToReceipt {
 //        logger.fine(msg);
 
         //Save receipts data to CosmosDB
-        if (!itemsDone.isEmpty()) {
+        //if (!itemsDone.isEmpty()) {
             documentdb.setValue(itemsDone);
-        }
+        //}
     }
 }
