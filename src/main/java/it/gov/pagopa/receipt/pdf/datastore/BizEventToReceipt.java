@@ -61,11 +61,10 @@ public class BizEventToReceipt {
 
         List<Receipt> itemsDone = new ArrayList<>();
         Logger logger = context.getLogger();
-        String msg;
 
-//        String msg = String.format("[%s] stat %s function - num events triggered %d", context.getFunctionName(),
-//                context.getInvocationId(), items.size());
-//        logger.fine(msg);
+        String msg = String.format("[%s] stat %s function - num events triggered %d", context.getFunctionName(),
+                context.getInvocationId(), items.size());
+        logger.info(msg);
         int discarder = 0;
 //
         //Retrieve receipt data from biz-event
