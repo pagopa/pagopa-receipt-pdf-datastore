@@ -54,6 +54,7 @@ public class BizEventToReceipt {
                     name = "ReceiptDatastore",
                     databaseName = "db",
                     collectionName = "receipts",
+                    createIfNotExists = false,
                     connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING")
             OutputBinding<List<Receipt>> documentdb,
             final ExecutionContext context) {
