@@ -73,7 +73,8 @@ export function getDocumentByEventId(cosmosServiceURI,cosmosDbURI, databaseId, c
         databaseId: databaseId,
         containerId: containerId,
         key: authorizationSignature,
-        eventId: eventId
+        partitionName: "eventId",
+        partitionId: eventId
     };
 
     let response = http.post(`${cosmosServiceURI}/getDocument`, JSON.stringify(body), {headers});
