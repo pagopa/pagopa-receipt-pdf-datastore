@@ -53,12 +53,15 @@ function postcondition(eventId) {
 	let documents = response.documents;
 
 	if(response && response.status === 200 && documents && documents.length > 0) {
+		let document = documents[0];
 
 		check(r, {
-			"Assert published receipt is in the datastore and with status GENERATED": (_r) => documents.length === 1 && documents[0].status === "GENERATED",
+			"Assert published receipt is in the datastore and with status GENERATED": (_r) => documents.length === 1 && document.status === "GENERATED",
 		}, tag);
 
-		let receiptId = documents[0].id;
+		console.log("Document with status " + r.status);
+
+		let receiptId = document.id;
 
 		deleteDocument(cosmosServiceURI, bizEventCosmosDBURI, bizEventDatabaseID, bizEventContainerID, bizEventCosmosDBPrimaryKey, eventId, eventId);
 		deleteDocument(cosmosServiceURI, receiptCosmosDBURI, receiptDatabaseID, receiptContainerID, receiptCosmosDBPrimaryKey, receiptId, eventId);
