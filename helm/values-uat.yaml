@@ -96,16 +96,16 @@ microservice-chart:
   canaryDelivery:
     create: true
     ingress:
-      create: true
+      create: false
       canary:
         type: header
         headerName: X-Canary
         headerValue: canary
         weightPercent: 0
     service:
-      create: true
+      create: false
     deployment:
-      create: true
+      create: false
       image:
         repository: ghcr.io/pagopa/pagopa-receipt-pdf-datastore
         tag: "0.5.1"
