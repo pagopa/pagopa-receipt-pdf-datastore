@@ -1,7 +1,7 @@
 {
   "environment": [
     {
-      "env": "local",
+      "env": "dev",
       "bizEventCosmosDBURI": "https://pagopa-d-weu-bizevents-ds-cosmos-account.documents.azure.com:443/",
       "bizEventDatabaseID":"db",
       "bizEventContainerID":"biz-events",
