@@ -27,15 +27,16 @@ parameters:
     type: string
     values:
       - pagopa-receipt-pdf-datastorek6
-  - name: "BIZEVENT_COSMOS_DB_SUBSCRIPTION_KEY"
-    displayName: "BizEvent Cosmos DB subscription key"
-    type: string
-  - name: "RECEIPT_COSMOS_DB_SUBSCRIPTION_KEY"
-    displayName: "Receipt CosmosDB subscription key"
-    type: string
-    values:
-      - template
-    default: template
+
+variables:
+  ${{ if eq(parameters['ENVIRONMENT'], 'dev') }}:
+    receiptCosmosSubscriptionKey: "$(DEV_RECEIPT_COSMOS_DB_SUBSCRIPTION_KEY)"
+    bizEventCosmosSubscriptionKey: "$(DEV_BIZEVENT_COSMOS_DB_SUBSCRIPTION_KEY)"
+    poolImage: 'pagopa-dev-loadtest-linux'
+  ${{ if eq(parameters['ENVIRONMENT'], 'uat') }}:
+    receiptCosmosSubscriptionKey: "$(UAT_RECEIPT_COSMOS_DB_SUBSCRIPTION_KEY)"
+    bizEventCosmosSubscriptionKey: "$(UAT_BIZEVENT_COSMOS_DB_SUBSCRIPTION_KEY)"
+    poolImage: 'pagopa-uat-loadtest-linux'
 
 pool:
   name: $(poolImage)
@@ -47,5 +48,8 @@ steps:
     displayName: Pull k6 image
   - script: |
       cd ./performance-test
-      sh ./run_performance_test.sh ${{ parameters.ENVIRONMENT }} ${{ parameters.TEST_TYPE }} ${{ parameters.SCRIPT }} ${{ parameters.DB_NAME }} ${{ parameters.BIZEVENT_COSMOS_DB_SUBSCRIPTION_KEY }} ${{ parameters.RECEIPT_COSMOS_DB_SUBSCRIPTION_KEY }}
+      sh ./run_performance_test.sh ${{ parameters.ENVIRONMENT }} ${{ parameters.TEST_TYPE }} ${{ parameters.SCRIPT }} ${{ parameters.DB_NAME }} $BIZEVENT_COSMOS_SUBSCRIPTION_KEY $RECEIPT_COSMOS_SUBSCRIPTION_KEY
     displayName: Run k6 ${{ parameters.SCRIPT }} on ${{ parameters.ENVIRONMENT }}
+    env:
+      RECEIPT_COSMOS_SUBSCRIPTION_KEY: ${{ variables.receiptCosmosSubscriptionKey }}
+      BIZEVENT_COSMOS_SUBSCRIPTION_KEY: ${{ variables.bizEventCosmosSubscriptionKey }}
