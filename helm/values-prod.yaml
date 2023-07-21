@@ -4,7 +4,7 @@ microservice-chart:
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-receipt-pdf-datastore
-    tag: "0.5.0"
+    tag: "0.5.1"
     pullPolicy: Always
   # https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script.WebHost/Controllers/HostController.cs
   livenessProbe:
@@ -101,19 +101,19 @@ microservice-chart:
   canaryDelivery:
     create: false
     ingress:
-      create: true
+      create: false
       canary:
         type: header
         headerName: X-Canary
         headerValue: canary
         weightPercent: 0
     service:
-      create: true
+      create: false
     deployment:
-      create: true
+      create: false
       image:
         repository: ghcr.io/pagopa/pagopa-receipt-pdf-datastore
-        tag: "0.5.0"
+        tag: "0.5.1"
         pullPolicy: Always
       envConfig:
       envSecret:
