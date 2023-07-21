@@ -8,7 +8,7 @@
       "receiptCosmosDBURI": "https://pagopa-d-weu-receipts-ds-cosmos-account.documents.azure.com:443/",
       "receiptDatabaseID":"db",
       "receiptContainerID":"receipts",
-      "processTime":"10"
+      "processTime":"5"
     }
   ]
 }
