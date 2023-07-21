@@ -21,7 +21,7 @@ parameters:
     displayName: "Script name"
     type: string
     values:
-      - pdf_engine
+      - receipt_processor
   - name: "DB_NAME"
     displayName: "DB name"
     type: string
