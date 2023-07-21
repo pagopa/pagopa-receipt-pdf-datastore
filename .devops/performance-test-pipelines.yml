@@ -1,0 +1,51 @@
+# azure-pipelines.yml
+trigger: none
+
+parameters:
+  - name: "ENVIRONMENT"
+    displayName: "Environment"
+    type: string
+    values:
+      - "dev"
+      - "uat"
+    default: "uat"
+  - name: "TEST_TYPE"
+    displayName: "Test type"
+    type: string
+    values:
+      - "load"
+      - "spike"
+      - "stress"
+    default: "constant"
+  - name: "SCRIPT"
+    displayName: "Script name"
+    type: string
+    values:
+      - pdf_engine
+  - name: "DB_NAME"
+    displayName: "DB name"
+    type: string
+    values:
+      - pagopa-receipt-pdf-datastorek6
+  - name: "BIZEVENT_COSMOS_DB_SUBSCRIPTION_KEY"
+    displayName: "BizEvent Cosmos DB subscription key"
+    type: string
+  - name: "RECEIPT_COSMOS_DB_SUBSCRIPTION_KEY"
+    displayName: "Receipt CosmosDB subscription key"
+    type: string
+    values:
+      - template
+    default: template
+
+pool:
+  name: $(poolImage)
+
+steps:
+  - script: |
+      cd ./performance-test/src
+      docker pull grafana/k6
+    displayName: Pull k6 image
+  - script: |
+      cd ./performance-test
+      sh ./run_performance_test.sh ${{ parameters.ENVIRONMENT }} ${{ parameters.TEST_TYPE }} ${{ parameters.SCRIPT }} ${{ parameters.DB_NAME }} ${{ parameters.BIZEVENT_COSMOS_DB_SUBSCRIPTION_KEY }} ${{ parameters.RECEIPT_COSMOS_DB_SUBSCRIPTION_KEY }}
+    displayName: Run k6 ${{ parameters.SCRIPT }} on ${{ parameters.ENVIRONMENT }}
