@@ -6,14 +6,14 @@ receipt-pdf-datastore:
   readinessProbe:
     httpGet:
       path: /info
-      port: 8080
+      port: 80
     initialDelaySeconds: 8
     failureThreshold: 10
     periodSeconds: 2
   livenessProbe:
     httpGet:
       path: /info
-      port: 8080
+      port: 80
     initialDelaySeconds: 8
     failureThreshold: 10
     periodSeconds: 2
