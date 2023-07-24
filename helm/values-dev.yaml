@@ -1,4 +1,4 @@
-receipt-pdf-datastore:
+microservice-chart:
   namespace: "receipts"
   image:
     repository: ghcr.io/pagopa/pagopa-receipt-pdf-datastore
@@ -120,10 +120,3 @@ receipt-pdf-datastore:
         pullPolicy: Always
       envConfig:
       envSecret:
-microservice-chart:
-  image:
-    tag: 0.6.0-PRDP-74-update-chart-to-add-prometheus
-  canaryDelivery:
-    deployment:
-      image:
-        tag: 0.6.0-PRDP-74-update-chart-to-add-prometheus
