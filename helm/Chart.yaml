@@ -1,6 +1,6 @@
 apiVersion: v2
-name: pagopa-functions-template
-description: Microservice description
+name: pagopa-receipt-pdf-datastore
+description: PagoPA Receipt PDF Datastore
 type: application
 version: 0.28.0
 appVersion: 0.5.8-PRDP-74-update-chart-to-add-prometheus
