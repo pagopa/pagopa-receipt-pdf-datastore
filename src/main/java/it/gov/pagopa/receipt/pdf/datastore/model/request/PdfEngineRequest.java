@@ -5,6 +5,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.io.InputStream;
+import java.net.URL;
 
 /**
  * Model class for PDF engine request
@@ -14,7 +15,7 @@ import java.io.InputStream;
 @NoArgsConstructor
 public class PdfEngineRequest {
 
-    InputStream template;
+    URL template;
     String data;
     boolean applySignature;
 }

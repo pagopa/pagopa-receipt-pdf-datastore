@@ -26,11 +26,19 @@ microservice-chart:
   service:
     create: true
     type: ClusterIP
-    port: 80
+    ports:
+      - 80
   ingress:
     create: true
     host: "weudev.receipts.internal.dev.platform.pagopa.it"
     path: /pagopa-receipt-pdf-datastore/(.*)
+    servicePort: 80
+  serviceMonitor:
+    create: true
+    endpoints:
+      - interval: 10s
+        targetPort: 12345
+        path: /metrics
   serviceAccount:
     create: false
     annotations: {}
@@ -77,6 +85,7 @@ microservice-chart:
     COSMOS_RECEIPT_CONTAINER_NAME: "receipts"
     BLOB_STORAGE_ACCOUNT_ENDPOINT: "https://pagopadweureceiptsfnsa.blob.core.windows.net/"
     BLOB_STORAGE_CONTAINER_NAME: "pagopa-d-weu-receipts-azure-blob-receipt-st-attach"
+    JAVA_TOOL_OPTIONS: "-javaagent:/home/site/wwwroot/jmx_prometheus_javaagent-0.19.0.jar=12345:/home/site/wwwroot/config.yaml -Xlog:gc* -Xmx1024m -XX:+UseG1GC"
   envSecret:
     APPLICATIONINSIGHTS_CONNECTION_STRING: "ai-d-connection-string"
     BLOB_STORAGE_CONN_STRING: "receipts-storage-account-connection-string"
