@@ -98,8 +98,8 @@ receipt-pdf-datastore:
     allowPrivilegeEscalation: false
   ingress:
     create: true
-    host: "weudev.fdr.internal.dev.platform.pagopa.it"
-    path: /pagopa-fdr-service(/|$)(.*)
+    host: "weuuat.receipts.internal.uat.platform.pagopa.it"
+    path: /pagopa-receipt-pdf-datastore/(.*)
     servicePort: 80
   canaryDelivery:
     create: false
