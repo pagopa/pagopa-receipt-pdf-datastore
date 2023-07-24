@@ -122,8 +122,8 @@ receipt-pdf-datastore:
       envSecret:
 microservice-chart:
   image:
-    tag: 0.6.0-PRDP-74-update-chart-to-add-prometheus
+    tag: 0.7.0-PRDP-74-update-chart-to-add-prometheus
   canaryDelivery:
     deployment:
       image:
-        tag: 0.6.0-PRDP-74-update-chart-to-add-prometheus
+        tag: 0.7.0-PRDP-74-update-chart-to-add-prometheus
