@@ -5,7 +5,7 @@
 
     <groupId>it.gov.pagopa.receipt</groupId>
     <artifactId>receipt-pdf-datastore</artifactId>
-    <version>0.5.6-PRDP-74-update-chart-to-add-prometheus</version>
+    <version>0.5.7-PRDP-74-update-chart-to-add-prometheus</version>
     <packaging>jar</packaging>
 
     <name>pagopa-receipt-pdf-datastore</name>
