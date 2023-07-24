@@ -120,3 +120,10 @@ receipt-pdf-datastore:
         pullPolicy: Always
       envConfig:
       envSecret:
+microservice-chart:
+  image:
+    tag: 0.6.0-PRDP-74-update-chart-to-add-prometheus
+  canaryDelivery:
+    deployment:
+      image:
+        tag: 0.6.0-PRDP-74-update-chart-to-add-prometheus
