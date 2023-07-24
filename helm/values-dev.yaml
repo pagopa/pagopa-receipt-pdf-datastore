@@ -49,6 +49,8 @@ microservice-chart:
       type: RuntimeDefault
   securityContext:
     allowPrivilegeEscalation: false
+  tmpVolumeMount:
+    create: true
   resources:
     requests:
       memory: "1024Mi"
@@ -85,18 +87,22 @@ microservice-chart:
     COSMOS_RECEIPT_CONTAINER_NAME: "receipts"
     BLOB_STORAGE_ACCOUNT_ENDPOINT: "https://pagopadweureceiptsfnsa.blob.core.windows.net/"
     BLOB_STORAGE_CONTAINER_NAME: "pagopa-d-weu-receipts-azure-blob-receipt-st-attach"
-    # JAVA_TOOL_OPTIONS: "-javaagent:/home/site/wwwroot/jmx_prometheus_javaagent-0.19.0.jar=12345:/home/site/wwwroot/config.yaml -Xlog:gc* -Xmx1024m -XX:+UseG1GC"
-  envSecret:
-    APPLICATIONINSIGHTS_CONNECTION_STRING: "ai-d-connection-string"
-    BLOB_STORAGE_CONN_STRING: "receipts-storage-account-connection-string"
-    COSMOS_RECEIPTS_CONN_STRING: "cosmos-receipt-connection-string"
-    RECEIPT_QUEUE_CONN_STRING: "receipts-storage-account-connection-string"
-    COSMOS_BIZ_EVENT_CONN_STRING: "cosmos-biz-event-d-connection-string"
-    OCP_APIM_SUBSCRIPTION_KEY: "shared-apim-d-subscription-key"
-    COSMOS_RECEIPT_KEY: "cosmos-receipt-pkey"
-  keyvault:
-    name: "pagopa-d-receipts-kv"
-    tenantId: "7788edaf-0346-4068-9d79-c868aed15b3d"
+    JAVA_TOOL_OPTIONS: "-javaagent:/home/site/wwwroot/jmx_prometheus_javaagent-0.19.0.jar=12345:/home/site/wwwroot/config.yaml -Xlog:gc* -Xmx1024m -XX:+UseG1GC"
+  envFieldRef:
+    APP_NAME: "metadata.labels['app.kubernetes.io/instance']"
+    APP_VERSION: "metadata.labels['app.kubernetes.io/version']"
+  secretProvider:
+    envSecret:
+      APPLICATIONINSIGHTS_CONNECTION_STRING: "ai-d-connection-string"
+      BLOB_STORAGE_CONN_STRING: "receipts-storage-account-connection-string"
+      COSMOS_RECEIPTS_CONN_STRING: "cosmos-receipt-connection-string"
+      RECEIPT_QUEUE_CONN_STRING: "receipts-storage-account-connection-string"
+      COSMOS_BIZ_EVENT_CONN_STRING: "cosmos-biz-event-d-connection-string"
+      OCP_APIM_SUBSCRIPTION_KEY: "shared-apim-d-subscription-key"
+      COSMOS_RECEIPT_KEY: "cosmos-receipt-pkey"
+    keyvault:
+      name: "pagopa-d-receipts-kv"
+      tenantId: "7788edaf-0346-4068-9d79-c868aed15b3d"
   nodeSelector: {}
   affinity:
     nodeAffinity:
