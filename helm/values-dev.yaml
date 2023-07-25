@@ -23,10 +23,20 @@ microservice-chart:
     periodSeconds: 10
   deployment:
     create: true
-  service:
+  serviceMonitor:
     create: true
+    endpoints:
+      - interval: 10s #jmx-exporter
+        targetPort: 12345
+        path: /metrics
+  ports:
+    - 80 #http
+    - 12345 #jmx-exporter
+  service:
     type: ClusterIP
-    port: 80
+    ports:
+      - 80 #http
+      - 12345 #jmx-exporter
   ingress:
     create: true
     host: "weudev.receipts.internal.dev.platform.pagopa.it"
