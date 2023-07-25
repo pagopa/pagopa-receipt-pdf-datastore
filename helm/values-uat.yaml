@@ -4,7 +4,7 @@ microservice-chart:
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-receipt-pdf-datastore
-    tag: "0.5.7-test-25072023"
+    tag: "0.5.8-test-25072023"
     pullPolicy: Always
   # https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script.WebHost/Controllers/HostController.cs
   livenessProbe:
@@ -113,7 +113,7 @@ microservice-chart:
       create: false
       image:
         repository: ghcr.io/pagopa/pagopa-receipt-pdf-datastore
-        tag: "0.5.7-test-25072023"
+        tag: "0.5.8-test-25072023"
         pullPolicy: Always
       envConfig:
       envSecret:
