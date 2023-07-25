@@ -35,7 +35,7 @@ microservice-chart:
     APP_VERSION: "metadata.labels['app.kubernetes.io/version']"
   secretProvider:
     create: true
-    envSecret:
+    envSecrets:
       APPLICATIONINSIGHTS_CONNECTION_STRING: "ai-d-connection-string"
       BLOB_STORAGE_CONN_STRING: "receipts-storage-account-connection-string"
       COSMOS_RECEIPTS_CONN_STRING: "cosmos-receipt-connection-string"
