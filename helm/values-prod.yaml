@@ -23,14 +23,25 @@ microservice-chart:
     periodSeconds: 10
   deployment:
     create: true
-  service:
+  serviceMonitor:
     create: true
+    endpoints:
+      - interval: 10s #jmx-exporter
+        targetPort: 12345
+        path: /metrics
+  ports:
+    - 80 #http
+    - 12345 #jmx-exporter
+  service:
     type: ClusterIP
-    port: 80
+    ports:
+      - 80 #http
+      - 12345 #jmx-exporter
   ingress:
     create: true
-    host: "weuprod.receipts.internal.platform.pagopa.it"
-    path: /pagopa-receipt-pdf-datastore/(.*) #
+    host: "weudev.receipts.internal.dev.platform.pagopa.it"
+    path: /pagopa-receipt-pdf-datastore/(.*)
+    servicePort: 80
   serviceAccount:
     create: false
     annotations: {}
@@ -43,15 +54,15 @@ microservice-chart:
     allowPrivilegeEscalation: false
   resources:
     requests:
-      memory: "512Mi"
-      cpu: "0.25"
+      memory: "1512Mi"
+      cpu: "1"
     limits:
-      memory: "512Mi"
-      cpu: "0.25"
+      memory: "1512Mi"
+      cpu: "1"
   autoscaling:
     enable: true
     minReplica: 3
-    maxReplica: 10
+    maxReplica: 8
     pollingInterval: 10 # seconds
     cooldownPeriod: 50 # seconds
     triggers:

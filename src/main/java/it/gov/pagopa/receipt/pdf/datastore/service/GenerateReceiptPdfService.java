@@ -21,6 +21,7 @@ import lombok.NoArgsConstructor;
 import org.apache.http.HttpStatus;
 
 import java.io.*;
+import java.net.URL;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.util.logging.Logger;
@@ -92,7 +93,8 @@ public class GenerateReceiptPdfService {
 
         String fileName = completeTemplate ? completeTemplateFileName : partialTemplateFileName;
 
-        try (InputStream templateStream = GenerateReceiptPdf.class.getClassLoader().getResourceAsStream(fileName)) {
+        try {
+            URL templateStream = GenerateReceiptPdf.class.getClassLoader().getResource(fileName);
             //Build the request
             request.setTemplate(templateStream);
             request.setData(ObjectMapperUtils.writeValueAsString(TemplateMapperUtils.convertReceiptToPdfData(bizEvent)));
