@@ -25,5 +25,5 @@ ENV AzureWebJobsScriptRoot=/home/site/wwwroot \
     AzureFunctionsJobHost__Logging__Console__IsEnabled=true
 
 EXPOSE 80
-# EXPOSE 12345
+EXPOSE 12345
 COPY --from=installer-env ["/home/site/wwwroot", "/home/site/wwwroot"]

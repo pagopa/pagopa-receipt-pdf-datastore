@@ -82,14 +82,17 @@ microservice-chart:
   serviceMonitor:
     create: true
     endpoints:
-      - interval: 5s
+      - interval: 10s #jmx-exporter
         targetPort: 12345
         path: /metrics
+  ports:
+    - 80 #http
+    - 12345 #jmx-exporter
   service:
-    create: true
     type: ClusterIP
     ports:
-      - 80
+      - 80 #http
+      - 12345 #jmx-exporter
   podAnnotations: {}
   podSecurityContext:
     seccompProfile:
