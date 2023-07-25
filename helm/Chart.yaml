@@ -2,8 +2,8 @@ apiVersion: v2
 name: pagopa-receipt-pdf-datastore
 description: Receipt PDF Datastore
 type: application
-version: 0.40.0
-appVersion: 0.7.6-PRDP-74-update-chart-to-add-prometheus
+version: 0.41.0
+appVersion: 0.7.7-PRDP-74-update-chart-to-add-prometheus
 dependencies:
   - name: microservice-chart
     version: 3.0.0
