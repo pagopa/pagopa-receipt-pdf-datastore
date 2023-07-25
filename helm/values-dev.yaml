@@ -2,7 +2,7 @@ microservice-chart:
   namespace: "receipts"
   image:
     repository: ghcr.io/pagopa/pagopa-receipt-pdf-datastore
-    tag: "0.7.1-PRDP-74-update-chart-to-add-prometheus"
+    tag: "0.7.2-PRDP-74-update-chart-to-add-prometheus"
   readinessProbe:
     httpGet:
       path: /info
@@ -116,7 +116,7 @@ microservice-chart:
       create: false
       image:
         repository: ghcr.io/pagopa/pagopa-receipt-pdf-datastore
-        tag: "0.7.1-PRDP-74-update-chart-to-add-prometheus"
+        tag: "0.7.2-PRDP-74-update-chart-to-add-prometheus"
         pullPolicy: Always
       envConfig:
       envSecret:
