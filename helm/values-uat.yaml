@@ -4,7 +4,7 @@ microservice-chart:
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-receipt-pdf-datastore
-    tag: "0.7.0-PRDP-74-update-chart-to-add-prometheus"
+    tag: "0.7.1-PRDP-74-update-chart-to-add-prometheus"
     pullPolicy: Always
   # https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script.WebHost/Controllers/HostController.cs
   livenessProbe:
@@ -113,7 +113,7 @@ microservice-chart:
       create: false
       image:
         repository: ghcr.io/pagopa/pagopa-receipt-pdf-datastore
-        tag: "0.7.0-PRDP-74-update-chart-to-add-prometheus"
+        tag: "0.7.1-PRDP-74-update-chart-to-add-prometheus"
         pullPolicy: Always
       envConfig:
       envSecret:
