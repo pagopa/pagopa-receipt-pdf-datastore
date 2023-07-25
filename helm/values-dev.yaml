@@ -41,6 +41,7 @@ microservice-chart:
     create: true
     host: "weudev.receipts.internal.dev.platform.pagopa.it"
     path: /pagopa-receipt-pdf-datastore/(.*)
+    servicePort: 80
   serviceAccount:
     create: false
     annotations: {}
