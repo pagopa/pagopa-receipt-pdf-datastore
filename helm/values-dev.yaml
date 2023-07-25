@@ -89,7 +89,7 @@ microservice-chart:
     create: true
     type: ClusterIP
     ports:
-      - 80
+    - 80
   podAnnotations: {}
   podSecurityContext:
     seccompProfile:
