@@ -13,10 +13,11 @@ parameters:
     displayName: "Test type"
     type: string
     values:
+      - "constant"
       - "load"
       - "spike"
       - "stress"
-    default: "load"
+    default: "constant"
   - name: "SCRIPT"
     displayName: "Script name"
     type: string
