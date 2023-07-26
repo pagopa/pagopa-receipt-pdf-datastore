@@ -2,8 +2,8 @@ apiVersion: v2
 name: pagopa-functions-template
 description: Microservice description
 type: application
-version: 0.30.0
-appVersion: 0.6.0-PRDP-74-add-prometheus-jmx-export
+version: 0.31.0
+appVersion: 0.7.0
 dependencies:
   - name: microservice-chart
     version: 2.4.0
