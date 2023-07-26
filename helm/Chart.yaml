@@ -2,9 +2,9 @@ apiVersion: v2
 name: pagopa-functions-template
 description: Microservice description
 type: application
-version: 0.25.0
-appVersion: 0.5.5
+version: 0.30.0
+appVersion: 0.6.0-PRDP-74-add-prometheus-jmx-export
 dependencies:
   - name: microservice-chart
-    version: 1.21.0
+    version: 2.4.0
     repository: "https://pagopa.github.io/aks-microservice-chart-blueprint"
