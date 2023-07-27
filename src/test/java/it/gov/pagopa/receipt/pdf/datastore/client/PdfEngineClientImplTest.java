@@ -3,6 +3,7 @@ package it.gov.pagopa.receipt.pdf.datastore.client;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.PdfEngineClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.model.request.PdfEngineRequest;
 import it.gov.pagopa.receipt.pdf.datastore.model.response.PdfEngineResponse;
+import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.*;
+import java.nio.file.Files;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -27,13 +29,25 @@ class PdfEngineClientImplTest {
 
     @Test
     void runOk() throws IOException {
+
+        File tempDirectory = new File("temp");
+        if (!tempDirectory.exists()) {
+            Files.createDirectory(tempDirectory.toPath());
+        }
+
+        File targetFile = File.createTempFile("tempFile", ".txt", tempDirectory);
+
+
         byte[] template;
         PdfEngineRequest pdfEngineRequest = new PdfEngineRequest();
         try (InputStream inputStream = FileInputStream.nullInputStream()) {
             template = inputStream.readAllBytes();
 
-            pdfEngineRequest.setTemplate(inputStream);
+            pdfEngineRequest.setTemplate(targetFile.toURI().toURL());
             pdfEngineRequest.setData(new String(template));
+        } finally {
+            targetFile.deleteOnExit();
+            tempDirectory.deleteOnExit();
         }
 
         HttpClientBuilder mockBuilder = mock(HttpClientBuilder.class);
@@ -62,13 +76,23 @@ class PdfEngineClientImplTest {
     @Test
     void runKoUnauthorized() throws IOException {
 
+        File tempDirectory = new File("temp");
+        if (!tempDirectory.exists()) {
+            Files.createDirectory(tempDirectory.toPath());
+        }
+
+        File targetFile = File.createTempFile("tempFile", ".txt", tempDirectory);
+
         byte[] template;
         PdfEngineRequest pdfEngineRequest = new PdfEngineRequest();
         try (InputStream inputStream = FileInputStream.nullInputStream()) {
             template = inputStream.readAllBytes();
 
-            pdfEngineRequest.setTemplate(inputStream);
+            pdfEngineRequest.setTemplate(targetFile.toURI().toURL());
             pdfEngineRequest.setData(new String(template));
+        } finally {
+            targetFile.deleteOnExit();
+            tempDirectory.deleteOnExit();
         }
 
         HttpClientBuilder mockBuilder = mock(HttpClientBuilder.class);
@@ -96,14 +120,21 @@ class PdfEngineClientImplTest {
 
     @Test
     void runKo400() throws IOException {
+        File tempDirectory = new File("temp");
+        if (!tempDirectory.exists()) {
+            Files.createDirectory(tempDirectory.toPath());
+        }
 
+        File targetFile = File.createTempFile("tempFile", ".txt", tempDirectory);
         byte[] template;
         PdfEngineRequest pdfEngineRequest = new PdfEngineRequest();
         try (InputStream inputStream = FileInputStream.nullInputStream()) {
             template = inputStream.readAllBytes();
-
-            pdfEngineRequest.setTemplate(inputStream);
+            pdfEngineRequest.setTemplate(targetFile.toURI().toURL());
             pdfEngineRequest.setData(new String(template));
+        } finally {
+            targetFile.deleteOnExit();
+            tempDirectory.deleteOnExit();
         }
 
         HttpClientBuilder mockBuilder = mock(HttpClientBuilder.class);
