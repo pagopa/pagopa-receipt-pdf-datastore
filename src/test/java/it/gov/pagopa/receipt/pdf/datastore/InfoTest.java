@@ -1,12 +1,15 @@
 package it.gov.pagopa.receipt.pdf.datastore;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
 import java.util.Optional;
+import java.util.logging.Logger;
 
+import it.gov.pagopa.receipt.pdf.datastore.model.AppInfo;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -38,6 +41,7 @@ class InfoTest {
 
         HttpResponseMessage responseMock = mock(HttpResponseMessage.class);
         doReturn(HttpStatus.OK).when(responseMock).getStatus();
+        doReturn(builder).when(builder).body(any());
         doReturn(responseMock).when(builder).build();
 
         // test execution
@@ -45,6 +49,40 @@ class InfoTest {
 
         // test assertion
         assertEquals(HttpStatus.OK, response.getStatus());
+    }
+
+    @SneakyThrows
+    @Test
+    void getInfoOk() {
+
+        // Mocking service creation
+        Logger logger = Logger.getLogger("example-test-logger");
+        String path = "/META-INF/maven/it.gov.pagopa.receipt.pdf.datastore/receipt-pdf-datastore/pom.properties";
+
+        // Execute function
+        AppInfo response = infoFunction.getInfo(logger, path);
+
+        // Checking assertions
+        assertNotNull(response.getName());
+        assertNotNull(response.getVersion());
+        assertNotNull(response.getEnvironment());
+    }
+
+    @SneakyThrows
+    @Test
+    void getInfoKo() {
+
+        // Mocking service creation
+        Logger logger = Logger.getLogger("example-test-logger");
+        String path = "/META-INF/maven/it.gov.pagopa.receipt.pdf.datastore/receipt-pdf-datastore/fake";
+
+        // Execute function
+        AppInfo response = infoFunction.getInfo(logger, path);
+
+        // Checking assertions
+        assertNull(response.getName());
+        assertNull(response.getVersion());
+        assertNotNull(response.getEnvironment());
     }
 
 }
