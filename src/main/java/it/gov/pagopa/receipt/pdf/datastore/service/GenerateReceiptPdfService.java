@@ -1,7 +1,6 @@
 package it.gov.pagopa.receipt.pdf.datastore.service;
 
 import com.microsoft.azure.functions.OutputBinding;
-import it.gov.pagopa.receipt.pdf.datastore.GenerateReceiptPdf;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.PdfEngineClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptBlobClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
@@ -94,7 +93,7 @@ public class GenerateReceiptPdfService {
         String fileName = completeTemplate ? completeTemplateFileName : partialTemplateFileName;
 
         try {
-            URL templateStream = GenerateReceiptPdf.class.getClassLoader().getResource(fileName);
+            URL templateStream = GenerateReceiptPdfService.class.getClassLoader().getResource(fileName);
             //Build the request
             request.setTemplate(templateStream);
             request.setData(ObjectMapperUtils.writeValueAsString(TemplateMapperUtils.convertReceiptToPdfData(bizEvent)));

@@ -15,11 +15,12 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReceiptError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptErrorStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.UnableToQueueException;
 import it.gov.pagopa.receipt.pdf.datastore.utils.ObjectMapperUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.Objects;
-import java.util.logging.Logger;
 
 /**
  * Azure Functions with Azure Queue trigger.
@@ -52,7 +53,7 @@ public class ManageReceiptPoisonQueue {
             OutputBinding<ReceiptError> documentdb,
             final ExecutionContext context) {
 
-        Logger logger = context.getLogger();
+        Logger logger = LoggerFactory.getLogger(getClass());
         BizEvent bizEvent = null;
 
         String logMsg = String.format("[%s] function called at %s for payload %s",

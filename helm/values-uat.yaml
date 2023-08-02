@@ -88,7 +88,11 @@ microservice-chart:
     COSMOS_RECEIPT_CONTAINER_NAME: 'receipts'
     BLOB_STORAGE_ACCOUNT_ENDPOINT: 'https://pagopauweureceiptsfnsa.blob.core.windows.net'
     BLOB_STORAGE_CONTAINER_NAME: 'pagopa-u-weu-receipts-azure-blob-receipt-st-attach'
-    JAVA_TOOL_OPTIONS: "-javaagent:/home/site/wwwroot/jmx_prometheus_javaagent-0.19.0.jar=12345:/home/site/wwwroot/config.yaml -Xmx1512m -XX:+UseG1GC"
+    ELASTIC_APM_SERVICE_NAME: "pagopapdfengine"
+    ELASTIC_APM_APPLICATION_PACKAGES: "it.gov.pagopa.pdf.engine"
+    ELASTIC_APM_SERVER_URL: "http://quickstart-apm-http.elastic-system.svc:8200"
+    ELASTIC_APM_LOG_SENDING: "false"
+    JAVA_TOOL_OPTIONS: "-javaagent:/home/site/wwwroot/jmx_prometheus_javaagent-0.19.0.jar=12345:/home/site/wwwroot/config.yaml -javaagent:/home/site/wwwroot/elastic-apm-agent.jar -Xmx1512m -XX:+UseG1GC"
   envSecret:
     APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-u-connection-string'
     BLOB_STORAGE_CONN_STRING: "receipts-storage-account-connection-string"
@@ -97,6 +101,7 @@ microservice-chart:
     COSMOS_BIZ_EVENT_CONN_STRING: 'cosmos-biz-event-u-connection-string'
     OCP_APIM_SUBSCRIPTION_KEY: 'shared-apim-u-subscription-key'
     COSMOS_RECEIPT_KEY: "cosmos-receipt-pkey"
+    ELASTIC_APM_SECRET_TOKEN: 'elastic-apm-secret-token'
   keyvault:
     name: "pagopa-u-receipts-kv"
     tenantId: "7788edaf-0346-4068-9d79-c868aed15b3d"

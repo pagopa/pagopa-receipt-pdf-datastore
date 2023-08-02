@@ -10,12 +10,13 @@ import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptQueueClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReceiptError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptErrorStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.UnableToQueueException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Azure Functions with Azure CosmosDB trigger.
@@ -55,11 +56,11 @@ public class RetryReviewedPoisonMessages {
             final ExecutionContext context) {
 
         List<ReceiptError> itemsDone = new ArrayList<>();
-        Logger logger = context.getLogger();
+        Logger logger = LoggerFactory.getLogger(getClass());
 
         String msg = String.format("[%s] documentCaptorValue stat %s function - num errors reviewed triggered %d",
                 context.getFunctionName(), context.getInvocationId(), items.size());
-        logger.fine(msg);
+        logger.debug(msg);
 
         ReceiptQueueClientImpl queueService = ReceiptQueueClientImpl.getInstance();
 
@@ -85,7 +86,7 @@ public class RetryReviewedPoisonMessages {
                         //Error info
                         msg = String.format("[%s] Error to process receiptError with id %s",
                                 context.getFunctionName(), receiptError.getId());
-                        logger.log(Level.SEVERE, msg, e);
+                        logger.error(msg, e);
                         receiptError.setMessageError(e.getMessage());
                         receiptError.setStatus(ReceiptErrorStatusType.TO_REVIEW);
                     }

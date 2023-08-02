@@ -9,12 +9,13 @@ import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
 import it.gov.pagopa.receipt.pdf.datastore.model.AppInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 
 /**
@@ -35,8 +36,10 @@ public class Info {
                     authLevel = AuthorizationLevel.ANONYMOUS) HttpRequestMessage<Optional<String>> request,
             final ExecutionContext context) {
 
+        org.slf4j.Logger logger = LoggerFactory.getLogger(getClass());
+
         return request.createResponseBuilder(HttpStatus.OK)
-                .body(getInfo(context.getLogger()))
+                .body(getInfo(logger))
                 .build();
     }
     public synchronized AppInfo getInfo(Logger logger) {
@@ -50,7 +53,7 @@ public class Info {
                 name = properties.getProperty("artifactId", null);
             }
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Impossible to retrieve information from pom.properties file.", e);
+            logger.error("Impossible to retrieve information from pom.properties file.", e);
         }
         return AppInfo.builder().version(version).environment("azure-fn").name(name).build();
     }
