@@ -11,12 +11,13 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.event.enumeration.BizEventStat
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Azure Functions with Azure CosmosDB trigger.
@@ -59,11 +60,11 @@ public class BizEventToReceipt {
             final ExecutionContext context) {
 
         List<Receipt> itemsDone = new ArrayList<>();
-        Logger logger = context.getLogger();
+        Logger logger = LoggerFactory.getLogger(getClass());
 
         String msg = String.format("[%s] stat %s function - num events triggered %d", context.getFunctionName(),
                 context.getInvocationId(), items.size());
-        logger.fine(msg);
+        logger.info(msg);
         int discarder = 0;
 
         //Retrieve receipt data from biz-event
@@ -104,29 +105,29 @@ public class BizEventToReceipt {
                     discarder++;
                     msg = String.format("[%s] event with id %s discarded because in status %s",
                             context.getFunctionName(), bizEvent.getId(), bizEvent.getEventStatus());
-                    logger.fine(msg);
+                    logger.debug(msg);
                 }
             } catch (Exception e) {
                 discarder++;
                 //Error info
                 msg = String.format("[%s] Error to process event with id %s", context.getFunctionName(), bizEvent.getId());
-                logger.log(Level.SEVERE, msg, e);
+                logger.error(msg, e);
             }
         }
         //Discarder info
         msg = String.format("[%s] itemsDone stat %s function - %d number of events in discarder", context.getFunctionName(),
                 context.getInvocationId(), discarder);
-        logger.fine(msg);
+        logger.debug(msg);
 
         //Call to queue info
         msg = String.format("[%s] itemsDone stat %s function - number of events in DONE sent to the receipt queue %d",
                 context.getFunctionName(), context.getInvocationId(), itemsDone.size());
-        logger.fine(msg);
+        logger.debug(msg);
 
         //Call to datastore info
         msg = String.format("[%s] stat %s function - number of receipts inserted on the datastore %d", context.getFunctionName(),
                 context.getInvocationId(), itemsDone.size());
-        logger.fine(msg);
+        logger.debug(msg);
 
         //Save receipts data to CosmosDB
         if (!itemsDone.isEmpty()) {

@@ -11,11 +11,11 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReasonErro
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.utils.ObjectMapperUtils;
 import lombok.NoArgsConstructor;
+import org.slf4j.Logger;
 
 import java.util.Base64;
 import java.util.Objects;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @NoArgsConstructor
 public class BizEventToReceiptService {
@@ -45,7 +45,7 @@ public class BizEventToReceiptService {
             handleError(receipt);
             //Error info
             String msg = String.format("Error sending to queue biz-event message with id %s", bizEvent.getId());
-            logger.log(Level.SEVERE, msg, e);
+            logger.error(msg, e);
         }
     }
 

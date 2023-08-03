@@ -77,6 +77,7 @@ microservice-chart:
           type: Utilization # Allowed types are 'Utilization' or 'AverageValue'
           value: "70"
   envConfig:
+    ENV: "prod"
     WEBSITE_SITE_NAME: "pagopareceiptpdfdatastore" # required to show cloud role name in application insights
     FUNCTIONS_WORKER_RUNTIME: "java"
     RECEIPT_QUEUE_TOPIC: 'pagopa-p-weu-receipts-queue-receipt-waiting-4-gen'
@@ -88,6 +89,15 @@ microservice-chart:
     COSMOS_RECEIPT_CONTAINER_NAME: 'receipts'
     BLOB_STORAGE_ACCOUNT_ENDPOINT: 'https://pagopapweureceiptsfnsa.blob.core.windows.net'
     BLOB_STORAGE_CONTAINER_NAME: 'pagopa-p-weu-receipts-azure-blob-receipt-st-attach'
+    ELASTIC_APM_SERVICE_NAME: "pagopareceiptpdfdatastoreapm"
+    ELASTIC_APM_APPLICATION_PACKAGES: "it.gov.pagopa.receipt.pdf.datastore"
+    ELASTIC_APM_SERVER_URL: "http://quickstart-apm-http.elastic-system.svc:8200"
+    ELASTIC_APM_LOG_SENDING: "false"
+    ENABLE_ECS_CONSOLE: "true"
+    JAVA_TOOL_OPTIONS: "-javaagent:/home/site/wwwroot/jmx_prometheus_javaagent-0.19.0.jar=12345:/home/site/wwwroot/config.yaml -javaagent:/home/site/wwwroot/elastic-apm-agent.jar"
+  envFieldRef:
+    APP_NAME: "metadata.labels['app.kubernetes.io/instance']"
+    APP_VERSION: "metadata.labels['app.kubernetes.io/version']"
   envSecret:
     APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-p-connection-string'
     BLOB_STORAGE_CONN_STRING: 'pdf-blob-storage-p-connection-string'
@@ -96,6 +106,7 @@ microservice-chart:
     COSMOS_BIZ_EVENT_CONN_STRING: 'cosmos-biz-event-p-connection-string'
     OCP_APIM_SUBSCRIPTION_KEY: 'shared-apim-p-subscription-key'
     COSMOS_RECEIPT_KEY: "cosmos-receipt-pkey"
+    ELASTIC_APM_SECRET_TOKEN: 'elastic-apm-secret-token'
   keyvault:
     name: "pagopa-p-receipts-kv"
     tenantId: "7788edaf-0346-4068-9d79-c868aed15b3d"
