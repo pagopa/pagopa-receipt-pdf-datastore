@@ -89,8 +89,8 @@ microservice-chart:
     COSMOS_RECEIPT_CONTAINER_NAME: 'receipts'
     BLOB_STORAGE_ACCOUNT_ENDPOINT: 'https://pagopapweureceiptsfnsa.blob.core.windows.net'
     BLOB_STORAGE_CONTAINER_NAME: 'pagopa-p-weu-receipts-azure-blob-receipt-st-attach'
-    ELASTIC_APM_SERVICE_NAME: "pagopapdfengine"
-    ELASTIC_APM_APPLICATION_PACKAGES: "it.gov.pagopa.pdf.engine"
+    ELASTIC_APM_SERVICE_NAME: "pagopareceiptpdfdatastoreapm"
+    ELASTIC_APM_APPLICATION_PACKAGES: "it.gov.pagopa.receipt.pdf.datastore"
     ELASTIC_APM_SERVER_URL: "http://quickstart-apm-http.elastic-system.svc:8200"
     ELASTIC_APM_LOG_SENDING: "false"
     ENABLE_ECS_CONSOLE: "true"
