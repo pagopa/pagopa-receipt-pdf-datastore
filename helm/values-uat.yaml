@@ -61,7 +61,7 @@ microservice-chart:
       cpu: "1"
   autoscaling:
     enable: true
-    minReplica: 3
+    minReplica: 1
     maxReplica: 7
     pollingInterval: 10 # seconds
     cooldownPeriod: 50 # seconds
@@ -76,6 +76,7 @@ microservice-chart:
           # Required
           type: Utilization # Allowed types are 'Utilization' or 'AverageValue'
           value: "70"
+  fileConfig: {}
   envConfig:
     ENV: "uat"
     WEBSITE_SITE_NAME: "pagopareceiptpdfdatastore" # required to show cloud role name in application insights
