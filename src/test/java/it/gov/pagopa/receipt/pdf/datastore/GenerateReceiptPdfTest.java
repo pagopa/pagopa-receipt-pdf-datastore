@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.util.List;
-import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -104,9 +103,6 @@ class GenerateReceiptPdfTest {
 
     @Test
     void runOkReceiptStatusInsertedDifferentFiscalCode() throws ReceiptNotFoundException, IOException {
-        Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
-        when(context.getLogger()).thenReturn(logger);
-
         ReceiptCosmosClientImpl cosmosClient = mock(ReceiptCosmosClientImpl.class);
         receiptMock.setStatus(ReceiptStatusType.INSERTED);
         EventData eventDataMock = mock(EventData.class);
@@ -165,9 +161,6 @@ class GenerateReceiptPdfTest {
 
     @Test
     void runOkReceiptStatusInsertedSameFiscalCode() throws ReceiptNotFoundException {
-        Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
-        when(context.getLogger()).thenReturn(logger);
-
         ReceiptCosmosClientImpl cosmosClient = mock(ReceiptCosmosClientImpl.class);
         receiptMock.setStatus(ReceiptStatusType.INSERTED);
         EventData eventDataMock = mock(EventData.class);
@@ -218,9 +211,6 @@ class GenerateReceiptPdfTest {
 
     @Test
     void runOkReceiptStatusRetrySameFiscalCode() throws ReceiptNotFoundException {
-        Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
-        when(context.getLogger()).thenReturn(logger);
-
         ReceiptCosmosClientImpl cosmosClient = mock(ReceiptCosmosClientImpl.class);
         receiptMock.setStatus(ReceiptStatusType.RETRY);
         EventData eventDataMock = mock(EventData.class);
@@ -271,9 +261,6 @@ class GenerateReceiptPdfTest {
 
     @Test
     void runDiscarded() throws ReceiptNotFoundException {
-        Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
-        when(context.getLogger()).thenReturn(logger);
-
         ReceiptCosmosClientImpl cosmosClient = mock(ReceiptCosmosClientImpl.class);
         receiptMock.setStatus(ReceiptStatusType.NOT_QUEUE_SENT);
         EventData eventDataMock = mock(EventData.class);
@@ -297,9 +284,6 @@ class GenerateReceiptPdfTest {
 
     @Test
     void runReceiptNotFound() throws ReceiptNotFoundException {
-        Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
-        when(context.getLogger()).thenReturn(logger);
-
         ReceiptCosmosClientImpl cosmosClient = mock(ReceiptCosmosClientImpl.class);
         when(cosmosClient.getReceiptDocument(any()))
                 .thenThrow(ReceiptNotFoundException.class);
@@ -329,9 +313,6 @@ class GenerateReceiptPdfTest {
 
     @Test
     void runKoPdfEngine400() throws ReceiptNotFoundException {
-        Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
-        when(context.getLogger()).thenReturn(logger);
-
         ReceiptCosmosClientImpl cosmosClient = mock(ReceiptCosmosClientImpl.class);
         receiptMock.setStatus(ReceiptStatusType.INSERTED);
         EventData eventDataMock = mock(EventData.class);
@@ -373,9 +354,6 @@ class GenerateReceiptPdfTest {
 
     @Test
     void runKoPdfEngine401() throws ReceiptNotFoundException {
-        Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
-        when(context.getLogger()).thenReturn(logger);
-
         ReceiptCosmosClientImpl cosmosClient = mock(ReceiptCosmosClientImpl.class);
         receiptMock.setStatus(ReceiptStatusType.INSERTED);
         EventData eventDataMock = mock(EventData.class);
@@ -417,9 +395,6 @@ class GenerateReceiptPdfTest {
 
     @Test
     void runKoPdfEngine500() throws ReceiptNotFoundException {
-        Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
-        when(context.getLogger()).thenReturn(logger);
-
         ReceiptCosmosClientImpl cosmosClient = mock(ReceiptCosmosClientImpl.class);
         receiptMock.setStatus(ReceiptStatusType.INSERTED);
         EventData eventDataMock = mock(EventData.class);
@@ -461,9 +436,6 @@ class GenerateReceiptPdfTest {
 
     @Test
     void runKoBlobStorage() throws ReceiptNotFoundException {
-        Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
-        when(context.getLogger()).thenReturn(logger);
-
         ReceiptCosmosClientImpl cosmosClient = mock(ReceiptCosmosClientImpl.class);
         receiptMock.setStatus(ReceiptStatusType.INSERTED);
         EventData eventDataMock = mock(EventData.class);
@@ -511,9 +483,6 @@ class GenerateReceiptPdfTest {
 
     @Test
     void runKoBlobStorageThrowException() throws Exception {
-        Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
-        when(context.getLogger()).thenReturn(logger);
-
         ReceiptCosmosClientImpl cosmosClient = mock(ReceiptCosmosClientImpl.class);
         receiptMock.setStatus(ReceiptStatusType.INSERTED);
         EventData eventDataMock = mock(EventData.class);
@@ -564,9 +533,6 @@ class GenerateReceiptPdfTest {
 
     @Test
     void runKoTooManyRetry() throws ReceiptNotFoundException {
-        Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
-        when(context.getLogger()).thenReturn(logger);
-
         ReceiptCosmosClientImpl cosmosClient = mock(ReceiptCosmosClientImpl.class);
         receiptMock.setStatus(ReceiptStatusType.RETRY);
         EventData eventDataMock = mock(EventData.class);
@@ -601,9 +567,6 @@ class GenerateReceiptPdfTest {
 
     @Test
     void runKoTemplateNotFound() throws Exception {
-        Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
-        when(context.getLogger()).thenReturn(logger);
-
         ReceiptCosmosClientImpl cosmosClient = mock(ReceiptCosmosClientImpl.class);
         receiptMock.setStatus(ReceiptStatusType.INSERTED);
         EventData eventDataMock = mock(EventData.class);

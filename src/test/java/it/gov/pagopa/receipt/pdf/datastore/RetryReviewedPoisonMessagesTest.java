@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -56,15 +55,11 @@ class RetryReviewedPoisonMessagesTest {
     }
 
     @Test
-    public void successfulRun() throws JsonProcessingException {
-
+    void successfulRun() throws JsonProcessingException {
         ReceiptError receiptError = new ReceiptError();
         receiptError.setMessagePayload(VALID_CONTENT_TO_RETRY);
         receiptError.setStatus(ReceiptErrorStatusType.REVIEWED);
         receiptError.setId("1");
-
-        Logger logger = Logger.getLogger("ManageReceiptPoisonQueue-test-logger");
-        when(context.getLogger()).thenReturn(logger);
 
         ReceiptQueueClientImpl serviceMock = mock(ReceiptQueueClientImpl.class);
         Response<SendMessageResult> response = mock(Response.class);
@@ -90,15 +85,11 @@ class RetryReviewedPoisonMessagesTest {
     }
 
     @Test
-    public void successfulRunWithoutElementToRequeue() {
-
+    void successfulRunWithoutElementToRequeue() {
         ReceiptError receiptError = new ReceiptError();
         receiptError.setMessagePayload(VALID_CONTENT_TO_RETRY);
         receiptError.setStatus(ReceiptErrorStatusType.TO_REVIEW);
         receiptError.setId("1");
-
-        Logger logger = Logger.getLogger("ManageReceiptPoisonQueue-test-logger");
-        when(context.getLogger()).thenReturn(logger);
 
         ReceiptQueueClientImpl serviceMock = mock(ReceiptQueueClientImpl.class);
         setMock(serviceMock);
@@ -112,15 +103,11 @@ class RetryReviewedPoisonMessagesTest {
     }
 
     @Test
-    public void resendToCosmosIfQueueFailed() throws JsonProcessingException {
-
+    void resendToCosmosIfQueueFailed() throws JsonProcessingException {
         ReceiptError receiptError = new ReceiptError();
         receiptError.setMessagePayload(VALID_CONTENT_TO_RETRY);
         receiptError.setStatus(ReceiptErrorStatusType.REVIEWED);
         receiptError.setId("1");
-
-        Logger logger = Logger.getLogger("ManageReceiptPoisonQueue-test-logger");
-        when(context.getLogger()).thenReturn(logger);
 
         ReceiptQueueClientImpl serviceMock = mock(ReceiptQueueClientImpl.class);
         Response<SendMessageResult> response = mock(Response.class);

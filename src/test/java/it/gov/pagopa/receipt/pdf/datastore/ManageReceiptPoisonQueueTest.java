@@ -4,7 +4,6 @@ import com.azure.core.http.rest.Response;
 import com.azure.storage.queue.models.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.ExecutionContext;
-import com.microsoft.azure.functions.HttpStatus;
 import com.microsoft.azure.functions.OutputBinding;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptQueueClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
@@ -22,7 +21,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.lang.reflect.Field;
 import java.util.Base64;
-import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -58,11 +56,7 @@ class ManageReceiptPoisonQueueTest {
     }
 
     @Test
-    public void successRunWithValidPayloadToRetryInQueue() throws JsonProcessingException {
-
-        Logger logger = Logger.getLogger("ManageReceiptPoisonQueue-test-logger");
-        when(context.getLogger()).thenReturn(logger);
-
+    void successRunWithValidPayloadToRetryInQueue() throws JsonProcessingException {
         ReceiptQueueClientImpl serviceMock = mock(ReceiptQueueClientImpl.class);
         Response<SendMessageResult> response = mock(Response.class);
         when(response.getStatusCode()).thenReturn(201);
@@ -85,11 +79,7 @@ class ManageReceiptPoisonQueueTest {
     }
 
     @Test
-    public void successRunWithValidPayloadNotToRetry() {
-
-        Logger logger = Logger.getLogger("ManageReceiptPoisonQueue-test-logger");
-        when(context.getLogger()).thenReturn(logger);
-
+    void successRunWithValidPayloadNotToRetry() {
         ReceiptQueueClientImpl serviceMock = mock(ReceiptQueueClientImpl.class);
 
         ManageReceiptPoisonQueueTest.setMock(serviceMock);
@@ -105,11 +95,7 @@ class ManageReceiptPoisonQueueTest {
     }
 
     @Test
-    public void successRunWithInvalidPayload() {
-
-        Logger logger = Logger.getLogger("ManageReceiptPoisonQueue-test-logger");
-        when(context.getLogger()).thenReturn(logger);
-
+    void successRunWithInvalidPayload() {
         ReceiptQueueClientImpl serviceMock = mock(ReceiptQueueClientImpl.class);
 
         ManageReceiptPoisonQueueTest.setMock(serviceMock);
@@ -125,11 +111,7 @@ class ManageReceiptPoisonQueueTest {
     }
 
     @Test
-    public void KoRunForRequeueError() {
-
-        Logger logger = Logger.getLogger("ManageReceiptPoisonQueue-test-logger");
-        when(context.getLogger()).thenReturn(logger);
-
+    void KoRunForRequeueError() {
         ReceiptQueueClientImpl serviceMock = mock(ReceiptQueueClientImpl.class);
         Response<SendMessageResult> response = mock(Response.class);
         when(response.getStatusCode()).thenReturn(400);

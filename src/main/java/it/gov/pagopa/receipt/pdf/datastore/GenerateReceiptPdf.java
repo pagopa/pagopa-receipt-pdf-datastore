@@ -3,7 +3,10 @@ package it.gov.pagopa.receipt.pdf.datastore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.OutputBinding;
-import com.microsoft.azure.functions.annotation.*;
+import com.microsoft.azure.functions.annotation.CosmosDBOutput;
+import com.microsoft.azure.functions.annotation.FunctionName;
+import com.microsoft.azure.functions.annotation.QueueOutput;
+import com.microsoft.azure.functions.annotation.QueueTrigger;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
@@ -14,11 +17,12 @@ import it.gov.pagopa.receipt.pdf.datastore.model.PdfGeneration;
 import it.gov.pagopa.receipt.pdf.datastore.service.GenerateReceiptPdfService;
 import it.gov.pagopa.receipt.pdf.datastore.utils.ObjectMapperUtils;
 import org.apache.http.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 
 /**
  * Azure Functions with Azure Queue trigger.
@@ -89,7 +93,7 @@ public class GenerateReceiptPdf {
         }
 
         List<Receipt> itemsToNotify = new ArrayList<>();
-        Logger logger = context.getLogger();
+        Logger logger = LoggerFactory.getLogger(getClass());
 
         String logMsg = String.format("[%s] function called at %s for bizEvent with id %s",
                 context.getFunctionName(), LocalDateTime.now(), bizEvent.getId());

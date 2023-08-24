@@ -5,13 +5,12 @@ import com.azure.storage.queue.models.SendMessageResult;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.HttpStatus;
 import com.microsoft.azure.functions.OutputBinding;
+import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptQueueClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.*;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.enumeration.BizEventStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReasonErrorCode;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
-import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptQueueClientImpl;
-import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,10 +24,11 @@ import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
+import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariable;
 
 @ExtendWith(MockitoExtension.class)
 class BizEventToReceiptTest {
@@ -56,9 +56,6 @@ class BizEventToReceiptTest {
 
     @Test
     void runOk() {
-        Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
-        when(context.getLogger()).thenReturn(logger);
-
         ReceiptQueueClientImpl serviceMock = mock(ReceiptQueueClientImpl.class);
         Response<SendMessageResult> response = mock(Response.class);
         when(response.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
@@ -85,9 +82,6 @@ class BizEventToReceiptTest {
 
     @Test
     void runDiscarded() {
-        Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
-        when(context.getLogger()).thenReturn(logger);
-
         List<BizEvent> bizEventItems = new ArrayList<>();
         bizEventItems.add(generateNotDoneBizEvent());
 
@@ -102,9 +96,6 @@ class BizEventToReceiptTest {
 
     @Test
     void errorAddingMessageToQueue() {
-        Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
-        when(context.getLogger()).thenReturn(logger);
-
         ReceiptQueueClientImpl serviceMock = mock(ReceiptQueueClientImpl.class);
         Response<SendMessageResult> response = mock(Response.class);
         when(response.getStatusCode()).thenReturn(400);
@@ -132,9 +123,6 @@ class BizEventToReceiptTest {
 
     @Test
     void errorAddingMessageToQueueThrowException() throws Exception {
-        Logger logger = Logger.getLogger("BizEventToReceipt-test-logger");
-        when(context.getLogger()).thenReturn(logger);
-
         ReceiptQueueClientImpl serviceMock = mock(ReceiptQueueClientImpl.class);
 
         BizEventToReceiptTest.setMock(serviceMock);

@@ -18,12 +18,12 @@ import it.gov.pagopa.receipt.pdf.datastore.utils.ObjectMapperUtils;
 import it.gov.pagopa.receipt.pdf.datastore.utils.TemplateMapperUtils;
 import lombok.NoArgsConstructor;
 import org.apache.http.HttpStatus;
+import org.slf4j.Logger;
 
 import java.io.*;
 import java.net.URL;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
-import java.util.logging.Logger;
 
 @NoArgsConstructor
 public class GenerateReceiptPdfService {
@@ -182,7 +182,7 @@ public class GenerateReceiptPdfService {
                 Files.delete(tempFile.toPath());
             } catch (IOException e) {
                 logMsg = String.format("Error deleting temporary pdf file from file system: %s", e);
-                logger.warning(logMsg);
+                logger.warn(logMsg);
             }
         }
 
@@ -192,7 +192,7 @@ public class GenerateReceiptPdfService {
                 Files.delete(tempDirectory.toPath());
             } catch (IOException e) {
                 logMsg = String.format("Error deleting temporary pdf directory from file system: %s", e);
-                logger.warning(logMsg);
+                logger.warn(logMsg);
             }
         }
     }
@@ -333,6 +333,6 @@ public class GenerateReceiptPdfService {
         //Re-queue the message
         requeueMessage.setValue(bizEventMessage);
         String logMessage = "Error generating PDF at " + LocalDateTime.now() + " : " + errorMessage;
-        logger.severe(logMessage);
+        logger.error(logMessage);
     }
 }
