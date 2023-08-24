@@ -58,7 +58,7 @@ export function getDocumentByEventId(cosmosDbURI, databaseId, containerId, autho
 
     const body = JSON.stringify(query);
 
-    return http.post(cosmosDbURI+path, body, {headers});
+    return http.post(cosmosDbURI+path, body, {headers, responseType: "text"});
 }
 
 
