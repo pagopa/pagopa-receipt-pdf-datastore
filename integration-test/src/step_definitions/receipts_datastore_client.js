@@ -19,6 +19,14 @@ async function getDocumentByIdFromReceiptsDatastore(id) {
         .fetchNext();
 }
 
+async function deleteDocumentFromReceiptsDatastoreByEventId(eventId){
+    let documents = await getDocumentByIdFromReceiptsDatastore(eventId);
+
+    documents?.resources?.forEach(el => {
+        deleteDocumentFromReceiptsDatastore(el.id, eventId);
+    })
+}
+
 async function createDocumentInReceiptsDatastore(id) {
     let event = createReceipt(id);
     try {
@@ -78,6 +86,14 @@ async function deleteDocumentFromErrorReceiptsDatastore(id) {
     }
 }
 
+async function deleteDocumentFromErrorReceiptsDatastoreByMessagePayload(messagePayload) {
+    let documents = await getDocumentByMessagePayloadFromErrorReceiptsDatastore(messagePayload);
+
+    documents?.resources?.forEach((el) => {
+        deleteDocumentFromErrorReceiptsDatastore(el.id);
+    })
+}
+
 module.exports = {
-    getDocumentByIdFromReceiptsDatastore, createDocumentInReceiptsDatastore, deleteDocumentFromReceiptsDatastore, getDocumentByMessagePayloadFromErrorReceiptsDatastore, createDocumentInErrorReceiptsDatastore, deleteDocumentFromErrorReceiptsDatastore
+    getDocumentByIdFromReceiptsDatastore, deleteDocumentFromReceiptsDatastoreByEventId, createDocumentInReceiptsDatastore, deleteDocumentFromReceiptsDatastore, getDocumentByMessagePayloadFromErrorReceiptsDatastore, createDocumentInErrorReceiptsDatastore, deleteDocumentFromErrorReceiptsDatastore, deleteDocumentFromErrorReceiptsDatastoreByMessagePayload
 }
