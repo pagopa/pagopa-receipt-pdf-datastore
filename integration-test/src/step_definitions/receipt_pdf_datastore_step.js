@@ -2,7 +2,7 @@ const assert = require('assert');
 const { After, Given, When, Then, setDefaultTimeout } = require('@cucumber/cucumber');
 const { sleep, createEventForQueue, createEventForPoisonQueue } = require("./common");
 const { createDocumentInBizEventsDatastore, deleteDocumentFromBizEventsDatastore } = require("./biz_events_datastore_client");
-const { getDocumentByIdFromReceiptsDatastore, deleteDocumentFromErrorReceiptsDatastoreByMessagePayload, deleteDocumentFromReceiptsDatastore, createDocumentInReceiptsDatastore, createDocumentInErrorReceiptsDatastore, deleteDocumentFromErrorReceiptsDatastore, getDocumentByMessagePayloadFromErrorReceiptsDatastore } = require("./receipts_datastore_client");
+const { getDocumentByIdFromReceiptsDatastore, deleteDocumentFromErrorReceiptsDatastoreByMessagePayload, deleteDocumentFromReceiptsDatastoreByEventId, deleteDocumentFromReceiptsDatastore, createDocumentInReceiptsDatastore, createDocumentInErrorReceiptsDatastore, deleteDocumentFromErrorReceiptsDatastore, getDocumentByMessagePayloadFromErrorReceiptsDatastore } = require("./receipts_datastore_client");
 const { putMessageOnPoisonQueue, putMessageOnReceiptQueue } = require("./reqeipt_queue_client");
 const { receiptPDFExist } = require("./receipts_blob_storage_client");
 
@@ -39,6 +39,7 @@ Given('a random biz event with id {string} stored on biz-events datastore with s
     this.eventId = id;
     // prior cancellation to avoid dirty cases
     await deleteDocumentFromBizEventsDatastore(this.eventId);
+    await deleteDocumentFromReceiptsDatastoreByEventId(this.eventId);
 
     let bizEventStoreResponse = await createDocumentInBizEventsDatastore(this.eventId);
     assert.strictEqual(bizEventStoreResponse.statusCode, 201);
