@@ -97,6 +97,7 @@ Then('the blob storage has the PDF document', async function () {
 
 
 Given('a random biz event with id {string} enqueued on receipts poison queue with poison retry {string}', async function (id, value) {
+    await deleteDocumentFromErrorReceiptsDatastore(id);
     let attemptedPoisonRetry = (value === 'true');
     this.event = createEventForPoisonQueue(id, attemptedPoisonRetry);
     await putMessageOnPoisonQueue(this.event);
