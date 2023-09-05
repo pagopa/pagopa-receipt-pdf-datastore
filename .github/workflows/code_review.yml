@@ -74,7 +74,6 @@ jobs:
         id: run_integration_test
         run: |
           export CUCUMBER_PUBLISH_TOKEN=${{ secrets.CUCUMBER_PUBLISH_TOKEN }}
-          export RECEIPTS_STORAGE_CONN_STRING='${{ secrets.RECEIPTS_STORAGE_CONN_STRING }}'
           export RECEIPTS_COSMOS_CONN_STRING='${{ secrets.RECEIPTS_COSMOS_CONN_STRING }}'
           export BIZEVENTS_COSMOS_CONN_STRING='${{ secrets.BIZEVENTS_COSMOS_CONN_STRING }}'
 
