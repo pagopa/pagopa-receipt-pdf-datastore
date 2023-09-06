@@ -2,7 +2,7 @@ const assert = require('assert');
 const { After, Given, When, Then, setDefaultTimeout } = require('@cucumber/cucumber');
 const { sleep } = require("./common");
 const { createDocumentInBizEventsDatastore, deleteDocumentFromBizEventsDatastore } = require("./biz_events_datastore_client");
-const { getDocumentByIdFromReceiptsDatastore, deleteDocumentFromErrorReceiptsDatastoreByMessagePayload, deleteDocumentFromReceiptsDatastoreByEventId, deleteDocumentFromReceiptsDatastore, createDocumentInReceiptsDatastore, createDocumentInErrorReceiptsDatastore, deleteDocumentFromErrorReceiptsDatastore, getDocumentByMessagePayloadFromErrorReceiptsDatastore } = require("./receipts_datastore_client");
+const { getDocumentByIdFromReceiptsDatastore, deleteDocumentFromReceiptsDatastoreByEventId, deleteDocumentFromReceiptsDatastore } = require("./receipts_datastore_client");
 
 // set timeout for Hooks function, it allows to wait for long task
 setDefaultTimeout(360 * 1000);
@@ -11,7 +11,6 @@ setDefaultTimeout(360 * 1000);
 this.eventId = null;
 this.responseToCheck = null;
 this.receiptId = null;
-this.errorReceiptId = null;
 this.event = null;
 
 // After each Scenario
@@ -23,13 +22,9 @@ After(async function () {
     if (this.eventId != null && this.receiptId != null) {
         await deleteDocumentFromReceiptsDatastore(this.receiptId, this.eventId);
     }
-    if (this.errorReceiptId != null) {
-        await deleteDocumentFromErrorReceiptsDatastore(this.errorReceiptId);
-    }
     this.eventId = null;
     this.responseToCheck = null;
     this.receiptId = null;
-    this.errorReceiptId = null;
     this.event = null;
 });
 
