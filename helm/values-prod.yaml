@@ -81,14 +81,9 @@ microservice-chart:
     WEBSITE_SITE_NAME: "pagopareceiptpdfdatastore" # required to show cloud role name in application insights
     FUNCTIONS_WORKER_RUNTIME: "java"
     RECEIPT_QUEUE_TOPIC: 'pagopa-p-weu-receipts-queue-receipt-waiting-4-gen'
-    RECEIPT_QUEUE_TOPIC_POISON: "pagopa-d-weu-receipts-queue-receipt-waiting-4-gen-poison"
-    COSMOS_RECEIPT_QUEUE_MAX_RETRY: '5'
-    PDF_ENGINE_ENDPOINT: 'https://api.prod.platform.pagopa.it/shared/pdf-engine/v1/generate-pdf'
     COSMOS_RECEIPT_SERVICE_ENDPOINT: 'https://pagopa-p-weu-receipts-ds-cosmos-account.documents.azure.com:443/'
     COSMOS_RECEIPT_DB_NAME: 'db'
     COSMOS_RECEIPT_CONTAINER_NAME: 'receipts'
-    BLOB_STORAGE_ACCOUNT_ENDPOINT: 'https://pagopapweureceiptsfnsa.blob.core.windows.net'
-    BLOB_STORAGE_CONTAINER_NAME: 'pagopa-p-weu-receipts-azure-blob-receipt-st-attach'
     ELASTIC_APM_SERVICE_NAME: "pagopareceiptpdfdatastoreapm"
     ELASTIC_APM_APPLICATION_PACKAGES: "it.gov.pagopa.receipt.pdf.datastore"
     ELASTIC_APM_SERVER_URL: "http://quickstart-apm-http.elastic-system.svc:8200"
@@ -100,11 +95,9 @@ microservice-chart:
     APP_VERSION: "metadata.labels['app.kubernetes.io/version']"
   envSecret:
     APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-p-connection-string'
-    BLOB_STORAGE_CONN_STRING: 'pdf-blob-storage-p-connection-string'
     COSMOS_RECEIPTS_CONN_STRING: 'cosmos-receipt-p-connection-string'
     RECEIPT_QUEUE_CONN_STRING: "receipts-storage-account-connection-string"
     COSMOS_BIZ_EVENT_CONN_STRING: 'cosmos-biz-event-p-connection-string'
-    OCP_APIM_SUBSCRIPTION_KEY: 'shared-apim-p-subscription-key'
     COSMOS_RECEIPT_KEY: "cosmos-receipt-pkey"
     ELASTIC_APM_SECRET_TOKEN: 'elastic-apm-secret-token'
   keyvault:
