@@ -74,10 +74,9 @@ function postcondition(eventId) {
 
 	let receipt = Documents[0];
 
-	check(r, {
-		"Assert published receipt is in the datastore RECEIPT": (_r) => _count === 1 &&
-			receipt.status !== "NOT_QUEUE_SENT"
-	}, tag);
+	check(r, {"Assert published receipt is in the datastore RECEIPT": (_r) => _count === 1}, tag);
+
+	check(r, {"Assert published receipt is not in status NOT_QUEUE_SENT": (_r) => receipt.status !== "NOT_QUEUE_SENT"}, tag);
 
 	if (_count) {
 		let receiptId = receipt.id;
