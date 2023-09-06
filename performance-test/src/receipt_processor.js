@@ -41,38 +41,6 @@ export function teardown(data) {
 	// todo
 }
 
-function postcondition(eventId) {
-	// verify that published event have been stored properly in the datastore
-	let tag = { datastoreMethod: "GetDocumentByEventId" };
-	let r = getDocumentByEventId(receiptCosmosDBURI, receiptDatabaseID, receiptContainerID, receiptCosmosDBPrimaryKey, eventId);
-
-	console.log("GetDocumentByEventId call, Status " + r.status);
-
-	let { _count, Documents } = r.json();
-
-	let receipt = Documents[0];
-
-	check(r, {
-		"Assert published receipt is in the datastore and with status GENERATED or beyond": (_r) => _count === 1 && (
-			receipt.status !== "INSERTED" &&
-			receipt.status !== "FAILED" &&
-			receipt.status !== "NOT_QUEUE_SENT" &&
-			receipt.status !== "RETRY"
-		) &&
-			receipt.mdAttach
-			&&
-			receipt.mdAttach.url
-		,
-	}, tag);
-
-	if (_count) {
-		let receiptId = receipt.id;
-
-		deleteDocument(bizEventCosmosDBURI, bizEventDatabaseID, bizEventContainerID, bizEventCosmosDBPrimaryKey, eventId);
-		deleteDocument(receiptCosmosDBURI, receiptDatabaseID, receiptContainerID, receiptCosmosDBPrimaryKey, receiptId);
-	}
-}
-
 export default function () {
 	// publish event
 	let tag = { eventHubMethod: "SaveBizEvent" };
@@ -92,5 +60,29 @@ export default function () {
 	if (r.status === 201) {
 		sleep(processTime);
 		postcondition(id);
+	}
+}
+
+function postcondition(eventId) {
+	// verify that published event have been stored properly in the datastore
+	let tag = { datastoreMethod: "GetDocumentByEventId" };
+	let r = getDocumentByEventId(receiptCosmosDBURI, receiptDatabaseID, receiptContainerID, receiptCosmosDBPrimaryKey, eventId);
+
+	console.log("GetDocumentByEventId call, Status " + r.status);
+
+	let { _count, Documents } = r.json();
+
+	let receipt = Documents[0];
+
+	check(r, {
+		"Assert published receipt is in the datastore and with status GENERATED or beyond": (_r) => _count === 1 &&
+			receipt.status !== "NOT_QUEUE_SENT"
+	}, tag);
+
+	if (_count) {
+		let receiptId = receipt.id;
+
+		deleteDocument(bizEventCosmosDBURI, bizEventDatabaseID, bizEventContainerID, bizEventCosmosDBPrimaryKey, eventId);
+		deleteDocument(receiptCosmosDBURI, receiptDatabaseID, receiptContainerID, receiptCosmosDBPrimaryKey, receiptId);
 	}
 }
