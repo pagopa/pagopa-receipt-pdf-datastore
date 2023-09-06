@@ -43,24 +43,6 @@ Given('a random biz event with id {string} stored on biz-events datastore with s
     assert.strictEqual(bizEventStoreResponse.statusCode, 201);
 });
 
-Given('a receipt with id {string} stored into receipt datastore', async function (id) {
-    this.eventId = id;
-    // prior cancellation to avoid dirty cases
-    await deleteDocumentFromReceiptsDatastore(this.eventId, this.eventId);
-
-    let receiptsStoreResponse = await createDocumentInReceiptsDatastore(this.eventId);
-    assert.strictEqual(receiptsStoreResponse.statusCode, 201);
-    this.receiptId = this.eventId;
-});
-
-
-Given('a error receipt with id {string} stored into receipt-message-error datastore with status REVIEWED', async function (id) {
-    assert.strictEqual(this.eventId, id);
-    let response = await createDocumentInErrorReceiptsDatastore(id);
-    assert.strictEqual(response.statusCode, 201);
-    this.errorReceiptId = id;
-});
-
 When('biz event has been properly stored into receipt datastore after {int} ms with eventId {string}', async function (time, eventId) {
     // boundary time spent by azure function to process event
     await sleep(time);
