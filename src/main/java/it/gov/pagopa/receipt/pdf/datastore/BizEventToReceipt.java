@@ -95,7 +95,7 @@ public class BizEventToReceipt {
                 receipt.setEventData(eventData);
 
                 logger.info("[{}] function called at {} for event with id {} and status {}",
-                        context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
+                            context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
 
                 //Send biz event as message to queue (to be processed from the other function)
                 service.handleSendMessageToQueue(bizEvent, receipt, logger);
