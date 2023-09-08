@@ -71,9 +71,8 @@ public class BizEventToReceipt {
         //Retrieve receipt data from biz-event
         for (BizEvent bizEvent : items) {
 
-            //Discard null biz events or not in status DONE
-            if (bizEvent == null || !bizEvent.getEventStatus().equals(BizEventStatusType.DONE)) {
-                logDiscardedEvent(context, bizEvent);
+            //Discard null biz events || not in status DONE || with totalNotice > 1
+            if (isBizEventInvalid(bizEvent, context)) {
                 discarder++;
                 continue;
             }
@@ -98,7 +97,7 @@ public class BizEventToReceipt {
                         context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
 
                 //Send biz event as message to queue (to be processed from the other function)
-                service.handleSendMessageToQueue(bizEvent, receipt, logger);
+                service.handleSendMessageToQueue(bizEvent, receipt);
 
                 //Add receipt to items to be saved on CosmosDB
                 itemsDone.add(receipt);
@@ -124,12 +123,37 @@ public class BizEventToReceipt {
         }
     }
 
-    private void logDiscardedEvent(ExecutionContext context, BizEvent bizEvent) {
+    private boolean isBizEventInvalid(BizEvent bizEvent, ExecutionContext context) {
         if (bizEvent == null) {
             logger.debug("[{}] event is null", context.getFunctionName());
-        } else {
+            return true;
+        }
+        if (!bizEvent.getEventStatus().equals(BizEventStatusType.DONE)) {
             logger.debug("[{}] event with id {} discarded because in status {}",
                     context.getFunctionName(), bizEvent.getId(), bizEvent.getEventStatus());
+            return true;
         }
+        if (bizEvent.getPaymentInfo() != null) {
+            int totalNotice;
+            try {
+                totalNotice = Integer.parseInt(bizEvent.getPaymentInfo().getTotalNotice());
+            } catch (NumberFormatException e) {
+                logger.error("[{}] event with id {} discarded because has an invalid total notice value: {}",
+                        context.getFunctionName(), bizEvent.getId(),
+                        bizEvent.getPaymentInfo().getTotalNotice(),
+                        e
+                );
+                return true;
+            }
+            if (totalNotice > 1) {
+                logger.debug("[{}] event with id {} discarded because is part of a payment cart ({} total notice)",
+                        context.getFunctionName(), bizEvent.getId(),
+                        totalNotice
+                );
+                return true;
+            }
+        }
+
+        return false;
     }
 }
