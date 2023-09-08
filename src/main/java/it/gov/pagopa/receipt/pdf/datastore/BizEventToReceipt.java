@@ -23,6 +23,8 @@ import java.util.List;
  */
 public class BizEventToReceipt {
 
+    private final Logger logger = LoggerFactory.getLogger(BizEventToReceipt.class);
+
     /**
      * This function will be invoked when an CosmosDB trigger occurs
      * #
@@ -59,78 +61,75 @@ public class BizEventToReceipt {
             final ExecutionContext context) {
 
         List<Receipt> itemsDone = new ArrayList<>();
-        Logger logger = LoggerFactory.getLogger(getClass());
 
-        String msg = String.format("[%s] stat %s function - num events triggered %d", context.getFunctionName(),
-                context.getInvocationId(), items.size());
-        logger.info(msg);
+        logger.info("[{}] stat {} function - num events triggered {}",
+                context.getFunctionName(),
+                context.getInvocationId(),
+                items.size());
         int discarder = 0;
 
         //Retrieve receipt data from biz-event
         for (BizEvent bizEvent : items) {
 
+            //Discard null biz events or not in status DONE
+            if (bizEvent == null || !bizEvent.getEventStatus().equals(BizEventStatusType.DONE)) {
+                logDiscardedEvent(context, bizEvent);
+                discarder++;
+                continue;
+            }
             try {
-                //Process only biz-event in status DONE
-                if (bizEvent != null && bizEvent.getEventStatus().equals(BizEventStatusType.DONE)) {
-                    BizEventToReceiptService service = new BizEventToReceiptService();
+                BizEventToReceiptService service = new BizEventToReceiptService();
+                Receipt receipt = new Receipt();
 
-                    Receipt receipt = new Receipt();
+                //Insert biz-event data into receipt
+                receipt.setEventId(bizEvent.getId());
 
-                    //Insert biz-event data into receipt
-                    receipt.setEventId(bizEvent.getId());
+                EventData eventData = new EventData();
+                //TODO verify if payer's or debtor's CF can be null
+                eventData.setPayerFiscalCode(bizEvent.getPayer() != null ? bizEvent.getPayer().getEntityUniqueIdentifierValue() : null);
+                eventData.setDebtorFiscalCode(bizEvent.getDebtor() != null ? bizEvent.getDebtor().getEntityUniqueIdentifierValue() : null);
+                eventData.setTransactionCreationDate(
+                        service.getTransactionCreationDate(bizEvent)
+                );
 
-                    EventData eventData = new EventData();
-                    //TODO verify if payer's or debtor's CF can be null
-                    eventData.setPayerFiscalCode(bizEvent.getPayer() != null ? bizEvent.getPayer().getEntityUniqueIdentifierValue() : null);
-                    eventData.setDebtorFiscalCode(bizEvent.getDebtor() != null ? bizEvent.getDebtor().getEntityUniqueIdentifierValue() : null);
-                    eventData.setTransactionCreationDate(
-                            service.getTransactionCreationDate(bizEvent)
-                    );
+                receipt.setEventData(eventData);
 
-                    receipt.setEventData(eventData);
+                logger.info("[{}] function called at {} for event with id {} and status {}",
+                        context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
 
-                    String message = String.format("[%s] function called at %s for event with id %s and status %s",
-                            context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
-                    logger.info(message);
+                //Send biz event as message to queue (to be processed from the other function)
+                service.handleSendMessageToQueue(bizEvent, receipt, logger);
 
-                    //Send biz event as message to queue (to be processed from the other function)
-                    service.handleSendMessageToQueue(bizEvent, receipt, logger);
-
-                    //Add receipt to items to be saved on CosmosDB
-                    itemsDone.add(receipt);
-
-                } else {
-                    //Discard biz events not in status DONE
-                    discarder++;
-                    msg = String.format("[%s] event with id %s discarded because in status %s",
-                            context.getFunctionName(), bizEvent.getId(), bizEvent.getEventStatus());
-                    logger.debug(msg);
-                }
+                //Add receipt to items to be saved on CosmosDB
+                itemsDone.add(receipt);
             } catch (Exception e) {
                 discarder++;
                 //Error info
-                msg = String.format("[%s] Error to process event with id %s", context.getFunctionName(), bizEvent.getId());
-                logger.error(msg, e);
+                logger.error("[{}] Error to process event with id {}", context.getFunctionName(), bizEvent.getId(), e);
             }
         }
         //Discarder info
-        msg = String.format("[%s] itemsDone stat %s function - %d number of events in discarder", context.getFunctionName(),
+        logger.debug("[{}] itemsDone stat {} function - {} number of events in discarder", context.getFunctionName(),
                 context.getInvocationId(), discarder);
-        logger.debug(msg);
-
         //Call to queue info
-        msg = String.format("[%s] itemsDone stat %s function - number of events in DONE sent to the receipt queue %d",
+        logger.debug("[{}] itemsDone stat {} function - number of events in DONE sent to the receipt queue {}",
                 context.getFunctionName(), context.getInvocationId(), itemsDone.size());
-        logger.debug(msg);
-
         //Call to datastore info
-        msg = String.format("[%s] stat %s function - number of receipts inserted on the datastore %d", context.getFunctionName(),
+        logger.debug("[{}] stat {} function - number of receipts inserted on the datastore {}", context.getFunctionName(),
                 context.getInvocationId(), itemsDone.size());
-        logger.debug(msg);
 
         //Save receipts data to CosmosDB
         if (!itemsDone.isEmpty()) {
             documentdb.setValue(itemsDone);
+        }
+    }
+
+    private void logDiscardedEvent(ExecutionContext context, BizEvent bizEvent) {
+        if (bizEvent == null) {
+            logger.debug("[{}] event is null", context.getFunctionName());
+        } else {
+            logger.debug("[{}] event with id {} discarded because in status {}",
+                    context.getFunctionName(), bizEvent.getId(), bizEvent.getEventStatus());
         }
     }
 }

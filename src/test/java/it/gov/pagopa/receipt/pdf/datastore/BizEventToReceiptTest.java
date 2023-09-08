@@ -81,9 +81,23 @@ class BizEventToReceiptTest {
     }
 
     @Test
-    void runDiscarded() {
+    void runDiscardedWithEventNotDONE() {
         List<BizEvent> bizEventItems = new ArrayList<>();
         bizEventItems.add(generateNotDoneBizEvent());
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+
+        // test execution
+        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
+
+        verify(documentdb, never()).setValue(any());
+    }
+
+    @Test
+    void runDiscardedWithEventNull() {
+        List<BizEvent> bizEventItems = new ArrayList<>();
+        bizEventItems.add(null);
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);

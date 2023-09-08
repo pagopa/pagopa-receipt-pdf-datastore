@@ -89,6 +89,10 @@ microservice-chart:
     ELASTIC_APM_SERVER_URL: "http://quickstart-apm-http.elastic-system.svc:8200"
     ELASTIC_APM_LOG_SENDING: "false"
     ENABLE_ECS_CONSOLE: "true"
+    CONSOLE_LOG_THRESHOLD: "DEBUG"
+    CONSOLE_LOG_PATTERN: "%d{HH:mm:ss.SSS}[%thread]%-5level%logger{36}-%msg%n"
+    CONSOLE_LOG_CHARSET: "UTF-8"
+    ECS_SERVICE_NAME: "pagopareceiptpdfdatastoreecs"
     JAVA_TOOL_OPTIONS: "-javaagent:/home/site/wwwroot/jmx_prometheus_javaagent-0.19.0.jar=12345:/home/site/wwwroot/config.yaml -javaagent:/home/site/wwwroot/elastic-apm-agent.jar"
   envFieldRef:
     APP_NAME: "metadata.labels['app.kubernetes.io/instance']"

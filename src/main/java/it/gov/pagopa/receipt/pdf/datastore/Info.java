@@ -15,13 +15,14 @@ import org.slf4j.LoggerFactory;
 import java.io.InputStream;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.logging.Level;
 
 
 /**
  * Azure Functions with Azure Http trigger.
  */
 public class Info {
+
+    private final Logger logger = LoggerFactory.getLogger(Info.class);
 
     /**
      * This function will be invoked when a Http Trigger occurs
@@ -36,13 +37,11 @@ public class Info {
                     authLevel = AuthorizationLevel.ANONYMOUS) HttpRequestMessage<Optional<String>> request,
             final ExecutionContext context) {
 
-        org.slf4j.Logger logger = LoggerFactory.getLogger(getClass());
-
         return request.createResponseBuilder(HttpStatus.OK)
-                .body(getInfo(logger))
+                .body(getInfo())
                 .build();
     }
-    public synchronized AppInfo getInfo(Logger logger) {
+    public synchronized AppInfo getInfo() {
         String version = null;
         String name = null;
         try (InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("application.properties")) {

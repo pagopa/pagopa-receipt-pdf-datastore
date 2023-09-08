@@ -15,7 +15,6 @@ import org.slf4j.Logger;
 
 import java.util.Base64;
 import java.util.Objects;
-import java.util.logging.Level;
 
 @NoArgsConstructor
 public class BizEventToReceiptService {
@@ -44,8 +43,7 @@ public class BizEventToReceiptService {
         } catch (Exception e) {
             handleError(receipt);
             //Error info
-            String msg = String.format("Error sending to queue biz-event message with id %s", bizEvent.getId());
-            logger.error(msg, e);
+            logger.error("Error sending to queue biz-event message with id {}", bizEvent.getId(), e);
         }
     }
 
