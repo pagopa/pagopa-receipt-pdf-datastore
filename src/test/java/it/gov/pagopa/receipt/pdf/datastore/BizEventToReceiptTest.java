@@ -64,7 +64,7 @@ class BizEventToReceiptTest {
         BizEventToReceiptTest.setMock(serviceMock);
 
         List<BizEvent> bizEventItems = new ArrayList<>();
-        bizEventItems.add(generateValidBizEvent());
+        bizEventItems.add(generateValidBizEvent("1"));
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
@@ -109,6 +109,34 @@ class BizEventToReceiptTest {
     }
 
     @Test
+    void runDiscardedWithCartEvent() {
+        List<BizEvent> bizEventItems = new ArrayList<>();
+        bizEventItems.add(generateValidBizEvent("2"));
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+
+        // test execution
+        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
+
+        verify(documentdb, never()).setValue(any());
+    }
+
+    @Test
+    void runDiscardedWithCartEventWithInvalidTotalNotice() {
+        List<BizEvent> bizEventItems = new ArrayList<>();
+        bizEventItems.add(generateValidBizEvent("invalid string"));
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+
+        // test execution
+        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
+
+        verify(documentdb, never()).setValue(any());
+    }
+
+    @Test
     void errorAddingMessageToQueue() {
         ReceiptQueueClientImpl serviceMock = mock(ReceiptQueueClientImpl.class);
         Response<SendMessageResult> response = mock(Response.class);
@@ -118,7 +146,7 @@ class BizEventToReceiptTest {
         BizEventToReceiptTest.setMock(serviceMock);
 
         List<BizEvent> bizEventItems = new ArrayList<>();
-        bizEventItems.add(generateValidBizEvent());
+        bizEventItems.add(generateValidBizEvent("1"));
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
@@ -142,7 +170,7 @@ class BizEventToReceiptTest {
         BizEventToReceiptTest.setMock(serviceMock);
 
         List<BizEvent> bizEventItems = new ArrayList<>();
-        bizEventItems.add(generateValidBizEvent());
+        bizEventItems.add(generateValidBizEvent("1"));
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
@@ -172,7 +200,7 @@ class BizEventToReceiptTest {
         }
     }
 
-    private BizEvent generateValidBizEvent(){
+    private BizEvent generateValidBizEvent(String totalNotice){
         BizEvent item = new BizEvent();
 
         Payer payer = new Payer();
@@ -185,11 +213,15 @@ class BizEventToReceiptTest {
         transaction.setCreationDate(String.valueOf(LocalDateTime.now()));
         transactionDetails.setTransaction(transaction);
 
+        PaymentInfo paymentInfo = new PaymentInfo();
+        paymentInfo.setTotalNotice(totalNotice);
+
         item.setEventStatus(BizEventStatusType.DONE);
         item.setId(EVENT_ID);
         item.setPayer(payer);
         item.setDebtor(debtor);
         item.setTransactionDetails(transactionDetails);
+        item.setPaymentInfo(paymentInfo);
 
         return item;
     }

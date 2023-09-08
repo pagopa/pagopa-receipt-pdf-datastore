@@ -12,6 +12,7 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptSta
 import it.gov.pagopa.receipt.pdf.datastore.utils.ObjectMapperUtils;
 import lombok.NoArgsConstructor;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Base64;
 import java.util.Objects;
@@ -19,13 +20,15 @@ import java.util.Objects;
 @NoArgsConstructor
 public class BizEventToReceiptService {
 
+    private final Logger logger = LoggerFactory.getLogger(BizEventToReceiptService.class);
+
     /**
      * Handles sending biz-events as message to queue and updates receipt's status
      *
      * @param bizEvent Biz-event from CosmosDB
      * @param receipt  Receipt to update
      */
-    public void handleSendMessageToQueue(BizEvent bizEvent, Receipt receipt, Logger logger) {
+    public void handleSendMessageToQueue(BizEvent bizEvent, Receipt receipt) {
         //Encode biz-event to base64 string
         String messageText = Base64.getMimeEncoder().encodeToString(Objects.requireNonNull(ObjectMapperUtils.writeValueAsString(bizEvent)).getBytes());
 
