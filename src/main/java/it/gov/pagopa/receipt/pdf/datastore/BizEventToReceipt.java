@@ -146,7 +146,7 @@ public class BizEventToReceipt {
                 return true;
             }
             if (totalNotice > 1) {
-                logger.debug("[{}] event with id {} is part of a payment cart and it will be discarded ({} total notice)",
+                logger.debug("[{}] event with id {} discarded because is part of a payment cart ({} total notice)",
                         context.getFunctionName(), bizEvent.getId(),
                         totalNotice
                 );
