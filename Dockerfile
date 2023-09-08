@@ -7,7 +7,7 @@ RUN echo $(ls -1 /src/java-function-app)
 RUN chmod 777 /src/java-function-app/agent/config.yaml
 RUN cd /src/java-function-app && \
     wget https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/0.19.0/jmx_prometheus_javaagent-0.19.0.jar && \
-    curl -o 'opentelemetry-javaagent.jar' -L 'https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v1.25.1/opentelemetry-javaagent.jar'
+    curl -o 'opentelemetry-javaagent.jar' -L 'https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v1.25.1/opentelemetry-javaagent.jar' && \
     mkdir -p /home/site/wwwroot && \
     mvn clean package -Dmaven.test.skip=true && \
     cd ./target/azure-functions/ && \
