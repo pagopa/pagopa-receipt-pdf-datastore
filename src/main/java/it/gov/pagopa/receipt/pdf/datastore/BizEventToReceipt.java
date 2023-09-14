@@ -35,29 +35,17 @@ public class BizEventToReceipt {
      * - NOT_QUEUE_SENT if sending the message to the queue failed
      * #
      *
-     * @param items      Biz-events that triggered the function from the Cosmos database
-     * @param documentdb Output binding that will save the receipt data retrieved from the biz-events
+     * @param items      Biz-events that triggered the function from the Cosmos
+     *                   database
+     * @param documentdb Output binding that will save the receipt data retrieved
+     *                   from the biz-events
      * @param context    Function context
      */
     @FunctionName("BizEventToReceiptProcessor")
     @ExponentialBackoffRetry(maxRetryCount = 5, minimumInterval = "500", maximumInterval = "5000")
     public void processBizEventToReceipt(
-            @CosmosDBTrigger(
-                    name = "BizEventDatastore",
-                    databaseName = "db",
-                    collectionName = "biz-events",
-                    leaseCollectionName = "biz-events-leases",
-                    leaseCollectionPrefix = "materialized",
-                    createLeaseCollectionIfNotExists = true,
-                    maxItemsPerInvocation = 100,
-                    connectionStringSetting = "COSMOS_BIZ_EVENT_CONN_STRING")
-            List<BizEvent> items,
-            @CosmosDBOutput(
-                    name = "ReceiptDatastore",
-                    databaseName = "db",
-                    collectionName = "receipts",
-                    connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING")
-            OutputBinding<List<Receipt>> documentdb,
+            @CosmosDBTrigger(name = "BizEventDatastore", databaseName = "db", collectionName = "biz-events", leaseCollectionName = "biz-events-leases", leaseCollectionPrefix = "materialized", createLeaseCollectionIfNotExists = true, maxItemsPerInvocation = 100, connectionStringSetting = "COSMOS_BIZ_EVENT_CONN_STRING") List<BizEvent> items,
+            @CosmosDBOutput(name = "ReceiptDatastore", databaseName = "db", collectionName = "receipts", connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING") OutputBinding<List<Receipt>> documentdb,
             final ExecutionContext context) {
 
         List<Receipt> itemsDone = new ArrayList<>();
@@ -68,10 +56,10 @@ public class BizEventToReceipt {
                 items.size());
         int discarder = 0;
 
-        //Retrieve receipt data from biz-event
+        // Retrieve receipt data from biz-event
         for (BizEvent bizEvent : items) {
 
-            //Discard null biz events || not in status DONE || with totalNotice > 1
+            // Discard null biz events || not in status DONE || with totalNotice > 1
             if (isBizEventInvalid(bizEvent, context)) {
                 discarder++;
                 continue;
@@ -80,44 +68,46 @@ public class BizEventToReceipt {
                 BizEventToReceiptService service = new BizEventToReceiptService();
                 Receipt receipt = new Receipt();
 
-                //Insert biz-event data into receipt
+                // Insert biz-event data into receipt
                 receipt.setEventId(bizEvent.getId());
 
                 EventData eventData = new EventData();
-                //TODO verify if payer's or debtor's CF can be null
-                eventData.setPayerFiscalCode(bizEvent.getPayer() != null ? bizEvent.getPayer().getEntityUniqueIdentifierValue() : null);
-                eventData.setDebtorFiscalCode(bizEvent.getDebtor() != null ? bizEvent.getDebtor().getEntityUniqueIdentifierValue() : null);
+                // TODO verify if payer's or debtor's CF can be null
+                eventData.setPayerFiscalCode(
+                        bizEvent.getPayer() != null ? bizEvent.getPayer().getEntityUniqueIdentifierValue() : null);
+                eventData.setDebtorFiscalCode(
+                        bizEvent.getDebtor() != null ? bizEvent.getDebtor().getEntityUniqueIdentifierValue() : null);
                 eventData.setTransactionCreationDate(
-                        service.getTransactionCreationDate(bizEvent)
-                );
+                        service.getTransactionCreationDate(bizEvent));
 
                 receipt.setEventData(eventData);
 
                 logger.info("[{}] function called at {} for event with id {} and status {}",
                         context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
 
-                //Send biz event as message to queue (to be processed from the other function)
+                // Send biz event as message to queue (to be processed from the other function)
                 service.handleSendMessageToQueue(bizEvent, receipt);
 
-                //Add receipt to items to be saved on CosmosDB
+                // Add receipt to items to be saved on CosmosDB
                 itemsDone.add(receipt);
             } catch (Exception e) {
                 discarder++;
-                //Error info
+                // Error info
                 logger.error("[{}] Error to process event with id {}", context.getFunctionName(), bizEvent.getId(), e);
             }
         }
-        //Discarder info
+        // Discarder info
         logger.debug("[{}] itemsDone stat {} function - {} number of events in discarder", context.getFunctionName(),
                 context.getInvocationId(), discarder);
-        //Call to queue info
+        // Call to queue info
         logger.debug("[{}] itemsDone stat {} function - number of events in DONE sent to the receipt queue {}",
                 context.getFunctionName(), context.getInvocationId(), itemsDone.size());
-        //Call to datastore info
-        logger.debug("[{}] stat {} function - number of receipts inserted on the datastore {}", context.getFunctionName(),
+        // Call to datastore info
+        logger.debug("[{}] stat {} function - number of receipts inserted on the datastore {}",
+                context.getFunctionName(),
                 context.getInvocationId(), itemsDone.size());
 
-        //Save receipts data to CosmosDB
+        // Save receipts data to CosmosDB
         if (!itemsDone.isEmpty()) {
             documentdb.setValue(itemsDone);
         }
@@ -128,29 +118,36 @@ public class BizEventToReceipt {
             logger.debug("[{}] event is null", context.getFunctionName());
             return true;
         }
+
         if (!bizEvent.getEventStatus().equals(BizEventStatusType.DONE)) {
             logger.debug("[{}] event with id {} discarded because in status {}",
                     context.getFunctionName(), bizEvent.getId(), bizEvent.getEventStatus());
             return true;
         }
+
         if (bizEvent.getPaymentInfo() != null) {
-            int totalNotice;
-            try {
-                totalNotice = Integer.parseInt(bizEvent.getPaymentInfo().getTotalNotice());
-            } catch (NumberFormatException e) {
-                logger.error("[{}] event with id {} discarded because has an invalid total notice value: {}",
-                        context.getFunctionName(), bizEvent.getId(),
-                        bizEvent.getPaymentInfo().getTotalNotice(),
-                        e
-                );
-                return true;
-            }
-            if (totalNotice > 1) {
-                logger.debug("[{}] event with id {} discarded because is part of a payment cart ({} total notice)",
-                        context.getFunctionName(), bizEvent.getId(),
-                        totalNotice
-                );
-                return true;
+            String totalNotice = bizEvent.getPaymentInfo().getTotalNotice();
+
+            if (totalNotice != null) {
+                int intTotalNotice;
+
+                try {
+                    intTotalNotice = Integer.parseInt(totalNotice);
+
+                } catch (NumberFormatException e) {
+                    logger.error("[{}] event with id {} discarded because has an invalid total notice value: {}",
+                            context.getFunctionName(), bizEvent.getId(),
+                            totalNotice,
+                            e);
+                    return true;
+                }
+                
+                if (intTotalNotice > 1) {
+                    logger.debug("[{}] event with id {} discarded because is part of a payment cart ({} total notice)",
+                            context.getFunctionName(), bizEvent.getId(),
+                            intTotalNotice);
+                    return true;
+                }
             }
         }
 
