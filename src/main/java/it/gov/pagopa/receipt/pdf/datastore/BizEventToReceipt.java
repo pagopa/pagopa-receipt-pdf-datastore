@@ -44,8 +44,22 @@ public class BizEventToReceipt {
     @FunctionName("BizEventToReceiptProcessor")
     @ExponentialBackoffRetry(maxRetryCount = 5, minimumInterval = "500", maximumInterval = "5000")
     public void processBizEventToReceipt(
-            @CosmosDBTrigger(name = "BizEventDatastore", databaseName = "db", collectionName = "biz-events", leaseCollectionName = "biz-events-leases", leaseCollectionPrefix = "materialized", createLeaseCollectionIfNotExists = true, maxItemsPerInvocation = 100, connectionStringSetting = "COSMOS_BIZ_EVENT_CONN_STRING") List<BizEvent> items,
-            @CosmosDBOutput(name = "ReceiptDatastore", databaseName = "db", collectionName = "receipts", connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING") OutputBinding<List<Receipt>> documentdb,
+            @CosmosDBTrigger(
+                    name = "BizEventDatastore",
+                    databaseName = "db",
+                    collectionName = "biz-events",
+                    leaseCollectionName = "biz-events-leases",
+                    leaseCollectionPrefix = "materialized",
+                    createLeaseCollectionIfNotExists = true,
+                    maxItemsPerInvocation = 100,
+                    connectionStringSetting = "COSMOS_BIZ_EVENT_CONN_STRING")
+            List<BizEvent> items,
+            @CosmosDBOutput(
+                    name = "ReceiptDatastore",
+                    databaseName = "db",
+                    collectionName = "receipts",
+                    connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING")
+            OutputBinding<List<Receipt>> documentdb,
             final ExecutionContext context) {
 
         List<Receipt> itemsDone = new ArrayList<>();
@@ -141,7 +155,7 @@ public class BizEventToReceipt {
                             e);
                     return true;
                 }
-                
+
                 if (intTotalNotice > 1) {
                     logger.debug("[{}] event with id {} discarded because is part of a payment cart ({} total notice)",
                             context.getFunctionName(), bizEvent.getId(),
