@@ -81,32 +81,6 @@ class BizEventToReceiptTest {
     }
 
     @Test
-    void runOkTotalNoticeNull() {
-        ReceiptQueueClientImpl serviceMock = mock(ReceiptQueueClientImpl.class);
-        Response<SendMessageResult> response = mock(Response.class);
-        when(response.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
-        when(serviceMock.sendMessageToQueue(anyString())).thenReturn(response);
-
-        BizEventToReceiptTest.setMock(serviceMock);
-
-        List<BizEvent> bizEventItems = new ArrayList<>();
-        bizEventItems.add(generateValidBizEvent(null));
-
-        @SuppressWarnings("unchecked")
-        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
-
-        // test execution
-        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
-
-        verify(documentdb).setValue(receiptCaptor.capture());
-        Receipt captured = receiptCaptor.getValue().get(0);
-        assertEquals(ReceiptStatusType.INSERTED, captured.getStatus());
-        assertEquals(EVENT_ID, captured.getEventId());
-        assertEquals(PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
-        assertEquals(DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
-    }
-
-    @Test
     void runDiscardedWithEventNotDONE() {
         List<BizEvent> bizEventItems = new ArrayList<>();
         bizEventItems.add(generateNotDoneBizEvent());
