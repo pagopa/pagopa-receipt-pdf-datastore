@@ -1,3 +1,4 @@
+export const SIM_TEST_CF = "SIMTESTCF";
 
 export function randomString(length, charset) {
     let res = '';
@@ -5,7 +6,7 @@ export function randomString(length, charset) {
     return res;
 }
 
-export function createEvent(id) {
+export function createEvent(id, customCF) {
     const idPA = randomString(11, "0123456789");
     const idPSP = randomString(11, "0123456789");
 	let json_event = {
@@ -41,7 +42,7 @@ export function createEvent(id) {
 		"debtor": {
 			"fullName": "John Doe",
 			"entityUniqueIdentifierType": "F",
-            "entityUniqueIdentifierValue": randomString(11, "0123456789"),
+            "entityUniqueIdentifierValue": customCF ? customCF : randomString(11, "0123456789"),
 			"streetName": "street",
 			"civicNumber": "12",
 			"postalCode": "89020",
