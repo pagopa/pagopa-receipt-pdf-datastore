@@ -40,6 +40,7 @@ public class BizEventToReceiptService {
 
             if (sendMessageResult.getStatusCode() == HttpStatus.CREATED.value()) {
                 receipt.setStatus(ReceiptStatusType.INSERTED);
+                receipt.setInserted_at(System.currentTimeMillis());
             } else {
                 handleError(receipt);
             }

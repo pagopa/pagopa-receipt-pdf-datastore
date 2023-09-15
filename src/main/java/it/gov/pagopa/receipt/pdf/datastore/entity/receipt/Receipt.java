@@ -20,4 +20,8 @@ public class Receipt {
     private ReceiptMetadata mdAttachPayer;
     private int numRetry;
     private ReasonError reasonErr;
+    private long inserted_at;
+    private long generated_at;
+    private long notified_at;
+
 }
