@@ -1,7 +1,9 @@
 import { BlobServiceClient } from "@azure/storage-blob";
+import { CosmosClient } from '@azure/cosmos';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
+
 
 //ENVIRONMENTAL VARIABLES
 const blobStorageConnString = process.env.BLOB_STORAGE_CONN_STRING;

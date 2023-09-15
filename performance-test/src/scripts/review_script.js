@@ -1,5 +1,5 @@
-import { bizeventContainer, receiptContainer} from "./scripts_common";
-import { SIM_TEST_CF } from '../modules/common';
+import { bizeventContainer, receiptContainer} from "./scripts_common.js";
+import { SIM_TEST_CF } from '../modules/common.js';
 
 function calculatePercentile(array, percentile){
     const currentIndex = 0;
