@@ -23,6 +23,8 @@ parameters:
     type: string
     values:
       - receipt_processor
+      - receipt_flow_simulation
+    default: "receipt_processor"
   - name: "DB_NAME"
     displayName: "DB name"
     type: string
