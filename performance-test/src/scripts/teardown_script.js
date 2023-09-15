@@ -4,13 +4,14 @@ import { bizeventContainer, blobContainerClient, receiptContainer } from "./scri
 
 //DELETE PDF FROM BLOB STORAGE
 const deleteDocumentFromAllDatabases = async () => {
-    let r = await receiptContainer.items.query(`SELECT * from c WHERE c.eventData.debtorFiscalCode = ${SIM_TEST_CF}`).fetchAll();
-    
-    let receipts = r?.resources;
+    let {resources} = await receiptContainer.items.query({
+        query: "SELECT * from c WHERE c.eventData.debtorFiscalCode = @fiscalCode",
+        parameters: [{ name: "@fiscalCode", value: SIM_TEST_CF }]
+      }).fetchAll();
 
-    console.info(`Found n. ${receipts?.length} receipts in the database`);
+    console.info(`Found n. ${resources?.length} receipts in the database`);
 
-    receipts?.forEach(async (el) => {
+    resources?.forEach(async (el) => {
         //Delete PDF from Blob Storage
         const response = await blobContainerClient.deleteBlob(el.id);
         if (response._response.status !== 202) {

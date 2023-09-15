@@ -35,11 +35,12 @@ const reviewReceiptsTimeToProcess = async () => {
 
     let receiptsCompleted = 0;
 
-    let r = await receiptContainer.items.query(`SELECT * from c WHERE c.eventData.debtorFiscalCode = ${SIM_TEST_CF}`).fetchAll();
+    let {resources} = await receiptContainer.items.query({
+        query: "SELECT * from c WHERE c.eventData.debtorFiscalCode = @fiscalCode",
+        parameters: [{ name: "@fiscalCode", value: SIM_TEST_CF }]
+      }).fetchAll();
 
-    let receipts = r?.resources;
-
-    receipts?.forEach(async (el) => {
+    resources?.forEach(async (el) => {
 
         if(el.inserted_at){
             let bizEvent =  await bizeventContainer.item(el.eventId, el.eventId).read();
