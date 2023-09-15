@@ -69,16 +69,16 @@ steps:
   - script: |
       sleep ${{ parameters.SLEEP_INTERVAL}}
     displayName: Wait receipt to be processed
-    condition: eq(parameters['SCRIPT'], 'receipt_flow_simulation')
+    condition: ${{ eq(parameters['SCRIPT'], 'receipt_flow_simulation') }}
   - script: |
       cd ./performance-test/src
       docker build -f ./DockerfileReview -t exec-node .
       docker run --rm --name initToRunk6 \
       -e RECEIPT_COSMOS_CONN_STRING=${RECEIPT_COSMOS_CONN_STRING} \
       -e ENVIRONMENT_STRING="${ENVIRONMENT_STRING}" \
-      exec-node     
+      exec-node
     displayName: Run Receipts Timestamp Review
-    condition: eq(parameters['SCRIPT'], 'receipt_flow_simulation')
+    condition: ${{ eq(parameters['SCRIPT'], 'receipt_flow_simulation') }}
     env:
       RECEIPT_COSMOS_CONN_STRING: ${{ variables.receiptCosmosConnectionString }}
   - script: |
@@ -89,11 +89,11 @@ steps:
       -e RECEIPT_COSMOS_CONN_STRING=${RECEIPT_COSMOS_CONN_STRING} \
       -e BIZEVENT_COSMOS_CONN_STRING=${BIZEVENT_COSMOS_CONN_STRING} \
       -e ENVIRONMENT_STRING="${ENVIRONMENT_STRING}" \
-      exec-node     
+      exec-node
     displayName: Run Receipts Teardown
-    condition: eq(parameters['SCRIPT'], 'receipt_flow_simulation')
+    condition: ${{ eq(parameters['SCRIPT'], 'receipt_flow_simulation') }}
     env:
       RECEIPT_COSMOS_CONN_STRING: ${{ variables.receiptCosmosConnectionString }}
       BIZEVENT_COSMOS_CONN_STRING: ${{ variables.bizeventCosmosConnectionString }}
       BLOB_STORAGE_CONN_STRING: ${{ variables.blobStorageConnectionString }}
-      
+
