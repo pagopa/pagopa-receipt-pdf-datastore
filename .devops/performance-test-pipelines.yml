@@ -55,21 +55,7 @@ pool:
   name: $(poolImage)
 
 steps:
-  - script: |
-      cd ./performance-test/src
-      docker pull grafana/k6
-    displayName: Pull k6 image
-  - script: |
-      cd ./performance-test
-      sh ./run_performance_test.sh ${{ parameters.ENVIRONMENT }} ${{ parameters.TEST_TYPE }} ${{ parameters.SCRIPT }} ${{ parameters.DB_NAME }} $BIZEVENT_COSMOS_SUBSCRIPTION_KEY $RECEIPT_COSMOS_SUBSCRIPTION_KEY
-    displayName: Run k6 ${{ parameters.SCRIPT }} on ${{ parameters.ENVIRONMENT }}
-    env:
-      RECEIPT_COSMOS_SUBSCRIPTION_KEY: ${{ variables.receiptCosmosSubscriptionKey }}
-      BIZEVENT_COSMOS_SUBSCRIPTION_KEY: ${{ variables.bizEventCosmosSubscriptionKey }}
-  - script: |
-      sleep ${{ parameters.SLEEP_INTERVAL}}
-    displayName: Wait receipt to be processed
-    condition: ${{ eq(parameters['SCRIPT'], 'receipt_flow_simulation') }}
+
   - script: |
       cd ./performance-test/src
       docker build -f ./DockerfileReview -t exec-node .
