@@ -25,6 +25,10 @@ parameters:
       - receipt_processor
       - receipt_flow_simulation
     default: "receipt_processor"
+  - name : "SLEEP_INTERVAL"
+    displayName: "Sleep before monitoring"
+    type: number
+    default: 300
   - name: "DB_NAME"
     displayName: "DB name"
     type: string
@@ -36,11 +40,15 @@ variables:
     receiptCosmosSubscriptionKey: "$(DEV_RECEIPT_COSMOS_DB_SUBSCRIPTION_KEY)"
     bizEventCosmosSubscriptionKey: "$(DEV_BIZEVENT_COSMOS_DB_SUBSCRIPTION_KEY)"
     blobStorageConnectionString: "$(DEV_BLOB_STORAGE_CONNECTION_STRING)"
+    receiptCosmosConnectionString: "$(DEV_RECEIPT_COSMOS_DB_CONNECTION_STRING)"
+    bizeventCosmosConnectionString: "$(DEV_BLOB_STORAGE_CONNECTION_STRING)"
     poolImage: "pagopa-dev-loadtest-linux"
   ${{ if eq(parameters['ENVIRONMENT'], 'uat') }}:
     receiptCosmosSubscriptionKey: "$(UAT_RECEIPT_COSMOS_DB_SUBSCRIPTION_KEY)"
     bizEventCosmosSubscriptionKey: "$(UAT_BIZEVENT_COSMOS_DB_SUBSCRIPTION_KEY)"
     blobStorageConnectionString: "$(UAT_BLOB_STORAGE_CONNECTION_STRING)"
+    receiptCosmosConnectionString: "$(UAT_RECEIPT_COSMOS_DB_CONNECTION_STRING)"
+    bizeventCosmosConnectionString: "$(UAT_BLOB_STORAGE_CONNECTION_STRING)"
     poolImage: "pagopa-uat-loadtest-linux"
 
 pool:
@@ -59,33 +67,33 @@ steps:
       RECEIPT_COSMOS_SUBSCRIPTION_KEY: ${{ variables.receiptCosmosSubscriptionKey }}
       BIZEVENT_COSMOS_SUBSCRIPTION_KEY: ${{ variables.bizEventCosmosSubscriptionKey }}
   - script: |
-      sleep 300
+      sleep ${{ parameters.SLEEP_INTERVAL}}
     displayName: Wait receipt to be processed
     condition: eq(parameters['SCRIPT'], 'receipt_flow_simulation')
   - script: |
       cd ./performance-test/src
       docker build -f ./DockerfileReview -t exec-node .
       docker run --rm --name initToRunk6 \
-      -e RECEIPT_COSMOS_SUBSCRIPTION_KEY=${RECEIPT_COSMOS_SUBSCRIPTION_KEY} \
+      -e RECEIPT_COSMOS_CONN_STRING=${RECEIPT_COSMOS_CONN_STRING} \
       -e ENVIRONMENT_STRING="${ENVIRONMENT_STRING}" \
       exec-node     
     displayName: Run Receipts Timestamp Review
     condition: eq(parameters['SCRIPT'], 'receipt_flow_simulation')
     env:
-      RECEIPT_COSMOS_SUBSCRIPTION_KEY: ${{ variables.receiptCosmosSubscriptionKey }}
+      RECEIPT_COSMOS_CONN_STRING: ${{ variables.receiptCosmosConnectionString }}
   - script: |
       cd ./performance-test/src
       docker build -f ./DockerfileTeardown -t exec-node .
       docker run --rm --name initToRunk6 \
       -e BLOB_STORAGE_CONN_STRING=${BLOB_STORAGE_CONN_STRING} \
-      -e RECEIPT_COSMOS_SUBSCRIPTION_KEY=${RECEIPT_COSMOS_SUBSCRIPTION_KEY} \
-      -e BIZEVENT_COSMOS_SUBSCRIPTION_KEY=${BIZEVENT_COSMOS_SUBSCRIPTION_KEY} \
+      -e RECEIPT_COSMOS_CONN_STRING=${RECEIPT_COSMOS_CONN_STRING} \
+      -e BIZEVENT_COSMOS_CONN_STRING=${BIZEVENT_COSMOS_CONN_STRING} \
       -e ENVIRONMENT_STRING="${ENVIRONMENT_STRING}" \
       exec-node     
     displayName: Run Receipts Teardown
     condition: eq(parameters['SCRIPT'], 'receipt_flow_simulation')
     env:
-      RECEIPT_COSMOS_SUBSCRIPTION_KEY: ${{ variables.receiptCosmosSubscriptionKey }}
-      BIZEVENT_COSMOS_SUBSCRIPTION_KEY: ${{ variables.bizEventCosmosSubscriptionKey }}
+      RECEIPT_COSMOS_CONN_STRING: ${{ variables.receiptCosmosConnectionString }}
+      BIZEVENT_COSMOS_CONN_STRING: ${{ variables.bizeventCosmosConnectionString }}
       BLOB_STORAGE_CONN_STRING: ${{ variables.blobStorageConnectionString }}
       
