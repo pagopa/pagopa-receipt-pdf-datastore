@@ -47,8 +47,6 @@ const reviewReceiptsTimeToProcess = async () => {
             let bizEventResponse =  await bizeventContainer.item(el.eventId, el.eventId).read();
             let bizEvent = bizEventResponse.resource;
 
-            console.log(bizEvent?._ts, bizEvent._ts ? 1 : 0);
-
             if(bizEvent?._ts){
                 let timeToInsert = el.inserted_at - bizEvent._ts;
 
@@ -81,6 +79,7 @@ const reviewReceiptsTimeToProcess = async () => {
 
             } else {
                 notGenerated += 1;
+                notNotified += 1;
             }
 
         } else {
