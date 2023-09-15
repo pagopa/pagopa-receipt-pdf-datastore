@@ -41,14 +41,14 @@ variables:
     bizEventCosmosSubscriptionKey: "$(DEV_BIZEVENT_COSMOS_DB_SUBSCRIPTION_KEY)"
     blobStorageConnectionString: "$(DEV_BLOB_STORAGE_CONNECTION_STRING)"
     receiptCosmosConnectionString: "$(DEV_RECEIPT_COSMOS_DB_CONNECTION_STRING)"
-    bizeventCosmosConnectionString: "$(DEV_BLOB_STORAGE_CONNECTION_STRING)"
+    bizeventCosmosConnectionString: "$(DEV_BIZ_COSMOS_DB_CONNECTION_STRING)"
     poolImage: "pagopa-dev-loadtest-linux"
   ${{ if eq(parameters['ENVIRONMENT'], 'uat') }}:
     receiptCosmosSubscriptionKey: "$(UAT_RECEIPT_COSMOS_DB_SUBSCRIPTION_KEY)"
     bizEventCosmosSubscriptionKey: "$(UAT_BIZEVENT_COSMOS_DB_SUBSCRIPTION_KEY)"
     blobStorageConnectionString: "$(UAT_BLOB_STORAGE_CONNECTION_STRING)"
     receiptCosmosConnectionString: "$(UAT_RECEIPT_COSMOS_DB_CONNECTION_STRING)"
-    bizeventCosmosConnectionString: "$(UAT_BLOB_STORAGE_CONNECTION_STRING)"
+    bizeventCosmosConnectionString: "$(UAT_BIZ_COSMOS_DB_CONNECTION_STRING)"
     poolImage: "pagopa-uat-loadtest-linux"
 
 pool:
