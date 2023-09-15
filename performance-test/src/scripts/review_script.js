@@ -1,7 +1,7 @@
 import { bizeventContainer, receiptContainer} from "./scripts_common.js";
 import { SIM_TEST_CF } from '../modules/common.js';
 
-function calculatePercentile(array, percentile){
+function calculatePercentile(array, percentile, suffix){
     const currentIndex = 0;
     const totalCount = array.reduce((count, currentValue) => {
       if (currentValue < percentile) {
@@ -11,7 +11,8 @@ function calculatePercentile(array, percentile){
       }
       return count + 0;
     }, currentIndex);
-    return (totalCount * 100) / array.length;
+    let fin = (totalCount * 100) / array.length;
+    return `${fin}${fin ? (suffix || "") : "" }`;
 }
 
 const reviewReceiptsTimeToProcess = async () => {
@@ -100,29 +101,29 @@ const reviewReceiptsTimeToProcess = async () => {
     console.log(`receipts failed to be generated..: ${notGenerated}`);
     console.log(`receipts failed to be notified...: ${notNotified}`);
     console.log("--------------------------------");
-    console.log(`mean time to insert..............: ${totalTimeToInsert/arrayTimeToInsert.length}ms`);
-    console.log(`mean time to generate............: ${totalTimeToGenerate/arrayTimeToGenerate.length}ms`);
-    console.log(`mean time to notify..............: ${totalTimeToNotify/arrayTimeToNotify.length}ms`);
+    console.log(`mean time to insert..............: ${totalTimeToInsert/arrayTimeToInsert.length}${totalTimeToInsert ? "ms" : ""}`);
+    console.log(`mean time to generate............: ${totalTimeToGenerate/arrayTimeToGenerate.length}${totalTimeToGenerate ? "ms" : ""}`);
+    console.log(`mean time to notify..............: ${totalTimeToNotify/arrayTimeToNotify.length}${totalTimeToNotify ? "ms" : ""}`);
     console.log("--------------------------------");
-    console.log(`min time to insert...............: ${minTimeToInsert}ms`);
-    console.log(`min time to generate.............: ${minTimeToGenerate}ms`);
-    console.log(`min time to notify...............: ${minTimeToNotify}ms`);
+    console.log(`min time to insert...............: ${minTimeToInsert}${minTimeToInsert ? "ms" : ""}`);
+    console.log(`min time to generate.............: ${minTimeToGenerate}${minTimeToGenerate ? "ms" : ""}`);
+    console.log(`min time to notify...............: ${minTimeToNotify}${minTimeToNotify ? "ms" : ""}`);
     console.log("--------------------------------");
-    console.log(`max time to insert...............: ${maxTimeToInsert}ms`);
-    console.log(`max time to generate.............: ${maxTimeToGenerate}ms`);
-    console.log(`max time to notify...............: ${maxTimeToNotify}ms`);
+    console.log(`max time to insert...............: ${maxTimeToInsert}${maxTimeToInsert ? "ms" : ""}`);
+    console.log(`max time to generate.............: ${maxTimeToGenerate}${maxTimeToGenerate ? "ms" : ""}`);
+    console.log(`max time to notify...............: ${maxTimeToNotify}${maxTimeToNotify ? "ms" : ""}`);
     console.log("--------------------------------");
-    console.log(`p(95) time to insert.............: ${calculatePercentile(arrayTimeToInsert, 95)}ms`); 
-    console.log(`p(95) time to generate...........: ${calculatePercentile(arrayTimeToGenerate, 95)}ms`); 
-    console.log(`p(95) time to notify.............: ${calculatePercentile(arrayTimeToNotify, 95)}ms`); 
+    console.log(`p(95) time to insert.............: ${calculatePercentile(arrayTimeToInsert, 95, "ms")}`); 
+    console.log(`p(95) time to generate...........: ${calculatePercentile(arrayTimeToGenerate, 95, "ms")}`); 
+    console.log(`p(95) time to notify.............: ${calculatePercentile(arrayTimeToNotify, 95, "ms")}`); 
     console.log("--------------------------------");
-    console.log(`p(99) time to insert.............: ${calculatePercentile(arrayTimeToInsert, 99)}ms`); 
-    console.log(`p(99) time to generate...........: ${calculatePercentile(arrayTimeToGenerate, 99)}ms`); 
-    console.log(`p(99) time to notify.............: ${calculatePercentile(arrayTimeToNotify, 99)}ms`); 
+    console.log(`p(99) time to insert.............: ${calculatePercentile(arrayTimeToInsert, 99, "ms")}`); 
+    console.log(`p(99) time to generate...........: ${calculatePercentile(arrayTimeToGenerate, 99, "ms")}`); 
+    console.log(`p(99) time to notify.............: ${calculatePercentile(arrayTimeToNotify, 99, "ms")}`); 
     console.log("--------------------------------");
-    console.log(`p(99.99) time to insert..........: ${calculatePercentile(arrayTimeToInsert, 99.99)}ms`); 
-    console.log(`p(99.99) time to generate........: ${calculatePercentile(arrayTimeToGenerate, 99.99)}ms`); 
-    console.log(`p(99.99) time to notify..........: ${calculatePercentile(arrayTimeToNotify, 99.99)}ms`); 
+    console.log(`p(99.99) time to insert..........: ${calculatePercentile(arrayTimeToInsert, 99.99, "ms")}`); 
+    console.log(`p(99.99) time to generate........: ${calculatePercentile(arrayTimeToGenerate, 99.99, "ms")}`); 
+    console.log(`p(99.99) time to notify..........: ${calculatePercentile(arrayTimeToNotify, 99.99, "ms")}`); 
     console.log("\n\n");
     console.log("/////////////////////////////////");
     console.log("/------------- END -------------/");
