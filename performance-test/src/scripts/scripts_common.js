@@ -21,6 +21,8 @@ const bizEventContainerID = environmentVars.bizEventContainerID;
 const receiptDatabaseID = environmentVars.receiptDatabaseID;
 const receiptContainerID = environmentVars.receiptContainerID;
 
+console.log(blobStorageConnString, receiptCosmosDBConnString, bizEventCosmosDBConnString, bizEventContainerID, bizEventDatabaseID, receiptDatabaseID, receiptContainerID, receiptCosmosDBConnString);
+
 //CLIENTS
 const blobServiceClient = BlobServiceClient.fromConnectionString(blobStorageConnString || "");
 export const blobContainerClient = blobServiceClient.getContainerClient(blobStorageContainerID || "");
