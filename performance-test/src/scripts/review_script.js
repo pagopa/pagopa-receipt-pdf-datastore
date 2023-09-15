@@ -15,29 +15,29 @@ function calculatePercentile(array, percentile){
 }
 
 const reviewReceiptsTimeToProcess = () => {
-    let r = getDocumentByDebtorCF(receiptCosmosDBURI, receiptDatabaseID, receiptContainerID, receiptCosmosDBPrimaryKey, SIM_TEST_CF);
-
-    let receipts = r?.json()?.Documents;
-
     let arrayTimeToInsert = [];
     let totalTimeToInsert = 0;
     let notInserted = 0;
-    let minTimeToInsert = -1;
+    let minTimeToInsert = 1000*60*60*24;
     let maxTimeToInsert = -1;
 
     let arrayTimeToGenerate = [];
     let totalTimeToGenerate = 0;
     let notGenerated = 0;
-    let minTimeToGenerate = -1;
+    let minTimeToGenerate = 1000*60*60*24;
     let maxTimeToGenerate = -1;
 
     let arrayTimeToNotify = [];
     let totalTimeToNotify = 0;
     let notNotified = 0;
-    let minTimeToNotify = -1;
+    let minTimeToNotify = 1000*60*60*24;
     let maxTimeToNotify = -1;
 
     let receiptsCompleted = 0;
+
+    let r = getDocumentByDebtorCF(receiptCosmosDBURI, receiptDatabaseID, receiptContainerID, receiptCosmosDBPrimaryKey, SIM_TEST_CF);
+
+    let receipts = r?.json()?.Documents;
 
     receipts?.forEach((el) => {
 
@@ -49,7 +49,7 @@ const reviewReceiptsTimeToProcess = () => {
 
                 arrayTimeToInsert.push(timeToInsert);
                 totalTimeToInsert += timeToInsert;
-                minTimeToInsert = (minTimeToInsert === -1 || timeToInsert < minTimeToInsert) ? timeToInsert : minTimeToInsert;
+                minTimeToInsert = timeToInsert < minTimeToInsert ? timeToInsert : minTimeToInsert;
                 maxTimeToInsert = timeToInsert > maxTimeToInsert ? timeToInsert : maxTimeToInsert;
             }
             
@@ -58,7 +58,7 @@ const reviewReceiptsTimeToProcess = () => {
 
                 arrayTimeToGenerate.push(timeToGenerate);
                 totalTimeToGenerate += timeToGenerate;
-                minTimeToGenerate = (minTimeToGenerate === -1 || timeToGenerate < minTimeToGenerate) ? timeToGenerate : minTimeToGenerate;
+                minTimeToGenerate = timeToGenerate < minTimeToGenerate ? timeToGenerate : minTimeToGenerate;
                 maxTimeToGenerate = timeToGenerate > maxTimeToGenerate ? timeToGenerate : maxTimeToGenerate;
 
                 if(el.notified_at){
@@ -66,7 +66,7 @@ const reviewReceiptsTimeToProcess = () => {
         
                     arrayTimeToNotify.push(timeToNotify);
                     totalTimeToNotify += timeToNotify;
-                    minTimeToNotify = (minTimeToNotify === -1 || timeToNotify < minTimeToNotify) ? timeToNotify : minTimeToNotify;
+                    minTimeToNotify = timeToNotify < minTimeToNotify ? timeToNotify : minTimeToNotify;
                     maxTimeToNotify = timeToNotify > maxTimeToNotify ? timeToNotify : maxTimeToNotify;
 
                     receiptsCompleted += 1;
