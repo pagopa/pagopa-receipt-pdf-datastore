@@ -1,12 +1,11 @@
-import { bizEventContainerID, bizEventCosmosDBPrimaryKey, bizEventCosmosDBURI, bizEventDatabaseID, blobContainerClient, receiptContainerID, receiptCosmosDBPrimaryKey, receiptCosmosDBURI, receiptDatabaseID } from "./scripts_common.js";
-import { getDocumentByDebtorCF, deleteDocument } from "../modules/datastore_client.js";
+import { bizeventContainer, blobContainerClient, receiptContainer } from "./scripts_common.js";
 
 
 //DELETE PDF FROM BLOB STORAGE
 const deleteDocumentFromAllDatabases = async () => {
-    let r = getDocumentByDebtorCF(receiptCosmosDBURI, receiptDatabaseID, receiptContainerID, receiptCosmosDBPrimaryKey, SIM_TEST_CF);
+    let r = await receiptContainer.items.query(`SELECT * from c WHERE c.eventData.debtorFiscalCode = ${SIM_TEST_CF}`).fetchAll();
     
-    let receipts = r?.json()?.Documents;
+    let receipts = r?.resources;
 
     console.info(`Found n. ${receipts?.length} receipts in the database`);
 
@@ -23,9 +22,7 @@ const deleteDocumentFromAllDatabases = async () => {
 
         //Delete Receipt from CosmosDB
         try {
-            deleteDocument(receiptCosmosDBURI, receiptDatabaseID, receiptContainerID, receiptCosmosDBPrimaryKey, el.id).then(resp => {
-                console.info("RESPONSE DELETE RECEIPT STATUS", resp.statusCode);
-            });
+            await receiptContainer.item(el.id).delete();
         } catch (error) {
             if (error.code !== 404) {
                 console.error(`Error deleting receipt ${el.id}`);
@@ -34,9 +31,7 @@ const deleteDocumentFromAllDatabases = async () => {
 
         //Delete BizEvent from CosmosDB
         try {
-            deleteDocument(bizEventCosmosDBURI, bizEventDatabaseID, bizEventContainerID, bizEventCosmosDBPrimaryKey, el.eventId).then(resp => {
-                console.info("RESPONSE DELETE BIZEVENT STATUS", resp.statusCode);
-            });
+            await bizeventContainer.item(el.eventId).delete();
         } catch (error) {
             if (error.code !== 404) {
                 console.error(`Error deleting receipt ${el.id}`);

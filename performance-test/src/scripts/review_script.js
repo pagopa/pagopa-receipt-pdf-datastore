@@ -1,5 +1,5 @@
-import { getDocumentByDebtorCF, getDocumentById } from "../modules/datastore_client";
-import { bizEventContainerID, bizEventCosmosDBPrimaryKey, bizEventCosmosDBURI, bizEventDatabaseID, receiptContainerID, receiptCosmosDBPrimaryKey, receiptCosmosDBURI, receiptDatabaseID } from "./scripts_common";
+import { bizeventContainer, receiptContainer} from "./scripts_common";
+import { SIM_TEST_CF } from '../modules/common';
 
 function calculatePercentile(array, percentile){
     const currentIndex = 0;
@@ -14,7 +14,7 @@ function calculatePercentile(array, percentile){
     return (totalCount * 100) / array.length;
 }
 
-const reviewReceiptsTimeToProcess = () => {
+const reviewReceiptsTimeToProcess = async () => {
     let arrayTimeToInsert = [];
     let totalTimeToInsert = 0;
     let notInserted = 0;
@@ -35,14 +35,14 @@ const reviewReceiptsTimeToProcess = () => {
 
     let receiptsCompleted = 0;
 
-    let r = getDocumentByDebtorCF(receiptCosmosDBURI, receiptDatabaseID, receiptContainerID, receiptCosmosDBPrimaryKey, SIM_TEST_CF);
+    let r = await receiptContainer.items.query(`SELECT * from c WHERE c.eventData.debtorFiscalCode = ${SIM_TEST_CF}`).fetchAll();
 
-    let receipts = r?.json()?.Documents;
+    let receipts = r?.resources;
 
-    receipts?.forEach((el) => {
+    receipts?.forEach(async (el) => {
 
         if(el.inserted_at){
-            let bizEvent = getDocumentById(bizEventCosmosDBURI, bizEventDatabaseID, bizEventContainerID, bizEventCosmosDBPrimaryKey, el.eventId)?.json()?.Documents?.[0];
+            let bizEvent =  await bizeventContainer.item(el.eventId, el.eventId).read();
 
             if(bizEvent?._ts){
                 let timeToInsert = el.inserted_at - bizEvent._ts;
