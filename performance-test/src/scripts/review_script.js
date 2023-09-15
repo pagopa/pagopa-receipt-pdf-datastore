@@ -45,6 +45,7 @@ const reviewReceiptsTimeToProcess = async () => {
         if(el.inserted_at){
             let bizEvent =  await bizeventContainer.item(el.eventId, el.eventId).read();
 
+            console.log(bizEvent);
             if(bizEvent?._ts){
                 let timeToInsert = el.inserted_at - bizEvent._ts;
 
