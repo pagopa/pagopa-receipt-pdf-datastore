@@ -1,3 +1,4 @@
+import { SIM_TEST_CF } from "../modules/common.js";
 import { bizeventContainer, blobContainerClient, receiptContainer } from "./scripts_common.js";
 
 
