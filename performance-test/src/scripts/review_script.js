@@ -40,8 +40,7 @@ const reviewReceiptsTimeToProcess = async () => {
         parameters: [{ name: "@fiscalCode", value: SIM_TEST_CF }]
       }).fetchAll();
 
-    resources?.forEach(async (el) => {
-
+    for(const el of resources){
         if(el.inserted_at){
             let bizEvent =  await bizeventContainer.item(el.eventId, el.eventId).read();
 
@@ -82,7 +81,7 @@ const reviewReceiptsTimeToProcess = async () => {
         } else {
             notInserted += 1;
         }
-    })
+    }
 
     console.log("/////////////////////////////////");
     console.log("/----------- METRICS -----------/");
