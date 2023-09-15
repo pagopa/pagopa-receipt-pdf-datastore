@@ -14,10 +14,19 @@ const deleteDocumentFromAllDatabases = async () => {
     resources?.forEach(async (el) => {
         console.log("Cleaning documents linked to receipts with id: "+el.id);
         //Delete PDF from Blob Storage
-        const response = await blobContainerClient.deleteBlob(el.id);
-        if (response._response.status !== 202) {
-            console.error(`Error deleting PDF ${el.id}`);
+        if(el?.mdAttach?.name){
+            const response = await blobContainerClient.deleteBlob(el.mdAttach.name);
+            if (response._response.status !== 202) {
+                console.error(`Error deleting PDF ${el.id}`);
+            }
         }
+        if(el?.mdAttachPayer?.name){
+            const response = await blobContainerClient.deleteBlob(el.mdAttachPayer.name);
+            if (response._response.status !== 202) {
+                console.error(`Error deleting PDF ${el.id}`);
+            }
+        }
+
 
         response.then((res) => {
             console.log("RESPONSE DELETE PDF STATUS", res._response.status);
