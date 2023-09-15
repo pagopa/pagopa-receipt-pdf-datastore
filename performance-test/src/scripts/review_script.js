@@ -41,6 +41,7 @@ const reviewReceiptsTimeToProcess = async () => {
       }).fetchAll();
 
     for(const el of resources){
+        console.log("Processing receipt with id: "+ el.id);
         if(el.inserted_at){
             let bizEvent =  await bizeventContainer.item(el.eventId, el.eventId).read();
 

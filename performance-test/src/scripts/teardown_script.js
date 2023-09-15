@@ -12,6 +12,7 @@ const deleteDocumentFromAllDatabases = async () => {
     console.info(`Found n. ${resources?.length} receipts in the database`);
 
     resources?.forEach(async (el) => {
+        console.log("Cleaning documents linked to receipts with id: "+el.id);
         //Delete PDF from Blob Storage
         const response = await blobContainerClient.deleteBlob(el.id);
         if (response._response.status !== 202) {
