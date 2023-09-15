@@ -4,33 +4,31 @@ import { bizeventContainer, blobContainerClient, receiptContainer } from "./scri
 
 //DELETE PDF FROM BLOB STORAGE
 const deleteDocumentFromAllDatabases = async () => {
-    let {resources} = await receiptContainer.items.query({
+    let { resources } = await receiptContainer.items.query({
         query: "SELECT * from c WHERE c.eventData.debtorFiscalCode = @fiscalCode",
         parameters: [{ name: "@fiscalCode", value: SIM_TEST_CF }]
-      }).fetchAll();
+    }).fetchAll();
 
     console.info(`Found n. ${resources?.length} receipts in the database`);
 
-    resources?.forEach(async (el) => {
-        console.log("Cleaning documents linked to receipts with id: "+el.id);
+    for (const el of resources) {
+        console.log("Cleaning documents linked to receipts with id: " + el.id);
+
         //Delete PDF from Blob Storage
-        if(el?.mdAttach?.name){
-            const response = await blobContainerClient.deleteBlob(el.mdAttach.name);
+        if (el?.mdAttach?.name) {
+            let response = await blobContainerClient.deleteBlob(el.mdAttach.name);
             if (response._response.status !== 202) {
                 console.error(`Error deleting PDF ${el.id}`);
             }
-        }
-        if(el?.mdAttachPayer?.name){
-            const response = await blobContainerClient.deleteBlob(el.mdAttachPayer.name);
-            if (response._response.status !== 202) {
-                console.error(`Error deleting PDF ${el.id}`);
-            }
-        }
-
-
-        response.then((res) => {
             console.log("RESPONSE DELETE PDF STATUS", res._response.status);
-        })
+        }
+        if (el?.mdAttachPayer?.name) {
+            let response = await blobContainerClient.deleteBlob(el.mdAttachPayer.name);
+            if (response._response.status !== 202) {
+                console.error(`Error deleting PDF ${el.id}`);
+            }
+            console.log("RESPONSE DELETE PDF STATUS", res._response.status);
+        }
 
         //Delete Receipt from CosmosDB
         try {
@@ -49,9 +47,7 @@ const deleteDocumentFromAllDatabases = async () => {
                 console.error(`Error deleting bizevent ${el.eventId}`);
             }
         }
-
-
-    });
+    }
 
 };
 
