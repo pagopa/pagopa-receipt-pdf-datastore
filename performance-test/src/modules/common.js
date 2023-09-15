@@ -1,4 +1,4 @@
-export const SIM_TEST_CF = "SIMTESTCF";
+export const SIM_TEST_CF = "PROD-TEST-CF";
 
 export function randomString(length, charset) {
     let res = '';
