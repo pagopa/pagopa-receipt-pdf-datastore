@@ -1,6 +1,19 @@
 import { getDocumentByDebtorCF, getDocumentById } from "../modules/datastore_client";
 import { bizEventContainerID, bizEventCosmosDBPrimaryKey, bizEventCosmosDBURI, bizEventDatabaseID, receiptContainerID, receiptCosmosDBPrimaryKey, receiptCosmosDBURI, receiptDatabaseID } from "./scripts_common";
 
+function calculatePercentile(array, percentile){
+    const currentIndex = 0;
+    const totalCount = array.reduce((count, currentValue) => {
+      if (currentValue < percentile) {
+        return count + 1; // add 1 to `count`
+      } else if (currentValue === percentile) {
+        return count + 0.5; // add 0.5 to `count`
+      }
+      return count + 0;
+    }, currentIndex);
+    return (totalCount * 100) / array.length;
+}
+
 const reviewReceiptsTimeToProcess = () => {
     let r = getDocumentByDebtorCF(receiptCosmosDBURI, receiptDatabaseID, receiptContainerID, receiptCosmosDBPrimaryKey, SIM_TEST_CF);
 
@@ -73,7 +86,7 @@ const reviewReceiptsTimeToProcess = () => {
     console.log("/////////////////////////////////");
     console.log("/----------- METRICS -----------/");
     console.log("/////////////////////////////////");
-    console.log(" ");
+    console.log("\n\n");
     console.log(`total receipts...................: ${receipts?.length ?? 0}`);
     console.log(`receipts processed completely....: ${receiptsCompleted}`);
     console.log(`receipts failed to complete......: ${notInserted + notGenerated + notNotified}`);
@@ -86,22 +99,33 @@ const reviewReceiptsTimeToProcess = () => {
     console.log(`receipts failed to be generated..: ${notGenerated}`);
     console.log(`receipts failed to be notified...: ${notNotified}`);
     console.log("--------------------------------");
-    console.log(`mean time to insert..............: ${totalTimeToInsert/arrayTimeToInsert.length}`);
-    console.log(`mean time to generate............: ${totalTimeToGenerate/arrayTimeToGenerate.length}`);
-    console.log(`mean time to notify..............: ${totalTimeToNotify/arrayTimeToNotify.length}`);
+    console.log(`mean time to insert..............: ${totalTimeToInsert/arrayTimeToInsert.length}ms`);
+    console.log(`mean time to generate............: ${totalTimeToGenerate/arrayTimeToGenerate.length}ms`);
+    console.log(`mean time to notify..............: ${totalTimeToNotify/arrayTimeToNotify.length}ms`);
     console.log("--------------------------------");
-    console.log(`min time to insert..............: ${minTimeToInsert}`);
-    console.log(`min time to generate..............: ${minTimeToGenerate}`);
-    console.log(`min time to notify..............: ${minTimeToNotify}`);
+    console.log(`min time to insert...............: ${minTimeToInsert}ms`);
+    console.log(`min time to generate.............: ${minTimeToGenerate}ms`);
+    console.log(`min time to notify...............: ${minTimeToNotify}ms`);
     console.log("--------------------------------");
-    console.log(`max time to insert..............: ${maxTimeToInsert}`);
-    console.log(`max time to generate..............: ${maxTimeToGenerate}`);
-    console.log(`max time to notify..............: ${maxTimeToNotify}`);
-    console.log(" ");
+    console.log(`max time to insert...............: ${maxTimeToInsert}ms`);
+    console.log(`max time to generate.............: ${maxTimeToGenerate}ms`);
+    console.log(`max time to notify...............: ${maxTimeToNotify}ms`);
+    console.log("--------------------------------");
+    console.log(`p(95) time to insert.............: ${calculatePercentile(arrayTimeToInsert, 95)}ms`); 
+    console.log(`p(95) time to generate...........: ${calculatePercentile(arrayTimeToGenerate, 95)}ms`); 
+    console.log(`p(95) time to notify.............: ${calculatePercentile(arrayTimeToNotify, 95)}ms`); 
+    console.log("--------------------------------");
+    console.log(`p(99) time to insert.............: ${calculatePercentile(arrayTimeToInsert, 99)}ms`); 
+    console.log(`p(99) time to generate...........: ${calculatePercentile(arrayTimeToGenerate, 99)}ms`); 
+    console.log(`p(99) time to notify.............: ${calculatePercentile(arrayTimeToNotify, 99)}ms`); 
+    console.log("--------------------------------");
+    console.log(`p(99.99) time to insert..........: ${calculatePercentile(arrayTimeToInsert, 99.99)}ms`); 
+    console.log(`p(99.99) time to generate........: ${calculatePercentile(arrayTimeToGenerate, 99.99)}ms`); 
+    console.log(`p(99.99) time to notify..........: ${calculatePercentile(arrayTimeToNotify, 99.99)}ms`); 
+    console.log("\n\n");
     console.log("/////////////////////////////////");
     console.log("/------------- END -------------/");
     console.log("/////////////////////////////////");
-    
 }
 
 reviewReceiptsTimeToProcess();
