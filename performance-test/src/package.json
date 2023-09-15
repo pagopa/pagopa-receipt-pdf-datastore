@@ -1,0 +1,10 @@
+{
+  "type": "module",
+  "dependencies": {
+    "@azure/storage-blob": "^12.15.0"
+  },
+  "scripts" : {
+    "start-review" : "export $(cat .env | xargs) && node ./scripts/review_script.js",
+    "start-teardown" : "export $(cat .env | xargs) && node ./scripts/teardown_script.js"
+  }
+}
