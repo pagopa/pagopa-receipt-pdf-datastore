@@ -34,7 +34,7 @@ const deleteDocumentFromAllDatabases = async () => {
             await bizeventContainer.item(el.eventId).delete();
         } catch (error) {
             if (error.code !== 404) {
-                console.error(`Error deleting receipt ${el.id}`);
+                console.error(`Error deleting bizevent ${el.eventId}`);
             }
         }
 
