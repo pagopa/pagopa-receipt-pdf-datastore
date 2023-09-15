@@ -71,6 +71,7 @@ steps:
       RECEIPT_COSMOS_CONN_STRING: ${{ variables.receiptCosmosConnectionString }}
       BIZEVENT_COSMOS_CONN_STRING: ${{ variables.bizeventCosmosConnectionString }}
       BLOB_STORAGE_CONN_STRING: ${{ variables.blobStorageConnectionString }}
+      ENVIRONMENT_STRING: ${{ parameters.ENVIRONMENT }}
   - script: |
       cd ./performance-test/src
       docker build -f ./DockerfileTeardown -t exec-node .
@@ -86,4 +87,5 @@ steps:
       RECEIPT_COSMOS_CONN_STRING: ${{ variables.receiptCosmosConnectionString }}
       BIZEVENT_COSMOS_CONN_STRING: ${{ variables.bizeventCosmosConnectionString }}
       BLOB_STORAGE_CONN_STRING: ${{ variables.blobStorageConnectionString }}
+      ENVIRONMENT_STRING: ${{ parameters.ENVIRONMENT }}
 

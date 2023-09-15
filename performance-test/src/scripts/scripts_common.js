@@ -21,7 +21,6 @@ const bizEventContainerID = environmentVars.bizEventContainerID;
 const receiptDatabaseID = environmentVars.receiptDatabaseID;
 const receiptContainerID = environmentVars.receiptContainerID;
 
-console.log(blobStorageConnString, blobStorageContainerID);
 //CLIENTS
 const blobServiceClient = BlobServiceClient.fromConnectionString(blobStorageConnString || "");
 export const blobContainerClient = blobServiceClient.getContainerClient(blobStorageContainerID || "");
