@@ -59,6 +59,10 @@ steps:
       RECEIPT_COSMOS_SUBSCRIPTION_KEY: ${{ variables.receiptCosmosSubscriptionKey }}
       BIZEVENT_COSMOS_SUBSCRIPTION_KEY: ${{ variables.bizEventCosmosSubscriptionKey }}
   - script: |
+      sleep 300
+    displayName: Wait receipt to be processed
+    condition: eq(parameters['SCRIPT'], 'receipt_flow_simulation')
+  - script: |
       cd ./performance-test/src
       docker build -f ./DockerfileReview -t exec-node .
       docker run --rm --name initToRunk6 \
@@ -69,10 +73,6 @@ steps:
     condition: eq(parameters['SCRIPT'], 'receipt_flow_simulation')
     env:
       RECEIPT_COSMOS_SUBSCRIPTION_KEY: ${{ variables.receiptCosmosSubscriptionKey }}
-  - script: |
-      sleep 300
-    displayName: Wait receipt to be processed
-    condition: eq(parameters['SCRIPT'], 'receipt_flow_simulation')
   - script: |
       cd ./performance-test/src
       docker build -f ./DockerfileTeardown -t exec-node .
