@@ -44,7 +44,10 @@ const reviewReceiptsTimeToProcess = async () => {
     for(const el of resources){
         console.log("Processing receipt with id: "+ el.id);
         if(el.inserted_at){
-            let bizEvent =  await bizeventContainer.item(el.eventId, el.eventId).read()?.resource;
+            let bizEventResponse =  await bizeventContainer.item(el.eventId, el.eventId).read();
+            let bizEvent = bizEventResponse.resource;
+
+            console.log(bizEvent?._ts, bizEvent._ts ? 1 : 0);
 
             if(bizEvent?._ts){
                 let timeToInsert = el.inserted_at - bizEvent._ts;
