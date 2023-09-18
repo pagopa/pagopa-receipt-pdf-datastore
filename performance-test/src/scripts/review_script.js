@@ -93,7 +93,6 @@ const reviewReceiptsTimeToProcess = async () => {
     console.log("/////////////////////////////////");
     console.log("/----------- METRICS -----------/");
     console.log("/////////////////////////////////");
-    console.log("\n\n");
     console.log(`total receipts...................: ${resources?.length ?? 0}`);
     console.log(`receipts processed completely....: ${receiptsCompleted}`);
     console.log(`receipts failed to complete......: ${notNotified}`);
@@ -117,7 +116,6 @@ const reviewReceiptsTimeToProcess = async () => {
     console.log(`max time to insert...............: ${maxTimeToInsert ? `${maxTimeToInsert}ms | ${maxTimeToInsert / 1000}s` : ""}`);
     console.log(`max time to generate.............: ${maxTimeToGenerate ? `${maxTimeToGenerate}ms | ${maxTimeToGenerate / 1000}s` : ""}`);
     console.log(`max time to notify...............: ${maxTimeToNotify ? `${maxTimeToNotify}ms | ${maxTimeToNotify / 1000}s` : ""}`);
-    console.log("\n\n");
     console.log("/////////////////////////////////");
     console.log("/------------- END -------------/");
     console.log("/////////////////////////////////");
