@@ -1,62 +1,67 @@
-import { bizeventContainer, receiptContainer} from "./scripts_common.js";
+import { bizeventContainer, receiptContainer } from "./scripts_common.js";
 import { SIM_TEST_CF } from '../modules/common.js';
 
-function calculatePercentile(array, percentile, suffix){
+function calculatePercentile(array, percentile, suffix) {
     const currentIndex = 0;
     const totalCount = array.reduce((count, currentValue) => {
-      if (currentValue < percentile) {
-        return count + 1; // add 1 to `count`
-      } else if (currentValue === percentile) {
-        return count + 0.5; // add 0.5 to `count`
-      }
-      return count + 0;
+        if (currentValue < percentile) {
+            return count + 1; // add 1 to `count`
+        } else if (currentValue === percentile) {
+            return count + 0.5; // add 0.5 to `count`
+        }
+        return count + 0;
     }, currentIndex);
     let fin = (totalCount * 100) / array.length;
-    return `${fin}${fin ? (suffix || "") : "" }`;
+    return `${fin}${fin ? (suffix || "") : ""}`;
 }
 
 const reviewReceiptsTimeToProcess = async () => {
     let arrayTimeToInsert = [];
     let totalTimeToInsert = 0;
     let notInserted = 0;
-    let minTimeToInsert = 1000*60*60*24;
+    let minTimeToInsert = 1000 * 60 * 60 * 24;
     let maxTimeToInsert = -1;
 
     let arrayTimeToGenerate = [];
     let totalTimeToGenerate = 0;
     let notGenerated = 0;
-    let minTimeToGenerate = 1000*60*60*24;
+    let minTimeToGenerate = 1000 * 60 * 60 * 24;
     let maxTimeToGenerate = -1;
 
     let arrayTimeToNotify = [];
     let totalTimeToNotify = 0;
     let notNotified = 0;
-    let minTimeToNotify = 1000*60*60*24;
+    let minTimeToNotify = 1000 * 60 * 60 * 24;
     let maxTimeToNotify = -1;
 
     let receiptsCompleted = 0;
 
-    let {resources} = await receiptContainer.items.query({
+    let { resources } = await receiptContainer.items.query({
         query: "SELECT * from c WHERE c.eventData.debtorFiscalCode = @fiscalCode",
         parameters: [{ name: "@fiscalCode", value: SIM_TEST_CF }]
-      }).fetchAll();
+    }).fetchAll();
 
-    for(const el of resources){
-        console.log("Processing receipt with id: "+ el.id);
-        if(el.inserted_at){
-            let bizEventResponse =  await bizeventContainer.item(el.eventId, el.eventId).read();
+    for (const el of resources) {
+        console.log("Processing receipt with id: " + el.id);
+        if (el.inserted_at) {
+            let bizEventResponse = await bizeventContainer.item(el.eventId, el.eventId).read();
             let bizEvent = bizEventResponse.resource;
 
-            if(bizEvent?._ts){
+            if (bizEvent?._ts > 0) {
                 let timeToInsert = el.inserted_at - bizEvent._ts;
 
                 arrayTimeToInsert.push(timeToInsert);
                 totalTimeToInsert += timeToInsert;
                 minTimeToInsert = timeToInsert < minTimeToInsert ? timeToInsert : minTimeToInsert;
                 maxTimeToInsert = timeToInsert > maxTimeToInsert ? timeToInsert : maxTimeToInsert;
+
+                if (arrayTimeToInsert.length === 1) {
+                    console.log("TIMESTAMP BIZ", bizEvent._ts);
+                    console.log("TIMESTAMP INSERTED", el.inserted_at);
+                }
             }
-            
-            if(el.generated_at){
+
+            if (el.generated_at) {
                 let timeToGenerate = el.generated_at - el.inserted_at;
 
                 arrayTimeToGenerate.push(timeToGenerate);
@@ -64,14 +69,11 @@ const reviewReceiptsTimeToProcess = async () => {
                 minTimeToGenerate = timeToGenerate < minTimeToGenerate ? timeToGenerate : minTimeToGenerate;
                 maxTimeToGenerate = timeToGenerate > maxTimeToGenerate ? timeToGenerate : maxTimeToGenerate;
 
-                if(arrayTimeToGenerate.length  === 1){
-                    console.log("TIMESTAMP INSERT", el.inserted_at);
-                    console.log("TIMESTAMP GENERATED", el.generated_at);
-                }
 
-                if(el.notified_at){
+
+                if (el.notified_at) {
                     let timeToNotify = el.notified_at - el.generated_at;
-        
+
                     arrayTimeToNotify.push(timeToNotify);
                     totalTimeToNotify += timeToNotify;
                     minTimeToNotify = timeToNotify < minTimeToNotify ? timeToNotify : minTimeToNotify;
@@ -108,9 +110,9 @@ const reviewReceiptsTimeToProcess = async () => {
     console.log(`receipts failed to be generated..: ${notGenerated}`);
     console.log(`receipts failed to be notified...: ${notNotified}`);
     console.log("--------------------------------");
-    console.log(`mean time to insert..............: ${totalTimeToInsert/arrayTimeToInsert.length}${totalTimeToInsert ? "ms" : ""}`);
-    console.log(`mean time to generate............: ${totalTimeToGenerate/arrayTimeToGenerate.length}${totalTimeToGenerate ? "ms" : ""}`);
-    console.log(`mean time to notify..............: ${totalTimeToNotify/arrayTimeToNotify.length}${totalTimeToNotify ? "ms" : ""}`);
+    console.log(`mean time to insert..............: ${totalTimeToInsert ? Math.round(totalTimeToInsert / arrayTimeToInsert.length) + "ms" : ""}`);
+    console.log(`mean time to generate............: ${totalTimeToGenerate ? Math.round(totalTimeToGenerate / arrayTimeToGenerate.length) + "ms" : ""}`);
+    console.log(`mean time to notify..............: ${totalTimeToNotify ? Math.round(totalTimeToNotify / arrayTimeToNotify.length) + "ms" : ""}`);
     console.log("--------------------------------");
     console.log(`min time to insert...............: ${minTimeToInsert}${minTimeToInsert ? "ms" : ""}`);
     console.log(`min time to generate.............: ${minTimeToGenerate}${minTimeToGenerate ? "ms" : ""}`);
@@ -120,17 +122,17 @@ const reviewReceiptsTimeToProcess = async () => {
     console.log(`max time to generate.............: ${maxTimeToGenerate}${maxTimeToGenerate ? "ms" : ""}`);
     console.log(`max time to notify...............: ${maxTimeToNotify}${maxTimeToNotify ? "ms" : ""}`);
     console.log("--------------------------------");
-    console.log(`p(95) time to insert.............: ${calculatePercentile(arrayTimeToInsert, 95, "ms")}`); 
-    console.log(`p(95) time to generate...........: ${calculatePercentile(arrayTimeToGenerate, 95, "ms")}`); 
-    console.log(`p(95) time to notify.............: ${calculatePercentile(arrayTimeToNotify, 95, "ms")}`); 
+    console.log(`p(95) time to insert.............: ${calculatePercentile(arrayTimeToInsert, 95, "ms")}`);
+    console.log(`p(95) time to generate...........: ${calculatePercentile(arrayTimeToGenerate, 95, "ms")}`);
+    console.log(`p(95) time to notify.............: ${calculatePercentile(arrayTimeToNotify, 95, "ms")}`);
     console.log("--------------------------------");
-    console.log(`p(99) time to insert.............: ${calculatePercentile(arrayTimeToInsert, 99, "ms")}`); 
-    console.log(`p(99) time to generate...........: ${calculatePercentile(arrayTimeToGenerate, 99, "ms")}`); 
-    console.log(`p(99) time to notify.............: ${calculatePercentile(arrayTimeToNotify, 99, "ms")}`); 
+    console.log(`p(99) time to insert.............: ${calculatePercentile(arrayTimeToInsert, 99, "ms")}`);
+    console.log(`p(99) time to generate...........: ${calculatePercentile(arrayTimeToGenerate, 99, "ms")}`);
+    console.log(`p(99) time to notify.............: ${calculatePercentile(arrayTimeToNotify, 99, "ms")}`);
     console.log("--------------------------------");
-    console.log(`p(99.99) time to insert..........: ${calculatePercentile(arrayTimeToInsert, 99.99, "ms")}`); 
-    console.log(`p(99.99) time to generate........: ${calculatePercentile(arrayTimeToGenerate, 99.99, "ms")}`); 
-    console.log(`p(99.99) time to notify..........: ${calculatePercentile(arrayTimeToNotify, 99.99, "ms")}`); 
+    console.log(`p(99.99) time to insert..........: ${calculatePercentile(arrayTimeToInsert, 99.99, "ms")}`);
+    console.log(`p(99.99) time to generate........: ${calculatePercentile(arrayTimeToGenerate, 99.99, "ms")}`);
+    console.log(`p(99.99) time to notify..........: ${calculatePercentile(arrayTimeToNotify, 99.99, "ms")}`);
     console.log("\n\n");
     console.log("/////////////////////////////////");
     console.log("/------------- END -------------/");
