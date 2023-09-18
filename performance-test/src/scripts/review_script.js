@@ -96,7 +96,7 @@ const reviewReceiptsTimeToProcess = async () => {
     console.log("\n\n");
     console.log(`total receipts...................: ${resources?.length ?? 0}`);
     console.log(`receipts processed completely....: ${receiptsCompleted}`);
-    console.log(`receipts failed to complete......: ${notInserted + notGenerated + notNotified}`);
+    console.log(`receipts failed to complete......: ${notNotified}`);
     console.log("--------------------------------");
     console.log(`receipts inserted................: ${arrayTimeToInsert.length}`);
     console.log(`receipts generated...............: ${arrayTimeToGenerate.length}`);
