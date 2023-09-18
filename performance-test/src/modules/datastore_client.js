@@ -61,6 +61,32 @@ export function getDocumentByEventId(cosmosDbURI, databaseId, containerId, autho
     return http.post(cosmosDbURI+path, body, {headers, responseType: "text"});
 }
 
+export function getDocumentByDebtorCF(cosmosDbURI, databaseId, containerId, authorizationSignature, debtorCF) {
+    const path = `dbs/${databaseId}/colls/${containerId}/docs`;
+    const resourceLink = `dbs/${databaseId}/colls/${containerId}`;
+    const resourceType = "docs";
+    const date = new Date().toUTCString();
+    const verb = 'post';
+    const authorizationToken = getCosmosDBAuthorizationToken(verb,authorizationType,authorizationVersion,authorizationSignature,resourceType,resourceLink,date);
+
+    let partitionKeyArray = [];
+    let headers = getCosmosDBAPIHeaders(authorizationToken, date, partitionKeyArray, 'application/query+json', "true");
+
+    const query = {
+        "query": "SELECT * FROM c WHERE c.eventData.debtorFiscalCode = @cf",
+        "parameters": [
+            {
+                "name":"@cf",
+                "value": debtorCF
+            }
+        ]
+    };
+
+    const body = JSON.stringify(query);
+
+    return http.post(cosmosDbURI+path, body, {headers, responseType: "text"});
+}
+
 
 export function createDocument(cosmosDbURI, databaseId, containerId, authorizationSignature, document, pk) {
 	let path = `dbs/${databaseId}/colls/${containerId}/docs`;
