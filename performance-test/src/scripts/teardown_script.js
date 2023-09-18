@@ -20,14 +20,14 @@ const deleteDocumentFromAllDatabases = async () => {
             if (response._response.status !== 202) {
                 console.error(`Error deleting PDF ${el.id}`);
             }
-            console.log("RESPONSE DELETE PDF STATUS", res._response.status);
+            console.log("RESPONSE DELETE PDF STATUS", response._response.status);
         }
         if (el?.mdAttachPayer?.name?.length > 1) {
             let response = await blobContainerClient.deleteIfExists(el.mdAttachPayer.name);
             if (response._response.status !== 202) {
                 console.error(`Error deleting PDF ${el.id}`);
             }
-            console.log("RESPONSE DELETE PDF STATUS", res._response.status);
+            console.log("RESPONSE DELETE PDF STATUS", response._response.status);
         }
 
         //Delete Receipt from CosmosDB
