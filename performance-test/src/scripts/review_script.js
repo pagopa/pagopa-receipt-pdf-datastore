@@ -64,6 +64,11 @@ const reviewReceiptsTimeToProcess = async () => {
                 minTimeToGenerate = timeToGenerate < minTimeToGenerate ? timeToGenerate : minTimeToGenerate;
                 maxTimeToGenerate = timeToGenerate > maxTimeToGenerate ? timeToGenerate : maxTimeToGenerate;
 
+                if(arrayTimeToGenerate.length  === 1){
+                    console.log("TIMESTAMP INSERT", el.inserted_at);
+                    console.log("TIMESTAMP GENERATED", el.generated_at);
+                }
+
                 if(el.notified_at){
                     let timeToNotify = el.notified_at - el.generated_at;
         
