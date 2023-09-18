@@ -19,20 +19,20 @@ const reviewReceiptsTimeToProcess = async () => {
     let arrayTimeToInsert = [];
     let totalTimeToInsert = 0;
     let notInserted = 0;
-    let minTimeToInsert = 1000 * 60 * 60 * 24;
-    let maxTimeToInsert = -1;
+    let minTimeToInsert = null;
+    let maxTimeToInsert = null;
 
     let arrayTimeToGenerate = [];
     let totalTimeToGenerate = 0;
     let notGenerated = 0;
-    let minTimeToGenerate = 1000 * 60 * 60 * 24;
-    let maxTimeToGenerate = -1;
+    let minTimeToGenerate = null;
+    let maxTimeToGenerate = null;
 
     let arrayTimeToNotify = [];
     let totalTimeToNotify = 0;
     let notNotified = 0;
-    let minTimeToNotify = 1000 * 60 * 60 * 24;
-    let maxTimeToNotify = -1;
+    let minTimeToNotify = null;
+    let maxTimeToNotify = null;
 
     let receiptsCompleted = 0;
 
@@ -48,17 +48,13 @@ const reviewReceiptsTimeToProcess = async () => {
             let bizEvent = bizEventResponse.resource;
 
             if (bizEvent?._ts > 0) {
-                let timeToInsert = el.inserted_at - bizEvent._ts;
+                //BizEvent ts is in seconds
+                let timeToInsert = el.inserted_at - (bizEvent._ts * 1000);
 
                 arrayTimeToInsert.push(timeToInsert);
                 totalTimeToInsert += timeToInsert;
-                minTimeToInsert = timeToInsert < minTimeToInsert ? timeToInsert : minTimeToInsert;
-                maxTimeToInsert = timeToInsert > maxTimeToInsert ? timeToInsert : maxTimeToInsert;
-
-                if (arrayTimeToInsert.length === 1) {
-                    console.log("TIMESTAMP BIZ", bizEvent._ts);
-                    console.log("TIMESTAMP INSERTED", el.inserted_at);
-                }
+                minTimeToInsert = minTimeToInsert === null || timeToInsert < minTimeToInsert ? timeToInsert : minTimeToInsert;
+                maxTimeToInsert = maxTimeToInsert === null || timeToInsert > maxTimeToInsert ? timeToInsert : maxTimeToInsert;
             }
 
             if (el.generated_at) {
@@ -66,8 +62,8 @@ const reviewReceiptsTimeToProcess = async () => {
 
                 arrayTimeToGenerate.push(timeToGenerate);
                 totalTimeToGenerate += timeToGenerate;
-                minTimeToGenerate = timeToGenerate < minTimeToGenerate ? timeToGenerate : minTimeToGenerate;
-                maxTimeToGenerate = timeToGenerate > maxTimeToGenerate ? timeToGenerate : maxTimeToGenerate;
+                minTimeToGenerate = minTimeToGenerate === null || timeToGenerate < minTimeToGenerate ? timeToGenerate : minTimeToGenerate;
+                maxTimeToGenerate = maxTimeToGenerate === null || timeToGenerate > maxTimeToGenerate ? timeToGenerate : maxTimeToGenerate;
 
 
 
@@ -76,8 +72,8 @@ const reviewReceiptsTimeToProcess = async () => {
 
                     arrayTimeToNotify.push(timeToNotify);
                     totalTimeToNotify += timeToNotify;
-                    minTimeToNotify = timeToNotify < minTimeToNotify ? timeToNotify : minTimeToNotify;
-                    maxTimeToNotify = timeToNotify > maxTimeToNotify ? timeToNotify : maxTimeToNotify;
+                    minTimeToNotify = minTimeToNotify === null || timeToNotify < minTimeToNotify ? timeToNotify : minTimeToNotify;
+                    maxTimeToNotify = maxTimeToNotify === null || timeToNotify > maxTimeToNotify ? timeToNotify : maxTimeToNotify;
 
                     receiptsCompleted += 1;
                 } else {
@@ -110,29 +106,17 @@ const reviewReceiptsTimeToProcess = async () => {
     console.log(`receipts failed to be generated..: ${notGenerated}`);
     console.log(`receipts failed to be notified...: ${notNotified}`);
     console.log("--------------------------------");
-    console.log(`mean time to insert..............: ${totalTimeToInsert ? Math.round(totalTimeToInsert / arrayTimeToInsert.length) + "ms" : ""}`);
-    console.log(`mean time to generate............: ${totalTimeToGenerate ? Math.round(totalTimeToGenerate / arrayTimeToGenerate.length) + "ms" : ""}`);
-    console.log(`mean time to notify..............: ${totalTimeToNotify ? Math.round(totalTimeToNotify / arrayTimeToNotify.length) + "ms" : ""}`);
+    console.log(`mean time to insert..............: ${totalTimeToInsert ? `${Math.round(totalTimeToInsert / arrayTimeToInsert.length)}ms | ${Math.round(totalTimeToInsert / arrayTimeToInsert.length) / 1000}s` : ""}`);
+    console.log(`mean time to generate............: ${totalTimeToGenerate ? `${Math.round(totalTimeToGenerate / arrayTimeToGenerate.length)}ms | ${Math.round(totalTimeToGenerate / arrayTimeToGenerate.length) / 1000}s` : ""}`);
+    console.log(`mean time to notify..............: ${totalTimeToNotify ? `${Math.round(totalTimeToNotify / arrayTimeToNotify.length)}ms | ${Math.round(totalTimeToNotify / arrayTimeToNotify.length) / 1000}s` : ""}`);
     console.log("--------------------------------");
-    console.log(`min time to insert...............: ${minTimeToInsert}${minTimeToInsert ? "ms" : ""}`);
-    console.log(`min time to generate.............: ${minTimeToGenerate}${minTimeToGenerate ? "ms" : ""}`);
-    console.log(`min time to notify...............: ${minTimeToNotify}${minTimeToNotify ? "ms" : ""}`);
+    console.log(`min time to insert...............: ${minTimeToInsert ? `${minTimeToInsert}ms | ${minTimeToInsert / 1000}s` : ""}`);
+    console.log(`min time to generate.............: ${minTimeToGenerate ? `${minTimeToGenerate}ms | ${minTimeToGenerate / 1000}s` : ""}`);
+    console.log(`min time to notify...............: ${minTimeToNotify ? `${minTimeToNotify}ms | ${minTimeToNotify / 1000}s` : ""}`);
     console.log("--------------------------------");
-    console.log(`max time to insert...............: ${maxTimeToInsert}${maxTimeToInsert ? "ms" : ""}`);
-    console.log(`max time to generate.............: ${maxTimeToGenerate}${maxTimeToGenerate ? "ms" : ""}`);
-    console.log(`max time to notify...............: ${maxTimeToNotify}${maxTimeToNotify ? "ms" : ""}`);
-    console.log("--------------------------------");
-    console.log(`p(95) time to insert.............: ${calculatePercentile(arrayTimeToInsert, 95, "ms")}`);
-    console.log(`p(95) time to generate...........: ${calculatePercentile(arrayTimeToGenerate, 95, "ms")}`);
-    console.log(`p(95) time to notify.............: ${calculatePercentile(arrayTimeToNotify, 95, "ms")}`);
-    console.log("--------------------------------");
-    console.log(`p(99) time to insert.............: ${calculatePercentile(arrayTimeToInsert, 99, "ms")}`);
-    console.log(`p(99) time to generate...........: ${calculatePercentile(arrayTimeToGenerate, 99, "ms")}`);
-    console.log(`p(99) time to notify.............: ${calculatePercentile(arrayTimeToNotify, 99, "ms")}`);
-    console.log("--------------------------------");
-    console.log(`p(99.99) time to insert..........: ${calculatePercentile(arrayTimeToInsert, 99.99, "ms")}`);
-    console.log(`p(99.99) time to generate........: ${calculatePercentile(arrayTimeToGenerate, 99.99, "ms")}`);
-    console.log(`p(99.99) time to notify..........: ${calculatePercentile(arrayTimeToNotify, 99.99, "ms")}`);
+    console.log(`max time to insert...............: ${maxTimeToInsert ? `${maxTimeToInsert}ms | ${maxTimeToInsert / 1000}s` : ""}`);
+    console.log(`max time to generate.............: ${maxTimeToGenerate ? `${maxTimeToGenerate}ms | ${maxTimeToGenerate / 1000}s` : ""}`);
+    console.log(`max time to notify...............: ${maxTimeToNotify ? `${maxTimeToNotify}ms | ${maxTimeToNotify / 1000}s` : ""}`);
     console.log("\n\n");
     console.log("/////////////////////////////////");
     console.log("/------------- END -------------/");
