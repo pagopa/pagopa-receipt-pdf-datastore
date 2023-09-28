@@ -25,8 +25,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariable;
 
@@ -78,6 +77,8 @@ class BizEventToReceiptTest {
         assertEquals(EVENT_ID, captured.getEventId());
         assertEquals(PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
         assertEquals(DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
+        assertNotNull(captured.getEventData().getCart());
+        assertEquals(1, captured.getEventData().getCart().size());
     }
 
     @Test
@@ -104,6 +105,8 @@ class BizEventToReceiptTest {
         assertEquals(EVENT_ID, captured.getEventId());
         assertEquals(PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
         assertEquals(DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
+        assertNotNull(captured.getEventData().getCart());
+        assertEquals(1, captured.getEventData().getCart().size());
     }
 
     @Test
@@ -187,6 +190,8 @@ class BizEventToReceiptTest {
         assertEquals(EVENT_ID, captured.getEventId());
         assertEquals(PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
         assertEquals(DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
+        assertNotNull(captured.getEventData().getCart());
+        assertEquals(1, captured.getEventData().getCart().size());
     }
 
     @Test
@@ -214,6 +219,8 @@ class BizEventToReceiptTest {
         assertEquals(EVENT_ID, captured.getEventId());
         assertEquals(PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
         assertEquals(DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
+        assertNotNull(captured.getEventData().getCart());
+        assertEquals(1, captured.getEventData().getCart().size());
     }
 
     private static void setMock(ReceiptQueueClientImpl mock) {
