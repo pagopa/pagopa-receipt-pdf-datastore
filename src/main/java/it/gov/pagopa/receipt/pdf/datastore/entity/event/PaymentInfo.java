@@ -1,5 +1,6 @@
 package it.gov.pagopa.receipt.pdf.datastore.entity.event;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 import java.util.List;
@@ -26,4 +27,6 @@ public class PaymentInfo {
 	private String remittanceInformation;
 	private String description;
 	private List<MapEntry> metadata;
+	@JsonProperty(value="IUR")
+	private String IUR;
 }
