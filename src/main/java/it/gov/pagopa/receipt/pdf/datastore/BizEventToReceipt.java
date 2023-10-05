@@ -95,6 +95,8 @@ public class BizEventToReceipt {
                         bizEvent.getDebtor() != null ? bizEvent.getDebtor().getEntityUniqueIdentifierValue() : null);
                 eventData.setTransactionCreationDate(
                         service.getTransactionCreationDate(bizEvent));
+                eventData.setAmount( bizEvent.getPaymentInfo() != null ?
+                        bizEvent.getPaymentInfo().getAmount() : null);
 
                 CartItem item = new CartItem();
                 item.setPayeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getOfficeName() : null);
