@@ -7,94 +7,117 @@ export function randomString(length, charset) {
 }
 
 export function createEvent(id, customCF) {
-    const idPA = randomString(11, "0123456789");
-    const idPSP = randomString(11, "0123456789");
 	let json_event = {
 		"id": id,
 		"version": "2",
+		"idPaymentManager": "54927408",
 		"complete": "false",
-		"receiptId": "0095ff2bafec4bc0a719c9bf003aee4a",
+		"receiptId": "9851395f09544a04b288202299193ca6",
 		"missingInfo": [
-			"idPaymentManager",
 			"psp.pspPartitaIVA",
 			"paymentInfo.primaryCiIncurredFee",
 			"paymentInfo.idBundle",
-			"paymentInfo.idCiBundle",
-			"paymentInfo.metadata"
+			"paymentInfo.idCiBundle"
 		],
-        "debtorPosition": {
-            "modelType": "2",
-            "noticeNumber": randomString(18, "0123456789"),
-            "iuv": randomString(17, "0123456789")
-        },
-        "creditor": {
-            "idPA": idPA,
-            "idBrokerPA": idPA,
-            "idStation": `${idPA}_08`,
-            "companyName": "PA test_company"
-        },
-        "psp": {
-            "idPsp": idPSP,
-            "idBrokerPsp": idPSP,
-            "idChannel": `${idPSP}_08`,
-            "psp": "test_PSP"
-        },
+		"debtorPosition": {
+			"modelType": "2",
+			"noticeNumber": "310391366991197059",
+			"iuv": "10391366991197059"
+		},
+		"creditor": {
+			"idPA": "66666666666",
+			"idBrokerPA": "66666666666",
+			"idStation": "66666666666_08",
+			"companyName": "PA paolo",
+			"officeName": "office"
+		},
+		"psp": {
+			"idPsp": "60000000001",
+			"idBrokerPsp": "60000000001",
+			"idChannel": "60000000001_08",
+			"psp": "PSP Paolo",
+			"pspFiscalCode": "CF60000000006",
+			"channelDescription": "app"
+		},
 		"debtor": {
-			"fullName": "John Doe",
-			"entityUniqueIdentifierType": "F",
-            "entityUniqueIdentifierValue": customCF ? customCF : randomString(11, "0123456789"),
-			"streetName": "street",
-			"civicNumber": "12",
-			"postalCode": "89020",
-			"city": "city",
-			"stateProvinceRegion": "MI",
+			"fullName": "paGetPaymentName",
+			"entityUniqueIdentifierType": "G",
+			"entityUniqueIdentifierValue": customCF ? customCF : randomString(11, "0123456789"),
+			"streetName": "paGetPaymentStreet",
+			"civicNumber": "paGetPayment99",
+			"postalCode": "20155",
+			"city": "paGetPaymentCity",
+			"stateProvinceRegion": "paGetPaymentState",
 			"country": "IT",
-			"eMail": "john.doe@test.it"
+			"eMail": "paGetPayment@test.it"
 		},
 		"payer": {
-			"fullName": "John Doe",
-			"entityUniqueIdentifierType": "F",
+			"fullName": "name",
+			"entityUniqueIdentifierType": "G",
 			"entityUniqueIdentifierValue": "JHNDOE00A01F205S",
 			"streetName": "street",
-			"civicNumber": "12",
-			"postalCode": "89020",
+			"civicNumber": "civic",
+			"postalCode": "postal",
 			"city": "city",
-			"stateProvinceRegion": "MI",
+			"stateProvinceRegion": "state",
 			"country": "IT",
-			"eMail": "john.doe@test.it"
+			"eMail": "prova@test.it"
 		},
 		"paymentInfo": {
-			"paymentDateTime": "2022-12-13T01:52:02.926587",
-			"applicationDate": "2021-10-01",
-			"transferDate": "2021-10-02",
-			"dueDate": "2021-07-31",
-			"paymentToken": "0095ff2bafec4bc0a719c9bf003aee4a",
-			"amount": "70.0",
+			"paymentDateTime": "2023-03-17T16:37:36.955813",
+			"applicationDate": "2021-12-12",
+			"transferDate": "2021-12-11",
+			"dueDate": "2021-12-12",
+			"paymentToken": "9851395f09544a04b288202299193ca6",
+			"amount": "10.0",
 			"fee": "2.0",
 			"totalNotice": "1",
 			"paymentMethod": "creditCard",
 			"touchpoint": "app",
 			"remittanceInformation": "TARI 2021",
-			"description": "TARI 2021"
+			"description": "TARI 2021",
+			"metadata": [
+				{
+					"key": "1",
+					"value": "22"
+				}
+			]
 		},
 		"transferList": [
-            {
-                "fiscalCodePA": idPA,
-                "companyName": "PA test_company",
-                "amount": "2.00",
-                "transferCategory": "paTest",
-                "remittanceInformation": "/RFB/00202200000217527/5.00/TXT/"
-            },
-            {
-                "fiscalCodePA": randomString(11, "0123456789"),
-                "companyName": "PA test_company",
-                "amount": "8.00",
-                "transferCategory": "paTest",
-                "remittanceInformation": "/RFB/00202200000217527/5.00/TXT/"
-            }
+			{
+				"idTransfer": "1",
+				"fiscalCodePA": "66666666666",
+				"companyName": "PA paolo",
+				"amount": "10.0",
+				"transferCategory": "paGetPaymentTest",
+				"remittanceInformation": "/RFB/00202200000217527/5.00/TXT/"
+			}
 		],
+		"transactionDetails": {
+			"user": {
+				"fullName": "John Doe",
+				"type": "F",
+				"fiscalCode": "JHNDOE00A01F205N",
+				"notificationEmail": "john.doe@mail.it",
+				"userId": "1234",
+				"userStatus": "11",
+				"userStatusDescription": "REGISTERED_SPID"
+			},
+			"transaction": {
+				"idTransaction": 123456,
+				"transactionId": 123456,
+				"grandTotal": 0,
+				"amount": 0,
+				"fee": 0
+			}
+		},
+		"timestamp": 1679067463501,
+		"properties": {
+			"diagnostic-id": "00-f70ef3167cffad76c6657a67a33ee0d2-61d794a75df0b43b-01",
+			"serviceIdentifier": "NDP002SIT"
+		},
 		"eventStatus": "DONE",
 		"eventRetryEnrichmentCount": 0
 	}
-    return json_event;
+	return json_event
 }
