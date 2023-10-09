@@ -1,5 +1,6 @@
 package it.gov.pagopa.receipt.pdf.datastore.entity.event;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
@@ -10,6 +11,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class PaymentInfo {
 	private String paymentDateTime;
 	private String applicationDate;

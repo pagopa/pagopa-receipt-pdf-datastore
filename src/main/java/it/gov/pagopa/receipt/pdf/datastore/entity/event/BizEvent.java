@@ -1,5 +1,6 @@
 package it.gov.pagopa.receipt.pdf.datastore.entity.event;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.enumeration.BizEventStatusType;
 import lombok.*;
 
@@ -11,6 +12,7 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class BizEvent {
 	private String id;
 	private String version;
