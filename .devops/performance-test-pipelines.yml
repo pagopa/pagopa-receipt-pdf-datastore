@@ -87,20 +87,20 @@ steps:
       BIZEVENT_COSMOS_CONN_STRING: ${{ variables.bizeventCosmosConnectionString }}
       BLOB_STORAGE_CONN_STRING: ${{ variables.blobStorageConnectionString }}
       ENVIRONMENT_STRING: ${{ parameters.ENVIRONMENT }}
-#  - script: |
-#      cd ./performance-test/src
-#      docker build -f ./DockerfileTeardown -t exec-node .
-#      docker run --rm --name initToRunk6 \
-#      -e BLOB_STORAGE_CONN_STRING=${BLOB_STORAGE_CONN_STRING} \
-#      -e RECEIPT_COSMOS_CONN_STRING=${RECEIPT_COSMOS_CONN_STRING} \
-#      -e BIZEVENT_COSMOS_CONN_STRING=${BIZEVENT_COSMOS_CONN_STRING} \
-#      -e ENVIRONMENT_STRING="${ENVIRONMENT_STRING}" \
-#      exec-node
-#    displayName: Run Receipts Teardown
-#    condition: ${{ eq(parameters['SCRIPT'], 'receipt_flow_simulation') }}
-#    env:
-#      RECEIPT_COSMOS_CONN_STRING: ${{ variables.receiptCosmosConnectionString }}
-#      BIZEVENT_COSMOS_CONN_STRING: ${{ variables.bizeventCosmosConnectionString }}
-#      BLOB_STORAGE_CONN_STRING: ${{ variables.blobStorageConnectionString }}
-#      ENVIRONMENT_STRING: ${{ parameters.ENVIRONMENT }}
+  - script: |
+      cd ./performance-test/src
+      docker build -f ./DockerfileTeardown -t exec-node .
+      docker run --rm --name initToRunk6 \
+      -e BLOB_STORAGE_CONN_STRING=${BLOB_STORAGE_CONN_STRING} \
+      -e RECEIPT_COSMOS_CONN_STRING=${RECEIPT_COSMOS_CONN_STRING} \
+      -e BIZEVENT_COSMOS_CONN_STRING=${BIZEVENT_COSMOS_CONN_STRING} \
+      -e ENVIRONMENT_STRING="${ENVIRONMENT_STRING}" \
+      exec-node
+    displayName: Run Receipts Teardown
+    condition: ${{ eq(parameters['SCRIPT'], 'receipt_flow_simulation') }}
+    env:
+      RECEIPT_COSMOS_CONN_STRING: ${{ variables.receiptCosmosConnectionString }}
+      BIZEVENT_COSMOS_CONN_STRING: ${{ variables.bizeventCosmosConnectionString }}
+      BLOB_STORAGE_CONN_STRING: ${{ variables.blobStorageConnectionString }}
+      ENVIRONMENT_STRING: ${{ parameters.ENVIRONMENT }}
 
