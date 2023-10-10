@@ -16,14 +16,14 @@ const deleteDocumentFromAllDatabases = async () => {
 
         //Delete PDF from Blob Storage
         if (el?.mdAttach?.name?.length > 1) {
-            let response = await blobContainerClient.deleteIfExists(el.mdAttach.name);
+            let response = await blobContainerClient.getBlockBlobClient(el.mdAttach.name).deleteIfExists();
             if (response._response.status !== 202) {
                 console.error(`Error deleting PDF ${el.id}`);
             }
             console.log("RESPONSE DELETE PDF STATUS", response._response.status);
         }
         if (el?.mdAttachPayer?.name?.length > 1) {
-            let response = await blobContainerClient.deleteIfExists(el.mdAttachPayer.name);
+            let response = await blobContainerClient.getBlockBlobClient(el.mdAttachPayer.name).deleteIfExists();
             if (response._response.status !== 202) {
                 console.error(`Error deleting PDF ${el.id}`);
             }
