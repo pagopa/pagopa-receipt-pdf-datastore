@@ -81,10 +81,10 @@ microservice-chart:
     ENV: "uat"
     WEBSITE_SITE_NAME: "pagopareceiptpdfdatastore" # required to show cloud role name in application insights
     FUNCTIONS_WORKER_RUNTIME: "java"
-    RECEIPT_QUEUE_TOPIC: 'pagopa-u-weu-receipts-queue-receipt-waiting-4-gen'
-    COSMOS_RECEIPT_SERVICE_ENDPOINT: 'https://pagopa-u-weu-receipts-ds-cosmos-account.documents.azure.com:443/'
-    COSMOS_RECEIPT_DB_NAME: 'db'
-    COSMOS_RECEIPT_CONTAINER_NAME: 'receipts'
+    RECEIPT_QUEUE_TOPIC: "pagopa-u-weu-receipts-queue-receipt-waiting-4-gen"
+    COSMOS_RECEIPT_SERVICE_ENDPOINT: "https://pagopa-u-weu-receipts-ds-cosmos-account.documents.azure.com:443/"
+    COSMOS_RECEIPT_DB_NAME: "db"
+    COSMOS_RECEIPT_CONTAINER_NAME: "receipts"
     ENABLE_ECS_CONSOLE: "true"
     CONSOLE_LOG_THRESHOLD: "DEBUG"
     CONSOLE_LOG_PATTERN: "%d{HH:mm:ss.SSS}[%thread]%-5level%logger{36}-%msg%n"
@@ -98,12 +98,12 @@ microservice-chart:
     APP_NAME: "metadata.labels['app.kubernetes.io/instance']"
     APP_VERSION: "metadata.labels['app.kubernetes.io/version']"
   envSecret:
-    APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-u-connection-string'
+    APPLICATIONINSIGHTS_CONNECTION_STRING: "ai-u-connection-string"
     COSMOS_RECEIPTS_CONN_STRING: "cosmos-receipt-connection-string"
     RECEIPT_QUEUE_CONN_STRING: "receipts-storage-account-connection-string"
-    COSMOS_BIZ_EVENT_CONN_STRING: 'cosmos-biz-event-u-connection-string'
+    COSMOS_BIZ_EVENT_CONN_STRING: "cosmos-biz-event-u-connection-string"
     COSMOS_RECEIPT_KEY: "cosmos-receipt-pkey"
-    OTEL_EXPORTER_OTLP_HEADERS: 'elastic-otl-secret-token'
+    OTEL_EXPORTER_OTLP_HEADERS: "elastic-otl-secret-token"
   keyvault:
     name: "pagopa-u-receipts-kv"
     tenantId: "7788edaf-0346-4068-9d79-c868aed15b3d"
