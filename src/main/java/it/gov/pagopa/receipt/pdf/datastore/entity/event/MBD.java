@@ -1,5 +1,6 @@
 package it.gov.pagopa.receipt.pdf.datastore.entity.event;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
@@ -8,6 +9,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class MBD {
 	@JsonProperty(value="IUBD")
 	private String iubd;

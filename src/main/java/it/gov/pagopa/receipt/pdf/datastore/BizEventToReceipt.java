@@ -8,6 +8,7 @@ import com.microsoft.azure.functions.annotation.ExponentialBackoffRetry;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.enumeration.BizEventStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.CartItem;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
@@ -16,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -93,6 +95,14 @@ public class BizEventToReceipt {
                         bizEvent.getDebtor() != null ? bizEvent.getDebtor().getEntityUniqueIdentifierValue() : null);
                 eventData.setTransactionCreationDate(
                         service.getTransactionCreationDate(bizEvent));
+                eventData.setAmount( bizEvent.getPaymentInfo() != null ?
+                        bizEvent.getPaymentInfo().getAmount() : null);
+
+                CartItem item = new CartItem();
+                item.setPayeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getOfficeName() : null);
+                item.setSubject(bizEvent.getPaymentInfo() != null ? bizEvent.getPaymentInfo().getRemittanceInformation() : null);
+                List<CartItem> cartItems = Collections.singletonList(item);
+                eventData.setCart(cartItems);
 
                 receipt.setEventData(eventData);
 
