@@ -149,6 +149,13 @@ public class BizEventToReceipt {
             return true;
         }
 
+        if (bizEvent.getDebtor().getEntityUniqueIdentifierValue() == null ||
+                bizEvent.getDebtor().getEntityUniqueIdentifierValue().equals("ANONIMO")) {
+            logger.debug("[{}] event with id {} discarded because debtor identifier is missing or ANONIMO",
+                    context.getFunctionName(), bizEvent.getId());
+            return true;
+        }
+
         if (bizEvent.getPaymentInfo() != null) {
             String totalNotice = bizEvent.getPaymentInfo().getTotalNotice();
 

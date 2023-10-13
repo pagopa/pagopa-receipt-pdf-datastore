@@ -124,6 +124,20 @@ class BizEventToReceiptTest {
     }
 
     @Test
+    void runDiscardedWithAnonymousDebtor() {
+        List<BizEvent> bizEventItems = new ArrayList<>();
+        bizEventItems.add(generateAnonymDebtorBizEvent("1"));
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+
+        // test execution
+        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
+
+        verify(documentdb, never()).setValue(any());
+    }
+
+    @Test
     void runDiscardedWithEventNull() {
         List<BizEvent> bizEventItems = new ArrayList<>();
         bizEventItems.add(null);
@@ -258,6 +272,33 @@ class BizEventToReceiptTest {
 
         return item;
     }
+
+    private BizEvent generateAnonymDebtorBizEvent(String totalNotice){
+        BizEvent item = new BizEvent();
+
+        Payer payer = new Payer();
+        payer.setEntityUniqueIdentifierValue(PAYER_FISCAL_CODE);
+        Debtor debtor = new Debtor();
+        debtor.setEntityUniqueIdentifierValue("ANONIMO");
+
+        TransactionDetails transactionDetails = new TransactionDetails();
+        Transaction transaction = new Transaction();
+        transaction.setCreationDate(String.valueOf(LocalDateTime.now()));
+        transactionDetails.setTransaction(transaction);
+
+        PaymentInfo paymentInfo = new PaymentInfo();
+        paymentInfo.setTotalNotice(totalNotice);
+
+        item.setEventStatus(BizEventStatusType.DONE);
+        item.setId(EVENT_ID);
+        item.setPayer(payer);
+        item.setDebtor(debtor);
+        item.setTransactionDetails(transactionDetails);
+        item.setPaymentInfo(paymentInfo);
+
+        return item;
+    }
+
 
     private BizEvent generateNotDoneBizEvent(){
         BizEvent item = new BizEvent();
