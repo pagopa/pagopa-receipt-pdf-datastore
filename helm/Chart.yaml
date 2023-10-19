@@ -2,8 +2,8 @@ apiVersion: v2
 name: pagopareceiptpdfdatastore
 description: Microservice description
 type: application
-version: 0.74.0
-appVersion: 1.3.10-1
+version: 0.75.0
+appVersion: 1.3.11
 dependencies:
   - name: microservice-chart
     version: 2.4.0
