@@ -65,17 +65,23 @@ On terminal type:
 then replace env variables with correct values
 (if there is NO default value, the variable HAS to be defined)
 
-| VARIABLE                          | USAGE                                                                            |      DEFAULT VALUE      |
-|-----------------------------------|----------------------------------------------------------------------------------|:-----------------------:|
-| `RECEIPT_QUEUE_CONN_STRING`       | Connection string to the Receipt Queue                                           |                         |
-| `RECEIPT_QUEUE_TOPIC`             | Topic name of the Receipt Queue                                                  |                         |
-| `RECEIPT_QUEUE_DELAY`             | Delay, in seconds, the visibility of the messages in the queue                   |           "1"           |
-| `COSMOS_BIZ_EVENT_CONN_STRING`    | Connection string to the BizEvent CosmosDB                                       |                         |
-| `COSMOS_RECEIPTS_CONN_STRING`     | Connection string to the Receipt CosmosDB                                        |                         |
-| `COSMOS_RECEIPT_SERVICE_ENDPOINT` | Endpoint to the Receipt CosmosDB                                                 |                         |
-| `COSMOS_RECEIPT_KEY`              | Key to the Receipt CosmosDB                                                      |                         |
-| `COSMOS_RECEIPT_DB_NAME`          | Database name of the Receipt database in CosmosDB                                |                         |
-| `COSMOS_RECEIPT_CONTAINER_NAME`   | Container name of the Receipt container in CosmosDB                              |                         |
+| VARIABLE                              | USAGE                                                          |                     DEFAULT VALUE                      |
+|---------------------------------------|----------------------------------------------------------------|:------------------------------------------------------:|
+| `RECEIPT_QUEUE_CONN_STRING`           | Connection string to the Receipt Queue                         |                                                        |
+| `RECEIPT_QUEUE_TOPIC`                 | Topic name of the Receipt Queue                                |                                                        |
+| `RECEIPT_QUEUE_DELAY`                 | Delay, in seconds, the visibility of the messages in the queue |                          "1"                           |
+| `COSMOS_BIZ_EVENT_CONN_STRING`        | Connection string to the BizEvent CosmosDB                     |                                                        |
+| `COSMOS_RECEIPTS_CONN_STRING`         | Connection string to the Receipt CosmosDB                      |                                                        |
+| `COSMOS_RECEIPT_SERVICE_ENDPOINT`     | Endpoint to the Receipt CosmosDB                               |                                                        |
+| `COSMOS_RECEIPT_KEY`                  | Key to the Receipt CosmosDB                                    |                                                        |
+| `COSMOS_RECEIPT_DB_NAME`              | Database name of the Receipt database in CosmosDB              |                                                        |
+| `COSMOS_RECEIPT_CONTAINER_NAME`       | Container name of the Receipt container in CosmosDB            |                                                        |
+| `PDV_TOKENIZER_BASE_PATH`             | PDV Tokenizer API base path                                    | "https://api.uat.tokenizer.pdv.pagopa.it/tokenizer/v1" |
+| `PDV_TOKENIZER_SEARCH_TOKEN_ENDPOINT` | PDV Tokenizer API search token endpoint                        |                    "/tokens/search"                    |
+| `PDV_TOKENIZER_FIND_PII_ENDPOINT`     | PDV Tokenizer API find pii endpoint                            |                    "/tokens/%s/pii"                    |
+| `PDV_TOKENIZER_CREATE_TOKEN_ENDPOINT` | PDV Tokenizer API create token endpoint                        |                       "/tokens"                        |
+| `PDV_TOKENIZER_SUBSCRIPTION_KEY`      | API azure ocp apim subscription key                            |                                                        |
+| `OCP_APIM_HEADER_KEY`                 | API azure header key for PDV_TOKENIZER_SUBSCRIPTION_KEY        |              "Ocp-Apim-Subscription-Key"               |
 
 > to doc details about AZ fn config
 > see [here](https://stackoverflow.com/questions/62669672/azure-functions-what-is-the-purpose-of-having-host-json-and-local-settings-jso)
