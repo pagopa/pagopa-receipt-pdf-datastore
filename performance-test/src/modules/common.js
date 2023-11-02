@@ -1,4 +1,5 @@
-export const SIM_TEST_CF = "PROD-TEST-CF";
+export const SIM_TEST_CF = "AAAAAA00A00A000A";
+export const TOKENIZED_SIM_TEST_CF = "cd07268c-73e8-4df4-8305-a35085e32eff";
 
 export function randomString(length, charset) {
     let res = '';
