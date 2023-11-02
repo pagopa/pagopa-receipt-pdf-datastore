@@ -81,7 +81,7 @@ then replace env variables with correct values
 | `PDV_TOKENIZER_FIND_PII_ENDPOINT`     | PDV Tokenizer API find pii endpoint                            |                    "/tokens/%s/pii"                    |
 | `PDV_TOKENIZER_CREATE_TOKEN_ENDPOINT` | PDV Tokenizer API create token endpoint                        |                       "/tokens"                        |
 | `PDV_TOKENIZER_SUBSCRIPTION_KEY`      | API azure ocp apim subscription key                            |                                                        |
-| `OCP_APIM_HEADER_KEY`                 | API azure header key for PDV_TOKENIZER_SUBSCRIPTION_KEY        |              "Ocp-Apim-Subscription-Key"               |
+| `TOKENIZER_APIM_HEADER_KEY`           | Tokenizer APIM header key                                      |                       x-api-key                        |
 
 > to doc details about AZ fn config
 > see [here](https://stackoverflow.com/questions/62669672/azure-functions-what-is-the-purpose-of-having-host-json-and-local-settings-jso)
