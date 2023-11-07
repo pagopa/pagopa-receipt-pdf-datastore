@@ -100,6 +100,7 @@ public class BizEventToReceipt {
             try{
                 receiptService.tokenizeFiscalCodes(bizEvent, receipt, eventData);
             } catch (Exception e){
+                logger.error("Error tokenizing receipt with bizEventId {}", bizEvent.getId(), e);
                 itemsDone.add(receipt);
                 continue;
             }
