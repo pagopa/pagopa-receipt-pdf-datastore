@@ -1,4 +1,4 @@
-package it.gov.pagopa.receipt.pdf.datastore.client;
+package it.gov.pagopa.receipt.pdf.datastore.client.impl;
 
 import com.azure.core.http.rest.Response;
 import com.azure.storage.queue.QueueClient;

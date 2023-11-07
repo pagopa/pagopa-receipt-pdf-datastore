@@ -1,4 +1,4 @@
-import { SIM_TEST_CF } from "../modules/common.js";
+import { TOKENIZED_SIM_TEST_CF } from "../modules/common.js";
 import { bizeventContainer, blobContainerClient, receiptContainer } from "./scripts_common.js";
 
 
@@ -6,7 +6,7 @@ import { bizeventContainer, blobContainerClient, receiptContainer } from "./scri
 const deleteDocumentFromAllDatabases = async () => {
     let { resources } = await receiptContainer.items.query({
         query: "SELECT * from c WHERE c.eventData.debtorFiscalCode = @fiscalCode",
-        parameters: [{ name: "@fiscalCode", value: SIM_TEST_CF }]
+        parameters: [{ name: "@fiscalCode", value: TOKENIZED_SIM_TEST_CF }]
     }).fetchAll();
 
     console.info(`Found n. ${resources?.length} receipts in the database`);

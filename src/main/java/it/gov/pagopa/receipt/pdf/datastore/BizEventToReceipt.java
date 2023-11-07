@@ -11,7 +11,9 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.event.enumeration.BizEventStat
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.CartItem;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
-import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
+import it.gov.pagopa.receipt.pdf.datastore.service.PDVTokenizerService;
+import it.gov.pagopa.receipt.pdf.datastore.service.impl.BizEventToReceiptServiceImpl;
+import it.gov.pagopa.receipt.pdf.datastore.service.impl.PDVTokenizerServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +28,12 @@ import java.util.List;
 public class BizEventToReceipt {
 
     private final Logger logger = LoggerFactory.getLogger(BizEventToReceipt.class);
+
+    private final PDVTokenizerService pdvTokenizerService;
+
+    public BizEventToReceipt(){ this.pdvTokenizerService = new PDVTokenizerServiceImpl();}
+
+    BizEventToReceipt(PDVTokenizerService pdvTokenizerService){ this.pdvTokenizerService = pdvTokenizerService;}
 
     /**
      * This function will be invoked when an CosmosDB trigger occurs
@@ -81,18 +89,23 @@ public class BizEventToReceipt {
                 continue;
             }
             try {
-                BizEventToReceiptService service = new BizEventToReceiptService();
+                BizEventToReceiptServiceImpl service = new BizEventToReceiptServiceImpl();
                 Receipt receipt = new Receipt();
 
                 // Insert biz-event data into receipt
                 receipt.setEventId(bizEvent.getId());
 
                 EventData eventData = new EventData();
-                // TODO verify if payer's or debtor's CF can be null
-                eventData.setPayerFiscalCode(
-                        bizEvent.getPayer() != null ? bizEvent.getPayer().getEntityUniqueIdentifierValue() : null);
-                eventData.setDebtorFiscalCode(
-                        bizEvent.getDebtor() != null ? bizEvent.getDebtor().getEntityUniqueIdentifierValue() : null);
+                if(bizEvent.getPayer() != null && bizEvent.getPayer().getEntityUniqueIdentifierValue() != null){
+                    eventData.setPayerFiscalCode(
+                            pdvTokenizerService.generateTokenForFiscalCode(bizEvent.getPayer().getEntityUniqueIdentifierValue())
+                    );
+                }
+                if(bizEvent.getDebtor() != null && bizEvent.getDebtor().getEntityUniqueIdentifierValue() != null){
+                    eventData.setDebtorFiscalCode(
+                            pdvTokenizerService.generateTokenForFiscalCode(bizEvent.getDebtor().getEntityUniqueIdentifierValue())
+                    );
+                }
                 eventData.setTransactionCreationDate(
                         service.getTransactionCreationDate(bizEvent));
                 eventData.setAmount( bizEvent.getPaymentInfo() != null ?
