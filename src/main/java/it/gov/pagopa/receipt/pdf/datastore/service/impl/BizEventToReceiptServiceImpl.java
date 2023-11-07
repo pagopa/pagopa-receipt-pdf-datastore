@@ -14,6 +14,7 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptSta
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.datastore.service.PDVTokenizerService;
+import it.gov.pagopa.receipt.pdf.datastore.service.PDVTokenizerServiceRetryWrapper;
 import it.gov.pagopa.receipt.pdf.datastore.utils.ObjectMapperUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,13 +26,13 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
 
     private final Logger logger = LoggerFactory.getLogger(BizEventToReceiptServiceImpl.class);
 
-    private final PDVTokenizerService pdvTokenizerService;
+    private final PDVTokenizerServiceRetryWrapper pdvTokenizerService;
 
     public BizEventToReceiptServiceImpl() {
-        this.pdvTokenizerService = new PDVTokenizerServiceImpl();
+        this.pdvTokenizerService = new PDVTokenizerServiceRetryWrapperImpl();
     }
 
-    public BizEventToReceiptServiceImpl(PDVTokenizerService pdvTokenizerService) {
+    public BizEventToReceiptServiceImpl(PDVTokenizerServiceRetryWrapper pdvTokenizerService) {
         this.pdvTokenizerService = pdvTokenizerService;
     }
 
@@ -98,12 +99,12 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         try {
             if (bizEvent.getDebtor() != null && bizEvent.getDebtor().getEntityUniqueIdentifierValue() != null) {
                 eventData.setDebtorFiscalCode(
-                        pdvTokenizerService.generateTokenForFiscalCode(bizEvent.getDebtor().getEntityUniqueIdentifierValue())
+                        pdvTokenizerService.generateTokenForFiscalCodeWithRetry(bizEvent.getDebtor().getEntityUniqueIdentifierValue())
                 );
             }
             if (bizEvent.getPayer() != null && bizEvent.getPayer().getEntityUniqueIdentifierValue() != null) {
                 eventData.setPayerFiscalCode(
-                        pdvTokenizerService.generateTokenForFiscalCode(bizEvent.getPayer().getEntityUniqueIdentifierValue())
+                        pdvTokenizerService.generateTokenForFiscalCodeWithRetry(bizEvent.getPayer().getEntityUniqueIdentifierValue())
                 );
             }
         } catch (PDVTokenizerException e) {

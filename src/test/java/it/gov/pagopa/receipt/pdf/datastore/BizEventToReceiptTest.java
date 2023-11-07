@@ -13,7 +13,7 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReasonErrorCode;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
-import it.gov.pagopa.receipt.pdf.datastore.service.PDVTokenizerService;
+import it.gov.pagopa.receipt.pdf.datastore.service.PDVTokenizerServiceRetryWrapper;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.BizEventToReceiptServiceImpl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -49,7 +49,7 @@ class BizEventToReceiptTest {
     @Mock
     private ExecutionContext context;
     @Mock
-    private PDVTokenizerService pdvTokenizerServiceMock;
+    private PDVTokenizerServiceRetryWrapper pdvTokenizerServiceMock;
 
     @Captor
     private ArgumentCaptor<List<Receipt>> receiptCaptor;
@@ -64,8 +64,8 @@ class BizEventToReceiptTest {
 
     @Test
     void runOk() throws PDVTokenizerException, JsonProcessingException {
-        when(pdvTokenizerServiceMock.generateTokenForFiscalCode(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
-        when(pdvTokenizerServiceMock.generateTokenForFiscalCode(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock);
         function = new BizEventToReceipt(receiptService);
 
@@ -97,8 +97,8 @@ class BizEventToReceiptTest {
 
     @Test
     void runOkTotalNoticeNull() throws PDVTokenizerException, JsonProcessingException {
-        when(pdvTokenizerServiceMock.generateTokenForFiscalCode(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
-        when(pdvTokenizerServiceMock.generateTokenForFiscalCode(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock);
         function = new BizEventToReceipt(receiptService);
 
@@ -200,7 +200,7 @@ class BizEventToReceiptTest {
 
     @Test
     void errorTokenizingFiscalCodes() throws PDVTokenizerException, JsonProcessingException {
-        lenient().when(pdvTokenizerServiceMock.generateTokenForFiscalCode(DEBTOR_FISCAL_CODE))
+        lenient().when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE))
                 .thenThrow(new PDVTokenizerException(HTTP_MESSAGE_ERROR, org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR));
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock);
         function = new BizEventToReceipt(receiptService);
@@ -225,8 +225,8 @@ class BizEventToReceiptTest {
 
     @Test
     void errorAddingMessageToQueue() throws PDVTokenizerException, JsonProcessingException {
-        when(pdvTokenizerServiceMock.generateTokenForFiscalCode(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
-        when(pdvTokenizerServiceMock.generateTokenForFiscalCode(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock);
         function = new BizEventToReceipt(receiptService);
 
@@ -259,8 +259,8 @@ class BizEventToReceiptTest {
 
     @Test
     void errorAddingMessageToQueueThrowException() throws Exception {
-        when(pdvTokenizerServiceMock.generateTokenForFiscalCode(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
-        when(pdvTokenizerServiceMock.generateTokenForFiscalCode(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock);
         function = new BizEventToReceipt(receiptService);
 
