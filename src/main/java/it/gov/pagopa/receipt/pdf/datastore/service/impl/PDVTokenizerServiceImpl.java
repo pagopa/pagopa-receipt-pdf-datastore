@@ -81,7 +81,7 @@ public class PDVTokenizerServiceImpl implements PDVTokenizerService {
         return tokenResource.getToken();
     }
 
-    private static void handleErrorResponse(HttpResponse<String> httpResponse, String serviceName) throws JsonProcessingException, PDVTokenizerException {
+    private void handleErrorResponse(HttpResponse<String> httpResponse, String serviceName) throws JsonProcessingException, PDVTokenizerException {
         if (httpResponse.statusCode() == HttpStatus.SC_BAD_REQUEST
                 || httpResponse.statusCode() == HttpStatus.SC_INTERNAL_SERVER_ERROR) {
             ErrorResponse response = ObjectMapperUtils.mapString(httpResponse.body(), ErrorResponse.class);
