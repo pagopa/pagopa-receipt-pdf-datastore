@@ -45,7 +45,7 @@ jobs:
           container_app_environment_name: ${{ vars.CONTAINER_APP_ENVIRONMENT_NAME }}
           resource_group_name: ${{ vars.CONTAINER_APP_ENVIRONMENT_RESOURCE_GROUP_NAME }} # RG of the runner
           pat_token: ${{ secrets.BOT_TOKEN_GITHUB }}
-          self_hosted_runner_image_tag: "v1.6.0"
+          # self_hosted_runner_image_tag: "v1.6.0"
 
   integration_test:
     needs: [ create_runner ]
@@ -73,7 +73,7 @@ jobs:
           export CUCUMBER_PUBLISH_TOKEN=${{ secrets.CUCUMBER_PUBLISH_TOKEN }}
           export RECEIPTS_COSMOS_CONN_STRING='${{ secrets.RECEIPTS_COSMOS_CONN_STRING }}'
           export BIZEVENTS_COSMOS_CONN_STRING='${{ secrets.BIZEVENTS_COSMOS_CONN_STRING }}'
-          
+
           cd ./integration-test
           chmod +x ./run_integration_test.sh
           ./run_integration_test.sh ${{( github.event.inputs == null && 'uat') || inputs.environment }}
@@ -91,7 +91,7 @@ jobs:
           status: ${{ needs.integration_test.result }}
           token: ${{ secrets.GITHUB_TOKEN }}
           notify_when: 'failure,skipped'
-          notification_title: "<{run_url}|Scheduled Integration Test> has {status_message} in ${{( github.event.inputs == null && 'uat') || inputs.environment }} env" 
+          notification_title: "<{run_url}|Scheduled Integration Test> has {status_message} in ${{( github.event.inputs == null && 'uat') || inputs.environment }} env"
           message_format: '{emoji} <{run_url}|{workflow}> {status_message} in <{repo_url}|{repo}>'
           footer: 'Linked to <{workflow_url}| workflow file>'
         env:
@@ -130,7 +130,7 @@ jobs:
                 });
               })
             );
-      
+
   cleanup_runner:
     name: Cleanup Runner
     needs: [ create_runner, integration_test ]
