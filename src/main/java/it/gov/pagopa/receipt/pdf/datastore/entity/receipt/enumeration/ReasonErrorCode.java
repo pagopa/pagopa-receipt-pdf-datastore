@@ -1,7 +1,7 @@
 package it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration;
 
 public enum ReasonErrorCode {
-    ERROR_QUEUE(902), ERROR_BLOB_STORAGE(901), ERROR_PDF_ENGINE(0);
+    ERROR_QUEUE(902), ERROR_BLOB_STORAGE(901), ERROR_PDF_ENGINE(0), ERROR_PDV_TOKENIZER(701);
 
     private int code;
 
