@@ -95,8 +95,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
     }
 
     public void tokenizeFiscalCodes(BizEvent bizEvent, Receipt receipt, EventData eventData) throws PDVTokenizerException {
-        int errorStatusCode = 0;
-        String errorMessage = null;
+        PDVTokenizerException exception = null;
 
         try {
             if (bizEvent.getDebtor() != null && bizEvent.getDebtor().getEntityUniqueIdentifierValue() != null) {
@@ -110,20 +109,19 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
                 );
             }
         } catch (PDVTokenizerException e) {
-            errorStatusCode = e.getStatusCode();
-            errorMessage = e.getMessage();
+            exception = new PDVTokenizerException(e.getMessage(), e.getStatusCode());
         } catch (JsonProcessingException e){
-            errorStatusCode = ReasonErrorCode.ERROR_PDV_TOKENIZER.getCode();
-            errorMessage = e.getMessage();
+            exception = new PDVTokenizerException(e.getMessage(), ReasonErrorCode.ERROR_PDV_TOKENIZER.getCode());
         }
 
-        if(errorMessage != null){
+        if(exception != null){
             receipt.setStatus(ReceiptStatusType.FAILED);
 
-            ReasonError reasonError = new ReasonError(errorStatusCode, errorMessage);
+            ReasonError reasonError = new ReasonError(exception.getStatusCode(), exception.getMessage());
             receipt.setReasonErr(reasonError);
 
-            throw new PDVTokenizerException(errorMessage, errorStatusCode);
+            logger.error("Error tokenizing receipt with bizEventId {}", bizEvent.getId(), exception);
+            throw exception;
         }
     }
 }
