@@ -36,11 +36,9 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
     }
 
     /**
-     * Handles sending biz-events as message to queue and updates receipt's status
-     *
-     * @param bizEvent Biz-event from CosmosDB
-     * @param receipt  Receipt to update
+     * {@inheritDoc}
      */
+    @Override
     public void handleSendMessageToQueue(BizEvent bizEvent, Receipt receipt) {
         //Encode biz-event to base64 string
         String messageText = Base64.getMimeEncoder().encodeToString(Objects.requireNonNull(ObjectMapperUtils.writeValueAsString(bizEvent)).getBytes());
@@ -69,7 +67,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
      *
      * @param receipt Receipt to update
      */
-    public void handleError(Receipt receipt) {
+    private void handleError(Receipt receipt) {
         receipt.setStatus(ReceiptStatusType.NOT_QUEUE_SENT);
         ReasonError reasonError = new ReasonError(ReasonErrorCode.ERROR_QUEUE.getCode(),
                 String.format("[BizEventToReceiptService] Error sending message to queue" +
@@ -78,11 +76,9 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
     }
 
     /**
-     * Retrieve conditionally the transaction creation date from biz-event
-     *
-     * @param bizEvent Biz-event from CosmosDB
-     * @return transaction date
+     * {@inheritDoc}
      */
+    @Override
     public String getTransactionCreationDate(BizEvent bizEvent) {
         if (bizEvent.getTransactionDetails() != null && bizEvent.getTransactionDetails().getTransaction() != null) {
             return bizEvent.getTransactionDetails().getTransaction().getCreationDate();
@@ -94,7 +90,10 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         return null;
     }
 
-
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void tokenizeFiscalCodes(BizEvent bizEvent, Receipt receipt, EventData eventData) throws JsonProcessingException, PDVTokenizerException {
         try {
             if (bizEvent.getDebtor() != null && bizEvent.getDebtor().getEntityUniqueIdentifierValue() != null) {
@@ -116,6 +115,13 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         }
     }
 
+    /**
+     * Handles errors for PDV tokenizer and updates receipt's status accordingly
+     *
+     * @param receipt Receipt to update
+     * @param errorMessage Message to save
+     * @param statusCode StatusCode to save
+     */
     private void handleTokenizerException(Receipt receipt, String errorMessage, int statusCode) {
         receipt.setStatus(ReceiptStatusType.FAILED);
         ReasonError reasonError = new ReasonError(statusCode, errorMessage);
