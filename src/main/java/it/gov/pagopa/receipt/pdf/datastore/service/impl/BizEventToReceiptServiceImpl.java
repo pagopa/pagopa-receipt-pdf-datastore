@@ -13,7 +13,6 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReasonErro
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
-import it.gov.pagopa.receipt.pdf.datastore.service.PDVTokenizerService;
 import it.gov.pagopa.receipt.pdf.datastore.service.PDVTokenizerServiceRetryWrapper;
 import it.gov.pagopa.receipt.pdf.datastore.utils.ObjectMapperUtils;
 import org.slf4j.Logger;
