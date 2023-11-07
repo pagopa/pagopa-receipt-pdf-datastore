@@ -11,9 +11,7 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.event.enumeration.BizEventStat
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.CartItem;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
-import it.gov.pagopa.receipt.pdf.datastore.service.PDVTokenizerService;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.BizEventToReceiptServiceImpl;
-import it.gov.pagopa.receipt.pdf.datastore.service.impl.PDVTokenizerServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,12 +26,15 @@ import java.util.List;
 public class BizEventToReceipt {
 
     private final Logger logger = LoggerFactory.getLogger(BizEventToReceipt.class);
+    private final BizEventToReceiptServiceImpl receiptService;
 
-    private final PDVTokenizerService pdvTokenizerService;
+    public BizEventToReceipt() {
+        this.receiptService = new BizEventToReceiptServiceImpl();
+    }
 
-    public BizEventToReceipt(){ this.pdvTokenizerService = new PDVTokenizerServiceImpl();}
-
-    BizEventToReceipt(PDVTokenizerService pdvTokenizerService){ this.pdvTokenizerService = pdvTokenizerService;}
+    public BizEventToReceipt(BizEventToReceiptServiceImpl receiptService) {
+        this.receiptService = receiptService;
+    }
 
     /**
      * This function will be invoked when an CosmosDB trigger occurs
@@ -83,32 +84,30 @@ public class BizEventToReceipt {
         // Retrieve receipt data from biz-event
         for (BizEvent bizEvent : items) {
 
-            // Discard null biz events || not in status DONE || with totalNotice > 1
+            // Discard null biz events OR not in status DONE OR with totalNotice > 1
             if (isBizEventInvalid(bizEvent, context)) {
                 discarder++;
                 continue;
             }
+
+            Receipt receipt = new Receipt();
+
+            // Insert biz-event data into receipt
+            receipt.setEventId(bizEvent.getId());
+
+            EventData eventData = new EventData();
+
+            try{
+                receiptService.tokenizeFiscalCodes(bizEvent, receipt, eventData);
+            } catch (Exception e){
+                itemsDone.add(receipt);
+                continue;
+            }
+
             try {
-                BizEventToReceiptServiceImpl service = new BizEventToReceiptServiceImpl();
-                Receipt receipt = new Receipt();
-
-                // Insert biz-event data into receipt
-                receipt.setEventId(bizEvent.getId());
-
-                EventData eventData = new EventData();
-                if(bizEvent.getPayer() != null && bizEvent.getPayer().getEntityUniqueIdentifierValue() != null){
-                    eventData.setPayerFiscalCode(
-                            pdvTokenizerService.generateTokenForFiscalCode(bizEvent.getPayer().getEntityUniqueIdentifierValue())
-                    );
-                }
-                if(bizEvent.getDebtor() != null && bizEvent.getDebtor().getEntityUniqueIdentifierValue() != null){
-                    eventData.setDebtorFiscalCode(
-                            pdvTokenizerService.generateTokenForFiscalCode(bizEvent.getDebtor().getEntityUniqueIdentifierValue())
-                    );
-                }
                 eventData.setTransactionCreationDate(
-                        service.getTransactionCreationDate(bizEvent));
-                eventData.setAmount( bizEvent.getPaymentInfo() != null ?
+                        receiptService.getTransactionCreationDate(bizEvent));
+                eventData.setAmount(bizEvent.getPaymentInfo() != null ?
                         bizEvent.getPaymentInfo().getAmount() : null);
 
                 CartItem item = new CartItem();
@@ -123,7 +122,7 @@ public class BizEventToReceipt {
                         context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
 
                 // Send biz event as message to queue (to be processed from the other function)
-                service.handleSendMessageToQueue(bizEvent, receipt);
+                receiptService.handleSendMessageToQueue(bizEvent, receipt);
 
                 // Add receipt to items to be saved on CosmosDB
                 itemsDone.add(receipt);

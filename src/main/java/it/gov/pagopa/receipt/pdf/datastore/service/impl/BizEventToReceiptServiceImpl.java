@@ -2,26 +2,38 @@ package it.gov.pagopa.receipt.pdf.datastore.service.impl;
 
 import com.azure.core.http.rest.Response;
 import com.azure.storage.queue.models.SendMessageResult;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.HttpStatus;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptQueueClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
+import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReasonError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReasonErrorCode;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
+import it.gov.pagopa.receipt.pdf.datastore.service.PDVTokenizerService;
 import it.gov.pagopa.receipt.pdf.datastore.utils.ObjectMapperUtils;
-import lombok.NoArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Base64;
 import java.util.Objects;
 
-@NoArgsConstructor
 public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
 
     private final Logger logger = LoggerFactory.getLogger(BizEventToReceiptServiceImpl.class);
+
+    private final PDVTokenizerService pdvTokenizerService;
+
+    public BizEventToReceiptServiceImpl() {
+        this.pdvTokenizerService = new PDVTokenizerServiceImpl();
+    }
+
+    public BizEventToReceiptServiceImpl(PDVTokenizerService pdvTokenizerService) {
+        this.pdvTokenizerService = pdvTokenizerService;
+    }
 
     /**
      * Handles sending biz-events as message to queue and updates receipt's status
@@ -80,5 +92,38 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         }
 
         return null;
+    }
+
+    public void tokenizeFiscalCodes(BizEvent bizEvent, Receipt receipt, EventData eventData) throws PDVTokenizerException {
+        int errorStatusCode = 0;
+        String errorMessage = null;
+
+        try {
+            if (bizEvent.getDebtor() != null && bizEvent.getDebtor().getEntityUniqueIdentifierValue() != null) {
+                eventData.setDebtorFiscalCode(
+                        pdvTokenizerService.generateTokenForFiscalCode(bizEvent.getDebtor().getEntityUniqueIdentifierValue())
+                );
+            }
+            if (bizEvent.getPayer() != null && bizEvent.getPayer().getEntityUniqueIdentifierValue() != null) {
+                eventData.setPayerFiscalCode(
+                        pdvTokenizerService.generateTokenForFiscalCode(bizEvent.getPayer().getEntityUniqueIdentifierValue())
+                );
+            }
+        } catch (PDVTokenizerException e) {
+            errorStatusCode = e.getStatusCode();
+            errorMessage = e.getMessage();
+        } catch (JsonProcessingException e){
+            errorStatusCode = ReasonErrorCode.ERROR_PDV_TOKENIZER.getCode();
+            errorMessage = e.getMessage();
+        }
+
+        if(errorMessage != null){
+            receipt.setStatus(ReceiptStatusType.FAILED);
+
+            ReasonError reasonError = new ReasonError(errorStatusCode, errorMessage);
+            receipt.setReasonErr(reasonError);
+
+            throw new PDVTokenizerException(errorMessage, errorStatusCode);
+        }
     }
 }

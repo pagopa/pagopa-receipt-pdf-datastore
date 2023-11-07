@@ -1,7 +1,9 @@
 package it.gov.pagopa.receipt.pdf.datastore.service;
 
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
+import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
+import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
 
 public interface BizEventToReceiptService {
 
@@ -10,4 +12,6 @@ public interface BizEventToReceiptService {
     void handleError(Receipt receipt);
 
     String getTransactionCreationDate(BizEvent bizEvent);
+
+    void tokenizeFiscalCodes(BizEvent bizEvent, Receipt receipt, EventData eventData) throws PDVTokenizerException;
 }
