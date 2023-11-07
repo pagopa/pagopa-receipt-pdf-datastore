@@ -1,5 +1,6 @@
 package it.gov.pagopa.receipt.pdf.datastore;
 
+import com.azure.cosmos.models.FeedResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;
@@ -61,6 +62,7 @@ public class RecoverFailedReceipt {
             final ExecutionContext context) {
 
         BizEventToReceiptServiceImpl bizEventToReceiptService = new BizEventToReceiptServiceImpl();
+        List<Receipt> receiptList = new ArrayList<>();
 
         try {
 
@@ -71,40 +73,84 @@ public class RecoverFailedReceipt {
             ReceiptCosmosClient receiptCosmosClient =
                     ReceiptCosmosClientImpl.getInstance();
 
-            BizEvent bizEvent = bizEventCosmosClient.getBizEventDocument(
-                    receiptFailedRecoveryRequest.getEventId());
+            if (receiptFailedRecoveryRequest.getEventId() != null) {
 
-            Receipt receipt;
+                getEvent(receiptFailedRecoveryRequest.getEventId(), context, bizEventToReceiptService, receiptList,
+                        bizEventCosmosClient, receiptCosmosClient, null);
 
-            try {
-                receipt = receiptCosmosClient.getReceiptDocument(
-                        receiptFailedRecoveryRequest.getEventId());
-            } catch (ReceiptNotFoundException e) {
-                return request.createResponseBuilder(HttpStatus.NOT_FOUND)
-                        .build();
+            } else {
+
+                String continuationToken = null;
+
+                do {
+
+                    Iterable<FeedResponse<Receipt>> feedResponseIterator =
+                            receiptCosmosClient.getFailedReceiptDocuments(continuationToken, 100);
+
+                    for (FeedResponse<Receipt> page : feedResponseIterator) {
+
+                        for (Receipt receipt : page.getResults()) {
+                            try {
+                                getEvent(receipt.getEventId(), context, bizEventToReceiptService, receiptList,
+                                        bizEventCosmosClient, receiptCosmosClient, receipt);
+                            } catch (Exception e) {
+                                logger.error(e.getMessage(), e);
+                            }
+                        }
+
+                        continuationToken = page.getContinuationToken();
+
+                    }
+
+                } while (continuationToken != null);
+
             }
 
-            if (receipt != null && receipt.getStatus().equals(ReceiptStatusType.FAILED)) {
-                bizEventToReceiptService.handleSendMessageToQueue(bizEvent, receipt);
-                receipt.setStatus(ReceiptStatusType.INSERTED);
-                documentdb.setValue(Collections.singletonList(receipt));
-            } {
-                receipt = BizEventToReceiptUtils.createReceipt(bizEvent,
-                        bizEventToReceiptService, pdvTokenizerService);
-                bizEventToReceiptService.handleSendMessageToQueue(bizEvent, receipt);
-            }
 
+            documentdb.setValue(receiptList);
             return request.createResponseBuilder(HttpStatus.OK)
                     .build();
 
         } catch (NoSuchElementException | ReceiptNotFoundException exception) {
             return request.createResponseBuilder(HttpStatus.BAD_REQUEST)
                     .build();
-        } catch (PDVTokenizerException e) {
-            throw new RuntimeException(e);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+        } catch (PDVTokenizerException | JsonProcessingException e) {
+            return request.createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .build();
         }
+    }
+
+    private void getEvent(String eventId, ExecutionContext context,
+                          BizEventToReceiptServiceImpl bizEventToReceiptService,
+                          List<Receipt> receiptList, BizEventCosmosClient bizEventCosmosClient,
+                          ReceiptCosmosClient receiptCosmosClient, Receipt receipt)
+            throws ReceiptNotFoundException, PDVTokenizerException, JsonProcessingException {
+
+            BizEvent bizEvent = bizEventCosmosClient.getBizEventDocument(
+                    eventId);
+
+            if (!BizEventToReceiptUtils.isBizEventInvalid(bizEvent, context, logger)) {
+
+
+                if (receipt == null) {
+                    try {
+                        receipt = receiptCosmosClient.getReceiptDocument(
+                                eventId);
+                    } catch (ReceiptNotFoundException e) {
+                        receipt = BizEventToReceiptUtils.createReceipt(bizEvent,
+                                bizEventToReceiptService, pdvTokenizerService);
+                        receipt.setStatus(ReceiptStatusType.FAILED);
+                    }
+                }
+
+                if (receipt != null && receipt.getStatus().equals(ReceiptStatusType.FAILED)) {
+                    bizEventToReceiptService.handleSendMessageToQueue(bizEvent, receipt);
+                    receipt.setStatus(ReceiptStatusType.INSERTED);
+                    receiptList.add(receipt);
+                }
+
+            }
+
     }
 
 }
