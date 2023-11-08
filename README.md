@@ -81,10 +81,10 @@ then replace env variables with correct values
 | `PDV_TOKENIZER_FIND_PII_ENDPOINT`     | PDV Tokenizer API find pii endpoint                                               |                    "/tokens/%s/pii"                    |
 | `PDV_TOKENIZER_CREATE_TOKEN_ENDPOINT` | PDV Tokenizer API create token endpoint                                           |                       "/tokens"                        |
 | `PDV_TOKENIZER_SUBSCRIPTION_KEY`      | API azure ocp apim subscription key                                               |                                                        |
-| `PDV_TOKENIZER_INITIAL_INTERVAL`      | PDV Tokenizer initial interval for retry a request that fail with 429 status code |                          1000                          |
+| `PDV_TOKENIZER_INITIAL_INTERVAL`      | PDV Tokenizer initial interval for retry a request that fail with 429 status code |                          200                           |
 | `PDV_TOKENIZER_MULTIPLIER`            | PDV Tokenizer interval multiplier for subsequent request retry                    |                          2.0                           |
 | `PDV_TOKENIZER_RANDOMIZATION_FACTOR`  | PDV Tokenizer randomization factor for interval retry calculation                 |                          0.6                           |
-| `PDV_TOKENIZER_MAX_RETRIES`           | PDV Tokenizer max request retry                                                   |                           4                            |
+| `PDV_TOKENIZER_MAX_RETRIES`           | PDV Tokenizer max request retry                                                   |                           3                            |
 | `TOKENIZER_APIM_HEADER_KEY`           | Tokenizer APIM header key                                                         |                       x-api-key                        |
 
 > to doc details about AZ fn config
