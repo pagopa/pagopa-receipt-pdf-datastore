@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.receipt.pdf.datastore.client.PDVTokenizerClient;
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
+import it.gov.pagopa.receipt.pdf.datastore.model.tokenizer.ErrorMessage;
 import it.gov.pagopa.receipt.pdf.datastore.model.tokenizer.ErrorResponse;
 import it.gov.pagopa.receipt.pdf.datastore.model.tokenizer.InvalidParam;
 import it.gov.pagopa.receipt.pdf.datastore.model.tokenizer.PiiResource;
@@ -18,7 +19,11 @@ import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
 class PDVTokenizerServiceImplTest {
 
@@ -100,7 +105,7 @@ class PDVTokenizerServiceImplTest {
     }
 
     @Test
-    void getTokenFailResponseNot200() throws PDVTokenizerException, JsonProcessingException {
+    void getTokenFailResponse400() throws PDVTokenizerException, JsonProcessingException {
         ErrorResponse errorResponse = buildErrorResponse();
         String responseBody = objectMapper.writeValueAsString(errorResponse);
 
@@ -116,6 +121,22 @@ class PDVTokenizerServiceImplTest {
     }
 
     @Test
+    void getTokenFailResponse429() throws PDVTokenizerException, JsonProcessingException {
+        ErrorMessage errorResponse = ErrorMessage.builder().message("Too Many Requests").build();
+        String responseBody = objectMapper.writeValueAsString(errorResponse);
+
+        doReturn(429).when(httpResponseMock).statusCode();
+        doReturn(responseBody).when(httpResponseMock).body();
+        doReturn(httpResponseMock).when(pdvTokenizerClientMock).searchTokenByPII(anyString());
+
+        PDVTokenizerException e = assertThrows(PDVTokenizerException.class, () -> sut.getToken(FISCAL_CODE));
+
+        assertEquals(429, e.getStatusCode());
+
+        verify(pdvTokenizerClientMock).searchTokenByPII(anyString());
+    }
+
+    @Test
     void getFiscalCodeFailClientThrowsPDVTokenizerException() throws PDVTokenizerException {
         doThrow(PDVTokenizerException.class).when(pdvTokenizerClientMock).findPIIByToken(anyString());
 
@@ -125,7 +146,7 @@ class PDVTokenizerServiceImplTest {
     }
 
     @Test
-    void getFiscalCodeFailResponseNot200() throws PDVTokenizerException, JsonProcessingException {
+    void getFiscalCodeFailResponse400() throws PDVTokenizerException, JsonProcessingException {
         ErrorResponse errorResponse = buildErrorResponse();
         String responseBody = objectMapper.writeValueAsString(errorResponse);
 
@@ -141,6 +162,22 @@ class PDVTokenizerServiceImplTest {
     }
 
     @Test
+    void getFiscalCodeFailResponse429() throws PDVTokenizerException, JsonProcessingException {
+        ErrorMessage errorResponse = ErrorMessage.builder().message("Too Many Requests").build();
+        String responseBody = objectMapper.writeValueAsString(errorResponse);
+
+        doReturn(429).when(httpResponseMock).statusCode();
+        doReturn(responseBody).when(httpResponseMock).body();
+        doReturn(httpResponseMock).when(pdvTokenizerClientMock).findPIIByToken(anyString());
+
+        PDVTokenizerException e = assertThrows(PDVTokenizerException.class, () -> sut.getFiscalCode(TOKEN));
+
+        assertEquals(429, e.getStatusCode());
+
+        verify(pdvTokenizerClientMock).findPIIByToken(anyString());
+    }
+
+    @Test
     void generateTokenForFiscalCodeFailClientThrowsPDVTokenizerException() throws PDVTokenizerException {
         doThrow(PDVTokenizerException.class).when(pdvTokenizerClientMock).createToken(anyString());
 
@@ -150,7 +187,7 @@ class PDVTokenizerServiceImplTest {
     }
 
     @Test
-    void generateTokenForFiscalCodeFailResponseNot200() throws PDVTokenizerException, JsonProcessingException {
+    void generateTokenForFiscalCodeFailResponse400() throws PDVTokenizerException, JsonProcessingException {
         ErrorResponse errorResponse = buildErrorResponse();
         String responseBody = objectMapper.writeValueAsString(errorResponse);
 
@@ -161,6 +198,22 @@ class PDVTokenizerServiceImplTest {
         PDVTokenizerException e = assertThrows(PDVTokenizerException.class, () -> sut.generateTokenForFiscalCode(FISCAL_CODE));
 
         assertEquals(HttpStatus.SC_BAD_REQUEST, e.getStatusCode());
+
+        verify(pdvTokenizerClientMock).createToken(anyString());
+    }
+
+    @Test
+    void generateTokenForFiscalCodeFailResponse429() throws PDVTokenizerException, JsonProcessingException {
+        ErrorMessage errorResponse = ErrorMessage.builder().message("Too Many Requests").build();
+        String responseBody = objectMapper.writeValueAsString(errorResponse);
+
+        doReturn(429).when(httpResponseMock).statusCode();
+        doReturn(responseBody).when(httpResponseMock).body();
+        doReturn(httpResponseMock).when(pdvTokenizerClientMock).createToken(anyString());
+
+        PDVTokenizerException e = assertThrows(PDVTokenizerException.class, () -> sut.generateTokenForFiscalCode(FISCAL_CODE));
+
+        assertEquals(429, e.getStatusCode());
 
         verify(pdvTokenizerClientMock).createToken(anyString());
     }
