@@ -31,7 +31,7 @@ class BizEventCosmosClientImplTest {
     }
 
     @Test
-    void runOk() throws ReceiptNotFoundException {
+    void runOk() throws BizEventNotFoundException {
         String BIZ_EVENT_ID = "a valid event id";
 
         CosmosClient mockClient = mock(CosmosClient.class);
