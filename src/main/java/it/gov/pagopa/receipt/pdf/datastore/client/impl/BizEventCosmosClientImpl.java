@@ -8,6 +8,7 @@ import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.util.CosmosPagedIterable;
 import it.gov.pagopa.receipt.pdf.datastore.client.BizEventCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
+import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 
 /**
@@ -52,7 +53,7 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
      * @throws ReceiptNotFoundException in case no receipt has been found with the given idEvent
      */
     @Override
-    public BizEvent getBizEventDocument(String eventId) throws ReceiptNotFoundException {
+    public BizEvent getBizEventDocument(String eventId) throws BizEventNotFoundException {
         CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
 
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
@@ -67,7 +68,7 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
         if (queryResponse.iterator().hasNext()) {
             return queryResponse.iterator().next();
         } else {
-            throw new ReceiptNotFoundException("Document not found in the defined container");
+            throw new BizEventNotFoundException("Document not found in the defined container");
         }
 
     }

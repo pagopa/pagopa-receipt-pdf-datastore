@@ -14,12 +14,11 @@ import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.model.ReceiptFailedRecoveryRequest;
-import it.gov.pagopa.receipt.pdf.datastore.service.PDVTokenizerService;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.BizEventToReceiptServiceImpl;
-import it.gov.pagopa.receipt.pdf.datastore.service.impl.PDVTokenizerServiceImpl;
 import it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,13 +32,6 @@ import java.util.*;
 public class RecoverFailedReceipt {
 
     private final Logger logger = LoggerFactory.getLogger(RecoverFailedReceipt.class);
-
-    private final PDVTokenizerService pdvTokenizerService;
-
-    public RecoverFailedReceipt() {
-        this.pdvTokenizerService = new PDVTokenizerServiceImpl();
-    }
-
 
     /**
      * This function will be invoked when a Http Trigger occurs
@@ -111,7 +103,7 @@ public class RecoverFailedReceipt {
             return request.createResponseBuilder(HttpStatus.OK)
                     .build();
 
-        } catch (NoSuchElementException | ReceiptNotFoundException exception) {
+        } catch (NoSuchElementException | ReceiptNotFoundException | BizEventNotFoundException exception) {
             return request.createResponseBuilder(HttpStatus.BAD_REQUEST)
                     .build();
         } catch (PDVTokenizerException | JsonProcessingException e) {
@@ -124,13 +116,12 @@ public class RecoverFailedReceipt {
                           BizEventToReceiptServiceImpl bizEventToReceiptService,
                           List<Receipt> receiptList, BizEventCosmosClient bizEventCosmosClient,
                           ReceiptCosmosClient receiptCosmosClient, Receipt receipt)
-            throws ReceiptNotFoundException, PDVTokenizerException, JsonProcessingException {
+            throws BizEventNotFoundException, ReceiptNotFoundException, PDVTokenizerException, JsonProcessingException {
 
             BizEvent bizEvent = bizEventCosmosClient.getBizEventDocument(
                     eventId);
 
             if (!BizEventToReceiptUtils.isBizEventInvalid(bizEvent, context, logger)) {
-
 
                 if (receipt == null) {
                     try {
@@ -138,7 +129,7 @@ public class RecoverFailedReceipt {
                                 eventId);
                     } catch (ReceiptNotFoundException e) {
                         receipt = BizEventToReceiptUtils.createReceipt(bizEvent,
-                                bizEventToReceiptService, pdvTokenizerService);
+                                bizEventToReceiptService, logger);
                         receipt.setStatus(ReceiptStatusType.FAILED);
                     }
                 }

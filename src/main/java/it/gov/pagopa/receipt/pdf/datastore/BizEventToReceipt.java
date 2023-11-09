@@ -1,6 +1,5 @@
 package it.gov.pagopa.receipt.pdf.datastore;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.OutputBinding;
 import com.microsoft.azure.functions.annotation.CosmosDBOutput;
@@ -8,11 +7,9 @@ import com.microsoft.azure.functions.annotation.CosmosDBTrigger;
 import com.microsoft.azure.functions.annotation.ExponentialBackoffRetry;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
-import it.gov.pagopa.receipt.pdf.datastore.entity.event.enumeration.BizEventStatusType;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.CartItem;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
-import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
+import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.datastore.service.PDVTokenizerService;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.BizEventToReceiptServiceImpl;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.PDVTokenizerServiceImpl;
@@ -22,7 +19,6 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -32,11 +28,11 @@ public class BizEventToReceipt {
 
     private final Logger logger = LoggerFactory.getLogger(BizEventToReceipt.class);
 
-    private final PDVTokenizerService pdvTokenizerService;
+    private final BizEventToReceiptService bizEventToReceiptService;
 
-    public BizEventToReceipt(){ this.pdvTokenizerService = new PDVTokenizerServiceImpl();}
+    public BizEventToReceipt(){ this.bizEventToReceiptService = new BizEventToReceiptServiceImpl();}
 
-    BizEventToReceipt(PDVTokenizerService pdvTokenizerService){ this.pdvTokenizerService = pdvTokenizerService;}
+    BizEventToReceipt(BizEventToReceiptService bizEventToReceiptService){ this.bizEventToReceiptService = bizEventToReceiptService;}
 
     /**
      * This function will be invoked when an CosmosDB trigger occurs
@@ -92,14 +88,24 @@ public class BizEventToReceipt {
                 continue;
             }
             try {
-                BizEventToReceiptServiceImpl service = new BizEventToReceiptServiceImpl();
-                Receipt receipt = BizEventToReceiptUtils.createReceipt(bizEvent, service, pdvTokenizerService);
+
+                Receipt receipt;
+                try {
+                    receipt = BizEventToReceiptUtils.createReceipt(bizEvent, bizEventToReceiptService, logger);
+                    if (ReceiptStatusType.FAILED.equals(receipt.getStatus())) {
+                        itemsDone.add(receipt);
+                        continue;
+                    }
+                } catch (Exception e) {
+                    logger.error("Error during receipt creation for bizEvent with Id {}", bizEvent.getId(), e);
+                    continue;
+                }
 
                 logger.info("[{}] function called at {} for event with id {} and status {}",
                         context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
 
                 // Send biz event as message to queue (to be processed from the other function)
-                service.handleSendMessageToQueue(bizEvent, receipt);
+                bizEventToReceiptService.handleSendMessageToQueue(bizEvent, receipt);
 
                 // Add receipt to items to be saved on CosmosDB
                 itemsDone.add(receipt);

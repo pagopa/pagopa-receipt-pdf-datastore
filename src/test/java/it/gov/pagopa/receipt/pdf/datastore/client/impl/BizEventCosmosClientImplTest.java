@@ -4,8 +4,9 @@ import com.azure.cosmos.CosmosClient;
 import com.azure.cosmos.CosmosContainer;
 import com.azure.cosmos.CosmosDatabase;
 import com.azure.cosmos.util.CosmosPagedIterable;
-import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
+import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
+import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -17,7 +18,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariables;
 
-class ReceiptCosmosClientImplTest {
+class BizEventCosmosClientImplTest {
 
     @Test
     void testSingletonConnectionError() throws Exception {
@@ -31,7 +32,7 @@ class ReceiptCosmosClientImplTest {
 
     @Test
     void runOk() throws ReceiptNotFoundException {
-        String RECEIPT_ID = "a valid receipt id";
+        String BIZ_EVENT_ID = "a valid event id";
 
         CosmosClient mockClient = mock(CosmosClient.class);
 
@@ -40,12 +41,12 @@ class ReceiptCosmosClientImplTest {
 
         CosmosPagedIterable mockIterable = mock(CosmosPagedIterable.class);
 
-        Iterator<Receipt> mockIterator = mock(Iterator.class);
-        Receipt receipt = new Receipt();
-        receipt.setId(RECEIPT_ID);
+        Iterator<BizEvent> mockIterator = mock(Iterator.class);
+        BizEvent bizEvent = new BizEvent();
+        bizEvent.setId(BIZ_EVENT_ID);
 
         when(mockIterator.hasNext()).thenReturn(true);
-        when(mockIterator.next()).thenReturn(receipt);
+        when(mockIterator.next()).thenReturn(bizEvent);
 
         when(mockIterable.iterator()).thenReturn(mockIterator);
 
@@ -55,12 +56,12 @@ class ReceiptCosmosClientImplTest {
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
         when(mockClient.getDatabase(any())).thenReturn(mockDatabase);
 
-        ReceiptCosmosClientImpl client = new ReceiptCosmosClientImpl(mockClient);
+        BizEventCosmosClientImpl client = new BizEventCosmosClientImpl(mockClient);
 
-        Assertions.assertDoesNotThrow(() -> client.getReceiptDocument(RECEIPT_ID));
+        Assertions.assertDoesNotThrow(() -> client.getBizEventDocument(BIZ_EVENT_ID));
 
-        Receipt receiptResponse = client.getReceiptDocument(RECEIPT_ID);
-        Assertions.assertEquals(RECEIPT_ID, receiptResponse.getId());
+        BizEvent bizEventResponse = client.getBizEventDocument(BIZ_EVENT_ID);
+        Assertions.assertEquals(BIZ_EVENT_ID, bizEventResponse.getId());
     }
 
     @Test
@@ -78,47 +79,15 @@ class ReceiptCosmosClientImplTest {
 
         when(mockIterable.iterator()).thenReturn(mockIterator);
 
-        when(mockContainer.queryItems(anyString(), any(), eq(Receipt.class))).thenReturn(
+        when(mockContainer.queryItems(anyString(), any(), eq(BizEvent.class))).thenReturn(
                 mockIterable
         );
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
         when(mockClient.getDatabase(any())).thenReturn(mockDatabase);
 
-        ReceiptCosmosClientImpl client = new ReceiptCosmosClientImpl(mockClient);
+        BizEventCosmosClientImpl client = new BizEventCosmosClientImpl(mockClient);
 
-        Assertions.assertThrows(ReceiptNotFoundException.class, () -> client.getReceiptDocument("an invalid receipt id"));
-    }
-
-    @Test
-void runOk_FailedQueryClient() throws ReceiptNotFoundException {
-        String RECEIPT_ID = "a valid receipt id";
-
-        CosmosClient mockClient = mock(CosmosClient.class);
-
-        CosmosDatabase mockDatabase = mock(CosmosDatabase.class);
-        CosmosContainer mockContainer = mock(CosmosContainer.class);
-
-        CosmosPagedIterable mockIterable = mock(CosmosPagedIterable.class);
-
-        Iterator<Receipt> mockIterator = mock(Iterator.class);
-        Receipt receipt = new Receipt();
-        receipt.setId(RECEIPT_ID);
-
-        when(mockIterator.hasNext()).thenReturn(true);
-        when(mockIterator.next()).thenReturn(receipt);
-
-        when(mockIterable.iterator()).thenReturn(mockIterator);
-
-        when(mockContainer.queryItems(anyString(), any(), eq(Receipt.class))).thenReturn(
-                mockIterable
-        );
-        when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
-        when(mockClient.getDatabase(any())).thenReturn(mockDatabase);
-
-        ReceiptCosmosClientImpl client = new ReceiptCosmosClientImpl(mockClient);
-
-        Assertions.assertDoesNotThrow(() -> client.getFailedReceiptDocuments(null, 100));
-
+        Assertions.assertThrows(BizEventNotFoundException.class, () -> client.getBizEventDocument("an invalid receipt id"));
     }
 
 }
