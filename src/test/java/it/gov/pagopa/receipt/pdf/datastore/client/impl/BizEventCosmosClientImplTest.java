@@ -24,9 +24,9 @@ class BizEventCosmosClientImplTest {
     void testSingletonConnectionError() throws Exception {
         String mockKey = "mockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeyMK==";
         withEnvironmentVariables(
-                "COSMOS_RECEIPT_KEY", mockKey,
-                "COSMOS_RECEIPT_SERVICE_ENDPOINT", ""
-        ).execute(() -> Assertions.assertThrows(IllegalArgumentException.class, ReceiptCosmosClientImpl::getInstance)
+                "COSMOS_BIZ_EVENT_KEY", mockKey,
+                "COSMOS_BIZ_EVENT_SERVICE_ENDPOINT", ""
+        ).execute(() -> Assertions.assertThrows(IllegalArgumentException.class, BizEventCosmosClientImpl::getInstance)
         );
     }
 
