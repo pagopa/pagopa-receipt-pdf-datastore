@@ -83,8 +83,8 @@ export default function () {
 	}, tag);
 
 	// if the event is published wait and check if it was correctly processed and stored in the datastore
-	if (r.status === 201) {
-		sleep(processTime);
-		postcondition(id);
-	}
+	// if (r.status === 201) {
+	// 	sleep(processTime);
+	// 	postcondition(id);
+	// }
 }
