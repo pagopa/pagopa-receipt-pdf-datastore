@@ -50,7 +50,7 @@ class BizEventCosmosClientImplTest {
 
         when(mockIterable.iterator()).thenReturn(mockIterator);
 
-        when(mockContainer.queryItems(anyString(), any(), eq(Receipt.class))).thenReturn(
+        when(mockContainer.queryItems(anyString(), any(), eq(BizEvent.class))).thenReturn(
                 mockIterable
         );
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
