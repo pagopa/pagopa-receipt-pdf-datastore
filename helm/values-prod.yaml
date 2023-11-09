@@ -85,7 +85,7 @@ microservice-chart:
     COSMOS_RECEIPT_SERVICE_ENDPOINT: "https://pagopa-p-weu-receipts-ds-cosmos-account.documents.azure.com:443/"
     COSMOS_RECEIPT_DB_NAME: "db"
     COSMOS_RECEIPT_CONTAINER_NAME: "receipts"
-    PDV_TOKENIZER_BASE_PATH: "https://api.tokenizer.pdv.pagopa.it"
+    PDV_TOKENIZER_BASE_PATH: "https://api.tokenizer.pdv.pagopa.it/tokenizer/v1"
     PDV_TOKENIZER_INITIAL_INTERVAL: "200"
     PDV_TOKENIZER_MULTIPLIER: "2.0"
     PDV_TOKENIZER_RANDOMIZATION_FACTOR: "0.6"
