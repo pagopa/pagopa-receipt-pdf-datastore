@@ -110,7 +110,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             handleTokenizerException(receipt, e.getMessage(), e.getStatusCode());
             throw e;
         } catch (JsonProcessingException e){
-            handleTokenizerException(receipt, e.getMessage(), ReasonErrorCode.ERROR_PDV_TOKENIZER.getCode());
+            handleTokenizerException(receipt, e.getMessage(), ReasonErrorCode.ERROR_PDV_MAPPING.getCode());
             throw e;
         }
     }
