@@ -1,5 +1,6 @@
 package it.gov.pagopa.receipt.pdf.datastore.utils;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.ExecutionContext;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.enumeration.BizEventStatusType;
@@ -7,6 +8,7 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.CartItem;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
 import org.slf4j.Logger;
 
@@ -108,6 +110,25 @@ public class BizEventToReceiptUtils {
         }
 
         return false;
+    }
+
+    public static void tokenizeReceipt(BizEventToReceiptService service, BizEvent bizEvent, Receipt receipt)
+            throws PDVTokenizerException, JsonProcessingException {
+        if (receipt.getEventData() == null) {
+            EventData eventData = new EventData();
+            receipt.setEventData(eventData);
+            eventData.setTransactionCreationDate(
+                    service.getTransactionCreationDate(bizEvent));
+            eventData.setAmount( bizEvent.getPaymentInfo() != null ?
+                    bizEvent.getPaymentInfo().getAmount() : null);
+
+            CartItem item = new CartItem();
+            item.setPayeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getOfficeName() : null);
+            item.setSubject(bizEvent.getPaymentInfo() != null ? bizEvent.getPaymentInfo().getRemittanceInformation() : null);
+            List<CartItem> cartItems = Collections.singletonList(item);
+            eventData.setCart(cartItems);
+        }
+        service.tokenizeFiscalCodes(bizEvent, receipt, receipt.getEventData());
     }
 
 }

@@ -18,6 +18,7 @@ import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.model.ReceiptFailedRecoveryRequest;
+import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.BizEventToReceiptServiceImpl;
 import it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils;
 import org.slf4j.Logger;
@@ -32,6 +33,25 @@ import java.util.*;
 public class RecoverFailedReceipt {
 
     private final Logger logger = LoggerFactory.getLogger(RecoverFailedReceipt.class);
+
+    private final BizEventToReceiptService bizEventToReceiptService;
+    private final BizEventCosmosClient bizEventCosmosClient;
+    private final ReceiptCosmosClient receiptCosmosClient;
+
+    public RecoverFailedReceipt(){
+        this.bizEventToReceiptService = new BizEventToReceiptServiceImpl();
+        this.receiptCosmosClient = ReceiptCosmosClientImpl.getInstance();
+        this.bizEventCosmosClient = BizEventCosmosClientImpl.getInstance();
+    }
+
+    RecoverFailedReceipt(BizEventToReceiptService bizEventToReceiptService,
+                         BizEventCosmosClient bizEventCosmosClient,
+                         ReceiptCosmosClient receiptCosmosClient){
+        this.bizEventToReceiptService = bizEventToReceiptService;
+        this.bizEventCosmosClient = bizEventCosmosClient;
+        this.receiptCosmosClient = receiptCosmosClient;
+    }
+
 
     /**
      * This function will be invoked when a Http Trigger occurs
@@ -53,17 +73,11 @@ public class RecoverFailedReceipt {
             OutputBinding<List<Receipt>> documentdb,
             final ExecutionContext context) {
 
-        BizEventToReceiptServiceImpl bizEventToReceiptService = new BizEventToReceiptServiceImpl();
         List<Receipt> receiptList = new ArrayList<>();
 
         try {
 
             ReceiptFailedRecoveryRequest receiptFailedRecoveryRequest = request.getBody().get();
-
-            BizEventCosmosClient bizEventCosmosClient =
-                    BizEventCosmosClientImpl.getInstance();
-            ReceiptCosmosClient receiptCosmosClient =
-                    ReceiptCosmosClientImpl.getInstance();
 
             if (receiptFailedRecoveryRequest.getEventId() != null) {
 
@@ -101,6 +115,7 @@ public class RecoverFailedReceipt {
 
             documentdb.setValue(receiptList);
             return request.createResponseBuilder(HttpStatus.OK)
+                    .body("OK")
                     .build();
 
         } catch (NoSuchElementException | ReceiptNotFoundException | BizEventNotFoundException exception) {
@@ -113,7 +128,7 @@ public class RecoverFailedReceipt {
     }
 
     private void getEvent(String eventId, ExecutionContext context,
-                          BizEventToReceiptServiceImpl bizEventToReceiptService,
+                          BizEventToReceiptService bizEventToReceiptService,
                           List<Receipt> receiptList, BizEventCosmosClient bizEventCosmosClient,
                           ReceiptCosmosClient receiptCosmosClient, Receipt receipt)
             throws BizEventNotFoundException, ReceiptNotFoundException, PDVTokenizerException, JsonProcessingException {
@@ -135,8 +150,13 @@ public class RecoverFailedReceipt {
                 }
 
                 if (receipt != null && receipt.getStatus().equals(ReceiptStatusType.FAILED)) {
+                    if (receipt.getEventData() == null || receipt.getEventData().getDebtorFiscalCode() == null) {
+                        BizEventToReceiptUtils.tokenizeReceipt(bizEventToReceiptService, bizEvent, receipt);
+                    }
                     bizEventToReceiptService.handleSendMessageToQueue(bizEvent, receipt);
                     receipt.setStatus(ReceiptStatusType.INSERTED);
+                    receipt.setReasonErr(null);
+                    receipt.setReasonErrPayer(null);
                     receiptList.add(receipt);
                 }
 
