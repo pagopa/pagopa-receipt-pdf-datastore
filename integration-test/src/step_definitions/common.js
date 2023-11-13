@@ -1,4 +1,4 @@
-onst axios = require("axios");
+const axios = require("axios");
 
 const datastore_url = process.env.DATASTORE_URL;
 
