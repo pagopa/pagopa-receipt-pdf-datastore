@@ -49,7 +49,7 @@ const updateBizEvents = async () => {
                     method: "PUT",
                     headers: {
                         'Content-Type': 'application/json',
-                        "Ocp-Apim-Key": ocpApimKey
+                        "Ocp-Apim-Subscription-Key": ocpApimKey
                     },
                     body: {
                         "eventId": bizEvent.id
