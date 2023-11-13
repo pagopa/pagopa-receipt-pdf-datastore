@@ -1,8 +1,8 @@
 {
   "openapi": "3.0.1",
   "info": {
-    "title": "Biz-Events Service",
-    "description": "Microservice for exposing REST APIs about receipts.",
+    "title": "Receipts Datastore",
+    "description": "Microservice for exposing REST APIs about receipts datastore.",
     "termsOfService": "https://www.pagopa.gov.it/",
     "version": "0.0.2-4"
   },
@@ -128,39 +128,32 @@
         }
       ]
     },
-    "/messages/{tp_id}": {
-      "get": {
+    "/recoverFailed": {
+      "put": {
         "tags": [
           "Receipts REST APIs"
         ],
         "summary": "Retrieve the attachment related to the receipt with the tp_id.",
-        "operationId": "getAttachmentsDetails",
-        "parameters": [
-          {
-            "name": "tp_id",
-            "in": "path",
-            "description": "The third party data id related to the receipt to recover.",
-            "required": true,
-            "schema": {
-              "type": "string"
+        "operationId": "recoverFailed",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReceiptFailedRecoveryRequest"
+              }
             }
-          }
-        ],
+          },
+          "required": true
+        },
         "responses": {
           "200": {
-            "description": "Obtained receipt.",
+            "description": "Succesfull Calls.",
             "headers": {
               "X-Request-Id": {
                 "description": "This header identifies the call",
                 "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GetAttachmentDetailsResponse"
+                  "type": "#/components/schemas/ProblemJson"
                 }
               }
             }
@@ -172,24 +165,6 @@
                 "description": "This header identifies the call",
                 "schema": {
                   "type": "string"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found the receipt.",
-            "headers": {
-              "X-Request-Id": {
-                "description": "This header identifies the call",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemJson"
                 }
               }
             }
@@ -253,158 +228,6 @@
           "name": "X-Request-Id",
           "in": "header",
           "description": "This header identifies the call, if not passed it is self-generated. This ID is returned in the response.",
-          "schema": {
-            "type": "string"
-          }
-        },
-        {
-          "name": "fiscal_code",
-          "in": "header",
-          "description": "User fiscal code to be used in the API call",
-          "schema": {
-            "type": "string"
-          }
-        }
-      ]
-    },
-    "/messages/{tp_id}/{attachment_url}": {
-      "get": {
-        "tags": [
-          "Receipts REST APIs"
-        ],
-        "summary": "Retrieve the attachment related to the receipt with the tp_id.",
-        "operationId": "getAttachment",
-        "parameters": [
-          {
-            "name": "tp_id",
-            "in": "path",
-            "description": "The third party data id related to the receipt to recover.",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "attachment_url",
-            "in": "path",
-            "description": "The attachment to recover.",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Obtained receipt.",
-            "headers": {
-              "X-Request-Id": {
-                "description": "This header identifies the call",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "content": {
-              "application/pdf": {}
-            }
-          },
-          "401": {
-            "description": "Wrong or missing function key.",
-            "headers": {
-              "X-Request-Id": {
-                "description": "This header identifies the call",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found the receipt.",
-            "headers": {
-              "X-Request-Id": {
-                "description": "This header identifies the call",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemJson"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Unable to process the request.",
-            "headers": {
-              "X-Request-Id": {
-                "description": "This header identifies the call",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemJson"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too many requests.",
-            "headers": {
-              "X-Request-Id": {
-                "description": "This header identifies the call",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Service unavailable.",
-            "headers": {
-              "X-Request-Id": {
-                "description": "This header identifies the call",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemJson"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "ApiKey": []
-          }
-        ]
-      },
-      "parameters": [
-        {
-          "name": "X-Request-Id",
-          "in": "header",
-          "description": "This header identifies the call, if not passed it is self-generated. This ID is returned in the response.",
-          "schema": {
-            "type": "string"
-          }
-        },
-        {
-          "name": "fiscal_code",
-          "in": "header",
-          "description": "User fiscal code to be used in the API call",
           "schema": {
             "type": "string"
           }
@@ -428,24 +251,12 @@
           }
         }
       },
-      "GetAttachmentDetailsResponse": {
+      "ReceiptFailedRecoveryRequest": {
         "type": "object",
         "properties": {
-          "id": {
+          "eventId": {
             "type": "string",
-            "description": "Id of the attachment"
-          },
-          "content_type": {
-            "type": "string",
-            "description": "content type of the attachment"
-          },
-          "name": {
-            "type": "string",
-            "description": "name of the attachment"
-          },
-          "url": {
-            "type": "string",
-            "description": "url to be used to recover the attachment"
+            "description": "Id of the event to start recovering (optional)"
           }
         }
       },
