@@ -70,7 +70,7 @@ When('HTTP recovery request is called', async function (time, eventId) {
     this.responseToCheck = await recoverFailedEvent(eventId);
 });
 
-Then('the receipt has not the status {string} after {int} ms', function (targetStatus, time) {
+Then('the receipt has not the status {string} after {int} ms', async function (targetStatus, time) {
     await sleep(time);
     this.responseToCheck = await getDocumentByIdFromReceiptsDatastore(eventId);
     assert.notStrictEqual(this.responseToCheck.resources[0].status, targetStatus);
