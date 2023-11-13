@@ -8,6 +8,7 @@ Java Azure Functions that ingest a biz-event, convert it in a receipt object and
 
 ## Summary 📖
 
+- [Api Documentation 📖](#api-documentation-)
 - [Start Project Locally 🚀](#start-project-locally-)
     * [Run locally with Docker](#run-locally-with-docker)
         + [Prerequisites](#prerequisites)
@@ -27,6 +28,11 @@ Java Azure Functions that ingest a biz-event, convert it in a receipt object and
     * [Maintainers](#maintainers)
 
 ---
+
+## Api Documentation 📖
+
+See
+the [OpenApi 3 here](https://editor.swagger.io/?url=https://raw.githubusercontent.com/pagopa/pagopa-receipt-pdf-datastore/main/openapi/openapi.json)
 
 ## Start Project Locally 🚀
 
@@ -89,6 +95,7 @@ then replace env variables with correct values
 
 > to doc details about AZ fn config
 > see [here](https://stackoverflow.com/questions/62669672/azure-functions-what-is-the-purpose-of-having-host-json-and-local-settings-jso)
+
 
 #### Run the project
 
