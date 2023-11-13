@@ -89,4 +89,36 @@ class ReceiptCosmosClientImplTest {
         Assertions.assertThrows(ReceiptNotFoundException.class, () -> client.getReceiptDocument("an invalid receipt id"));
     }
 
+    @Test
+void runOk_FailedQueryClient() throws ReceiptNotFoundException {
+        String RECEIPT_ID = "a valid receipt id";
+
+        CosmosClient mockClient = mock(CosmosClient.class);
+
+        CosmosDatabase mockDatabase = mock(CosmosDatabase.class);
+        CosmosContainer mockContainer = mock(CosmosContainer.class);
+
+        CosmosPagedIterable mockIterable = mock(CosmosPagedIterable.class);
+
+        Iterator<Receipt> mockIterator = mock(Iterator.class);
+        Receipt receipt = new Receipt();
+        receipt.setId(RECEIPT_ID);
+
+        when(mockIterator.hasNext()).thenReturn(true);
+        when(mockIterator.next()).thenReturn(receipt);
+
+        when(mockIterable.iterator()).thenReturn(mockIterator);
+
+        when(mockContainer.queryItems(anyString(), any(), eq(Receipt.class))).thenReturn(
+                mockIterable
+        );
+        when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
+        when(mockClient.getDatabase(any())).thenReturn(mockDatabase);
+
+        ReceiptCosmosClientImpl client = new ReceiptCosmosClientImpl(mockClient);
+
+        Assertions.assertDoesNotThrow(() -> client.getFailedReceiptDocuments(null, 100));
+
+    }
+
 }

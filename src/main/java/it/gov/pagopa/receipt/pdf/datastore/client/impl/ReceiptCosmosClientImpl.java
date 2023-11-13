@@ -5,6 +5,7 @@ import com.azure.cosmos.CosmosClientBuilder;
 import com.azure.cosmos.CosmosContainer;
 import com.azure.cosmos.CosmosDatabase;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
+import com.azure.cosmos.models.FeedResponse;
 import com.azure.cosmos.util.CosmosPagedIterable;
 import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
@@ -70,4 +71,27 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
         }
 
     }
+
+    /**
+     * Retrieve failed receipt documents from CosmosDB database
+     *
+     * @param continuationToken Paged query continuation token
+     * @return receipt documents
+     */
+    @Override
+    public Iterable<FeedResponse<Receipt>> getFailedReceiptDocuments(String continuationToken, Integer pageSize)  {
+        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
+
+        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
+
+        //Build query
+        String query = "SELECT *CosmosPagedIterable<Receipt> FROM c WHERE c.status = 'FAILED'";
+
+        //Query the container
+        return cosmosContainer
+                .queryItems(query, new CosmosQueryRequestOptions(), Receipt.class)
+                .iterableByPage(continuationToken,pageSize);
+
+    }
+
 }
