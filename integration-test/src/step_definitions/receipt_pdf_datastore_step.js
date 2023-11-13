@@ -64,9 +64,8 @@ Given('a random receipt with id {string} stored with status FAILED', async funct
     await updateReceiptToFailed(this.eventId);
 });
 
-When('HTTP recovery request is called', async function (time, eventId) {
+When('HTTP recovery request is called', async function () {
     // boundary time spent by azure function to process event
-    await sleep(time);
     this.responseToCheck = await recoverFailedEvent(eventId);
 });
 
@@ -74,6 +73,10 @@ Then('the receipt has not the status {string} after {int} ms', async function (t
     await sleep(time);
     this.responseToCheck = await getDocumentByIdFromReceiptsDatastore(eventId);
     assert.notStrictEqual(this.responseToCheck.resources[0].status, targetStatus);
+});
+
+When('HTTP recovery request is called without eventId', async function () {
+    this.responseToCheck = await recoverFailedEvent(null);
 });
 
 

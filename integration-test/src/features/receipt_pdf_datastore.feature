@@ -11,3 +11,8 @@ Feature: All about payment events consumed by Azure functions receipt-pdf-datast
     When HTTP recovery request is called
     Then response has a 200 Http status
     And the receipt has not the status "FAILED" after 10000 ms
+
+    Given a random receipt with id "receipt-datastore-int-test-id-1" stored with status FAILED
+    When HTTP recovery request is called without eventId
+    Then response has a 200 Http status
+    And the receipt has not the status "FAILED" after 10000 ms
