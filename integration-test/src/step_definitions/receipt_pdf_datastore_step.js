@@ -1,8 +1,8 @@
 const assert = require('assert');
 const { After, Given, When, Then, setDefaultTimeout } = require('@cucumber/cucumber');
-const { sleep } = require("./common");
+const { sleep, recoverFailedEvent, updateReceiptToFailed } = require("./common");
 const { createDocumentInBizEventsDatastore, deleteDocumentFromBizEventsDatastore } = require("./biz_events_datastore_client");
-const { getDocumentByIdFromReceiptsDatastore, deleteDocumentFromReceiptsDatastoreByEventId, deleteDocumentFromReceiptsDatastore } = require("./receipts_datastore_client");
+const { getDocumentByIdFromReceiptsDatastore, deleteDocumentFromReceiptsDatastoreByEventId, deleteDocumentFromReceiptsDatastore, updateReceiptToFailed } = require("./receipts_datastore_client");
 
 // set timeout for Hooks function, it allows to wait for long task
 setDefaultTimeout(360 * 1000);
@@ -57,6 +57,25 @@ Then('the receipt has eventId {string}', function (targetId) {
 Then('the receipt has not the status {string}', function (targetStatus) {
     assert.notStrictEqual(this.responseToCheck.resources[0].status, targetStatus);
 });
+
+Given('a random receipt with id {string} stored with status FAILED', async function (id) {
+    this.eventId = id;
+    // prior cancellation to avoid dirty cases
+    await updateReceiptToFailed(this.eventId);
+});
+
+When('HTTP recovery request is called', async function (time, eventId) {
+    // boundary time spent by azure function to process event
+    await sleep(time);
+    this.responseToCheck = await recoverFailedEvent(eventId);
+});
+
+Then('the receipt has not the status {string} after {int} ms', function (targetStatus, time) {
+    await sleep(time);
+    this.responseToCheck = await getDocumentByIdFromReceiptsDatastore(eventId);
+    assert.notStrictEqual(this.responseToCheck.resources[0].status, targetStatus);
+});
+
 
 
 
