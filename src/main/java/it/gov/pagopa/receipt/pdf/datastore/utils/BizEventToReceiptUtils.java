@@ -46,7 +46,7 @@ public class BizEventToReceiptUtils {
                 bizEvent.getPaymentInfo().getAmount() : null);
 
         CartItem item = new CartItem();
-        item.setPayeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getOfficeName() : null);
+        item.setPayeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null);
         item.setSubject(bizEvent.getPaymentInfo() != null ? bizEvent.getPaymentInfo().getRemittanceInformation() : null);
         List<CartItem> cartItems = Collections.singletonList(item);
         eventData.setCart(cartItems);
@@ -123,7 +123,7 @@ public class BizEventToReceiptUtils {
                     bizEvent.getPaymentInfo().getAmount() : null);
 
             CartItem item = new CartItem();
-            item.setPayeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getOfficeName() : null);
+            item.setPayeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null);
             item.setSubject(bizEvent.getPaymentInfo() != null ? bizEvent.getPaymentInfo().getRemittanceInformation() : null);
             List<CartItem> cartItems = Collections.singletonList(item);
             eventData.setCart(cartItems);
