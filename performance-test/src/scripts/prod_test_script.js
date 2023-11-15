@@ -4,11 +4,9 @@ import { CosmosClient } from '@azure/cosmos';
 const bizEventCosmosDBConnString = ""; //bizEvent cosmos connection string
 const bizEventDatabaseID = "db";
 const bizEventContainerID = "biz-events";
-
 const receiptCosmosDBConnString = ""; //receipt cosmos connection string
 const receiptDatabaseID = "db";
 const receiptContainerID = "receipts";
-
 const apiRetryFailedURI = ""; //Retry failed function apim uri
 const ocpApimKey = ""; //APIM ocp key
 
@@ -35,32 +33,43 @@ const updateBizEvents = async () => {
         for (let j = 0; j < resources.length; j++) {
             let bizEvent = resources[j];
 
-            let exist = await bizeventContainer.item(bizEvent.id, bizEvent.id).read();
+            let receiptResponse = await receiptContainer.items.query({
+                query: "SELECT * from c WHERE c.eventId = @eventId",
+                parameters: [{ name: "@eventId", value: bizEvent.id }]
+            }).fetchAll();
+            let receiptResources = receiptResponse?.resources;
 
-            if (exist.statusCode === 200) {
-                let receipt = {
-                    eventId: bizEvent.id,
-                    status: "FAILED"
-                };
-                let { resource } = await receiptContainer.items.create(receipt);
-                console.log("SAVED receipt with id: " + resource.id);
+            if (receiptResources?.length === 0) {
+                let bizEventExists = await bizeventContainer.item(bizEvent.id, bizEvent.id).read();
 
-                fetch(apiRetryFailedURI, {
-                    method: "PUT",
-                    headers: {
-                        'Content-Type': 'application/json',
-                        "Ocp-Apim-Subscription-Key": ocpApimKey
-                    },
-                    body: {
-                        "eventId": bizEvent.id
-                    }
-                })
-                .then(() => console.log("RETRIED receipt with id: " + resource.id))
-                .catch(() => console.log("FAILED RETRY for receipt with id: " + resource.id))
+                if (bizEventExists.statusCode === 200) {
+                    let receipt = {
+                        eventId: bizEvent.id,
+                        status: "FAILED"
+                    };
+                    let { resource } = await receiptContainer.items.create(receipt);
+                    console.log("SAVED receipt with id: " + resource.id);
+
+                    await fetch(apiRetryFailedURI, {
+                        method: "PUT",
+                        headers: {
+                            'Content-Type': 'application/json',
+                            "Ocp-Apim-Subscription-Key": ocpApimKey
+                        },
+                        body: JSON.stringify({
+                            "eventId": "45abd323-1ebd-4b78-bca9-ca8145ad04f5"
+                        })
+                    })
+                        .then((res) => {
+                            console.log("RETRIED receipt with id: " + resource.id, res.status);
+                        })
+                        .catch(() => console.log("FAILED RETRY for receipt with id: " + resource.id))
+                }
+
+            } else {
+                console.log("ABORTED too many receipt with bizEventId: " + bizEvent.id);
             }
-
         }
-
     }
 }
 
