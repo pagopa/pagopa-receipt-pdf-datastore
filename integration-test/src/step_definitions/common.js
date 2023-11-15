@@ -1,3 +1,12 @@
+const axios = require("axios");
+
+const datastore_url = process.env.DATASTORE_URL;
+
+axios.defaults.headers.common['Ocp-Apim-Subscription-Key'] = process.env.SUBKEY || ""; // for all requests
+if (process.env.canary) {
+  axios.defaults.headers.common['X-CANARY'] = 'canary' // for all requests
+}
+
 function sleep(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -118,6 +127,40 @@ function createEvent(id) {
 	return json_event
 }
 
+function createReceipt(id, fiscalCode, pdfName) {
+	let receipt =
+	{
+		"eventId": id,
+		"eventData": {
+			"debtorFiscalCode": fiscalCode,
+			"payerFiscalCode": fiscalCode
+		},
+		"status": "IO_NOTIFIED",
+		"mdAttach": {
+			"name": pdfName,
+			"url": pdfName
+		},
+		"id": id
+	}
+	return receipt
+}
+async function recoverFailedEvent(eventId) {
+
+    var data = {}
+    if (eventId == null) {
+        data = { "eventId": eventId };
+    }
+
+  	return await axios.put(datastore_url, data, {})
+  		.then(res => {
+  			return res.data;
+  		})
+  		.catch(error => {
+  			return error.response;
+  		});
+
+}
+
 module.exports = {
-	createEvent, sleep
+	createEvent, sleep, recoverFailedEvent
 }
