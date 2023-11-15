@@ -57,7 +57,7 @@ const updateBizEvents = async () => {
                             "Ocp-Apim-Subscription-Key": ocpApimKey
                         },
                         body: JSON.stringify({
-                            "eventId": "45abd323-1ebd-4b78-bca9-ca8145ad04f5"
+                            "eventId": bizEvent.id
                         })
                     })
                         .then((res) => {
