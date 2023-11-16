@@ -153,7 +153,7 @@ async function recoverFailedEvent(eventId) {
 
   	return await axios.put(datastore_url, data, {})
   		.then(res => {
-  			return res.data;
+  			return res;
   		})
   		.catch(error => {
   			return error.response;
