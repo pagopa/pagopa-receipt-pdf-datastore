@@ -67,7 +67,7 @@ Given('a random receipt with id {string} stored with status FAILED', async funct
 
 When('HTTP recovery request is called', async function () {
     // boundary time spent by azure function to process event
-    this.responseToCheck = await recoverFailedEvent(eventId);
+    this.responseToCheck = await recoverFailedEvent(this.eventId);
 });
 
 Then('the receipt has not the status {string} after {int} ms', async function (targetStatus, time) {
