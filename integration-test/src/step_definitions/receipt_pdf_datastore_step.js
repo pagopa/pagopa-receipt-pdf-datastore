@@ -10,6 +10,7 @@ setDefaultTimeout(360 * 1000);
 // initialize variables
 this.eventId = null;
 this.responseToCheck = null;
+this.response = null;
 this.receiptId = null;
 this.event = null;
 
@@ -61,22 +62,27 @@ Then('the receipt has not the status {string}', function (targetStatus) {
 Given('a random receipt with id {string} stored with status FAILED', async function (id) {
     this.eventId = id;
     // prior cancellation to avoid dirty cases
-    await updateReceiptToFailed(this.eventId);
+    document = await getDocumentByIdFromReceiptsDatastore(this.eventId);
+    await updateReceiptToFailed(document.resources[0].id, this.eventId);
 });
 
 When('HTTP recovery request is called', async function () {
     // boundary time spent by azure function to process event
-    this.responseToCheck = await recoverFailedEvent(eventId);
+    this.response = await recoverFailedEvent(this.eventId);
 });
 
 Then('the receipt has not the status {string} after {int} ms', async function (targetStatus, time) {
     await sleep(time);
-    this.responseToCheck = await getDocumentByIdFromReceiptsDatastore(eventId);
+    this.responseToCheck = await getDocumentByIdFromReceiptsDatastore(this.eventId);
     assert.notStrictEqual(this.responseToCheck.resources[0].status, targetStatus);
 });
 
 When('HTTP recovery request is called without eventId', async function () {
-    this.responseToCheck = await recoverFailedEvent(null);
+    this.response = await recoverFailedEvent(null);
+});
+
+Then('response has a {int} Http status', function (expectedStatus) {
+   assert.strictEqual(this.response.status, expectedStatus);
 });
 
 
