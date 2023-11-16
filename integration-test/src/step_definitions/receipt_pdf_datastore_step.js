@@ -79,6 +79,10 @@ When('HTTP recovery request is called without eventId', async function () {
     this.responseToCheck = await recoverFailedEvent(null);
 });
 
+Then('response has a {int} Http status', function (expectedStatus) {
+   assert.strictEqual(this.response.status, expectedStatus);
+});
+
 
 
 
