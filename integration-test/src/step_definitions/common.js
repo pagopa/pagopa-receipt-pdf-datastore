@@ -147,8 +147,8 @@ function createReceipt(id, fiscalCode, pdfName) {
 async function recoverFailedEvent(eventId) {
 
     var data = {}
-    if (eventId == null) {
-        data = { "eventId": eventId };
+    if (eventId != null) {
+        data = JSON.stringify({ "eventId": eventId });
     }
 
   	return await axios.put(datastore_url, data, {})
