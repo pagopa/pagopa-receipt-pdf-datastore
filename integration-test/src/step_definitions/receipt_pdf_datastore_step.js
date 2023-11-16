@@ -61,7 +61,8 @@ Then('the receipt has not the status {string}', function (targetStatus) {
 Given('a random receipt with id {string} stored with status FAILED', async function (id) {
     this.eventId = id;
     // prior cancellation to avoid dirty cases
-    await updateReceiptToFailed(this.eventId);
+    document = await getDocumentByIdFromReceiptsDatastore(eventId);
+    await updateReceiptToFailed(document.resources[0].id, this.eventId);
 });
 
 When('HTTP recovery request is called', async function () {
