@@ -61,7 +61,7 @@ Then('the receipt has not the status {string}', function (targetStatus) {
 Given('a random receipt with id {string} stored with status FAILED', async function (id) {
     this.eventId = id;
     // prior cancellation to avoid dirty cases
-    document = await getDocumentByIdFromReceiptsDatastore(eventId);
+    document = await getDocumentByIdFromReceiptsDatastore(this.eventId);
     await updateReceiptToFailed(document.resources[0].id, this.eventId);
 });
 
@@ -72,7 +72,7 @@ When('HTTP recovery request is called', async function () {
 
 Then('the receipt has not the status {string} after {int} ms', async function (targetStatus, time) {
     await sleep(time);
-    this.responseToCheck = await getDocumentByIdFromReceiptsDatastore(eventId);
+    this.responseToCheck = await getDocumentByIdFromReceiptsDatastore(this.eventId);
     assert.notStrictEqual(this.responseToCheck.resources[0].status, targetStatus);
 });
 
