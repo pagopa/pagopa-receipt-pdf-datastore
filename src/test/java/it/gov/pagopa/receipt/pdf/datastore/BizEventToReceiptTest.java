@@ -1,11 +1,13 @@
 package it.gov.pagopa.receipt.pdf.datastore;
 
 import com.azure.core.http.rest.Response;
+import com.azure.cosmos.models.CosmosItemResponse;
 import com.azure.storage.queue.models.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.HttpStatus;
 import com.microsoft.azure.functions.OutputBinding;
+import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptQueueClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.*;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.enumeration.BizEventStatusType;
@@ -15,16 +17,13 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptSta
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.datastore.service.PDVTokenizerServiceRetryWrapper;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.BizEventToReceiptServiceImpl;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,46 +34,45 @@ import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariable;
 
 @ExtendWith(MockitoExtension.class)
 class BizEventToReceiptTest {
-
     public static final String HTTP_MESSAGE_ERROR = "an error occured";
+    public static final String RECEIPT_ID = "receipt_id";
     private final String PAYER_FISCAL_CODE = "a valid payer CF";
     private final String DEBTOR_FISCAL_CODE = "a valid debtor CF";
     private final String TOKENIZED_DEBTOR_FISCAL_CODE = "tokenizedDebtorFiscalCode";
     private final String TOKENIZED_PAYER_FISCAL_CODE = "tokenizedPayerFiscalCode";
     private final String EVENT_ID = "a valid id";
 
-    @Spy
     private BizEventToReceipt function;
-
     @Mock
     private ExecutionContext context;
     @Mock
     private PDVTokenizerServiceRetryWrapper pdvTokenizerServiceMock;
+    @Mock
+    private ReceiptCosmosClientImpl receiptCosmosClient;
+    @Mock
+    private ReceiptQueueClientImpl queueClient;
 
     @Captor
     private ArgumentCaptor<List<Receipt>> receiptCaptor;
-
-    @AfterEach
-    public void teardown() throws Exception {
-        // reset singleton
-        Field instance = ReceiptQueueClientImpl.class.getDeclaredField("instance");
-        instance.setAccessible(true);
-        instance.set(null, null);
-    }
 
     @Test
     void runOk() throws PDVTokenizerException, JsonProcessingException {
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
-        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock);
-        function = new BizEventToReceipt(receiptService);
 
-        ReceiptQueueClientImpl serviceMock = mock(ReceiptQueueClientImpl.class);
+        CosmosItemResponse<Receipt> cosmosResponse = mock(CosmosItemResponse.class);
+        when(cosmosResponse.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
+     Receipt cosmosMockReceipt = new Receipt();
+        cosmosMockReceipt.setId(RECEIPT_ID);
+        when(cosmosResponse.getItem()).thenReturn(cosmosMockReceipt);
+        when(receiptCosmosClient.saveReceipts(any(Receipt.class))).thenReturn(cosmosResponse);
+
         Response<SendMessageResult> response = mock(Response.class);
         when(response.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
-        when(serviceMock.sendMessageToQueue(anyString())).thenReturn(response);
+        when(queueClient.sendMessageToQueue(anyString())).thenReturn(response);
 
-        BizEventToReceiptTest.setMock(serviceMock);
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, receiptCosmosClient, queueClient);
+        function = new BizEventToReceipt(receiptService);
 
         List<BizEvent> bizEventItems = new ArrayList<>();
         bizEventItems.add(generateValidBizEvent("1"));
@@ -85,29 +83,27 @@ class BizEventToReceiptTest {
         // test execution
         assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
 
-        verify(documentdb).setValue(receiptCaptor.capture());
-        Receipt captured = receiptCaptor.getValue().get(0);
-        assertEquals(ReceiptStatusType.INSERTED, captured.getStatus());
-        assertEquals(EVENT_ID, captured.getEventId());
-        assertEquals(TOKENIZED_PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
-        assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
-        assertNotNull(captured.getEventData().getCart());
-        assertEquals(1, captured.getEventData().getCart().size());
+        verify(documentdb, never()).setValue(any());
     }
 
     @Test
     void runOkTotalNoticeNull() throws PDVTokenizerException, JsonProcessingException {
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
-        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock);
-        function = new BizEventToReceipt(receiptService);
 
-        ReceiptQueueClientImpl serviceMock = mock(ReceiptQueueClientImpl.class);
         Response<SendMessageResult> response = mock(Response.class);
         when(response.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
-        when(serviceMock.sendMessageToQueue(anyString())).thenReturn(response);
+        when(queueClient.sendMessageToQueue(anyString())).thenReturn(response);
 
-        BizEventToReceiptTest.setMock(serviceMock);
+        CosmosItemResponse<Receipt> cosmosResponse = mock(CosmosItemResponse.class);
+        when(cosmosResponse.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
+     Receipt cosmosMockReceipt = new Receipt();
+        cosmosMockReceipt.setId(RECEIPT_ID);
+        when(cosmosResponse.getItem()).thenReturn(cosmosMockReceipt);
+        when(receiptCosmosClient.saveReceipts(any(Receipt.class))).thenReturn(cosmosResponse);
+
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, receiptCosmosClient, queueClient);
+        function = new BizEventToReceipt(receiptService);
 
         List<BizEvent> bizEventItems = new ArrayList<>();
         bizEventItems.add(generateValidBizEvent(null));
@@ -118,14 +114,7 @@ class BizEventToReceiptTest {
         // test execution
         assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
 
-        verify(documentdb).setValue(receiptCaptor.capture());
-        Receipt captured = receiptCaptor.getValue().get(0);
-        assertEquals(ReceiptStatusType.INSERTED, captured.getStatus());
-        assertEquals(EVENT_ID, captured.getEventId());
-        assertEquals(TOKENIZED_PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
-        assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
-        assertNotNull(captured.getEventData().getCart());
-        assertEquals(1, captured.getEventData().getCart().size());
+        verify(documentdb, never()).setValue(any());
     }
 
     @Test
@@ -136,6 +125,8 @@ class BizEventToReceiptTest {
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
 
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, receiptCosmosClient, queueClient);
+        function = new BizEventToReceipt(receiptService);
         // test execution
         assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
 
@@ -149,7 +140,8 @@ class BizEventToReceiptTest {
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
-
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, receiptCosmosClient, queueClient);
+        function = new BizEventToReceipt(receiptService);
         // test execution
         assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
 
@@ -163,7 +155,8 @@ class BizEventToReceiptTest {
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
-
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, receiptCosmosClient, queueClient);
+        function = new BizEventToReceipt(receiptService);
         // test execution
         assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
 
@@ -177,7 +170,8 @@ class BizEventToReceiptTest {
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
-
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, receiptCosmosClient, queueClient);
+        function = new BizEventToReceipt(receiptService);
         // test execution
         assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
 
@@ -191,7 +185,8 @@ class BizEventToReceiptTest {
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
-
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, receiptCosmosClient, queueClient);
+        function = new BizEventToReceipt(receiptService);
         // test execution
         assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
 
@@ -202,7 +197,8 @@ class BizEventToReceiptTest {
     void errorTokenizingFiscalCodes() throws PDVTokenizerException, JsonProcessingException {
         lenient().when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE))
                 .thenThrow(new PDVTokenizerException(HTTP_MESSAGE_ERROR, org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR));
-        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock);
+
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, receiptCosmosClient, queueClient);
         function = new BizEventToReceipt(receiptService);
 
         List<BizEvent> bizEventItems = new ArrayList<>();
@@ -227,15 +223,18 @@ class BizEventToReceiptTest {
     void errorAddingMessageToQueue() throws PDVTokenizerException, JsonProcessingException {
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
-        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock);
-        function = new BizEventToReceipt(receiptService);
 
-        ReceiptQueueClientImpl serviceMock = mock(ReceiptQueueClientImpl.class);
+        CosmosItemResponse<Receipt> cosmosResponse = mock(CosmosItemResponse.class);
+        when(cosmosResponse.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
+          when(cosmosResponse.getItem()).thenReturn(new Receipt());
+        when(receiptCosmosClient.saveReceipts(any(Receipt.class))).thenReturn(cosmosResponse);
+
         Response<SendMessageResult> response = mock(Response.class);
-        when(response.getStatusCode()).thenReturn(400);
-        when(serviceMock.sendMessageToQueue(anyString())).thenReturn(response);
+        when(response.getStatusCode()).thenReturn(HttpStatus.FORBIDDEN.value());
+        when(queueClient.sendMessageToQueue(anyString())).thenReturn(response);
 
-        BizEventToReceiptTest.setMock(serviceMock);
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, receiptCosmosClient, queueClient);
+        function = new BizEventToReceipt(receiptService);
 
         List<BizEvent> bizEventItems = new ArrayList<>();
         bizEventItems.add(generateValidBizEvent("1"));
@@ -249,7 +248,39 @@ class BizEventToReceiptTest {
         verify(documentdb).setValue(receiptCaptor.capture());
         Receipt captured = receiptCaptor.getValue().get(0);
         assertEquals(ReceiptStatusType.NOT_QUEUE_SENT, captured.getStatus());
-        assertEquals(ReasonErrorCode.ERROR_QUEUE.getCode(), captured.getReasonErr().getCode());
+        assertEquals(HttpStatus.FORBIDDEN.value(), captured.getReasonErr().getCode());
+        assertEquals(EVENT_ID, captured.getEventId());
+        assertEquals(TOKENIZED_PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
+        assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
+        assertNotNull(captured.getEventData().getCart());
+        assertEquals(1, captured.getEventData().getCart().size());
+    }
+
+    @Test
+    void errorSavingReceiptToCosmos() throws PDVTokenizerException, JsonProcessingException {
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
+
+        CosmosItemResponse<Receipt> cosmosResponse = mock(CosmosItemResponse.class);
+        when(cosmosResponse.getStatusCode()).thenReturn(HttpStatus.FORBIDDEN.value());
+        when(receiptCosmosClient.saveReceipts(any(Receipt.class))).thenReturn(cosmosResponse);
+
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, receiptCosmosClient, queueClient);
+        function = new BizEventToReceipt(receiptService);
+
+        List<BizEvent> bizEventItems = new ArrayList<>();
+        bizEventItems.add(generateValidBizEvent("1"));
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+
+        // test execution
+        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
+
+        verify(documentdb).setValue(receiptCaptor.capture());
+        Receipt captured = receiptCaptor.getValue().get(0);
+        assertEquals(ReceiptStatusType.FAILED, captured.getStatus());
+        assertEquals(HttpStatus.FORBIDDEN.value(), captured.getReasonErr().getCode());
         assertEquals(EVENT_ID, captured.getEventId());
         assertEquals(TOKENIZED_PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
         assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
@@ -261,12 +292,17 @@ class BizEventToReceiptTest {
     void errorAddingMessageToQueueThrowException() throws Exception {
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
-        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock);
+
+        CosmosItemResponse<Receipt> cosmosResponse = mock(CosmosItemResponse.class);
+        when(cosmosResponse.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
+        Receipt cosmosMockReceipt = new Receipt();
+        cosmosMockReceipt.setId(RECEIPT_ID);
+        when(cosmosResponse.getItem()).thenReturn(cosmosMockReceipt);
+
+        when(receiptCosmosClient.saveReceipts(any(Receipt.class))).thenReturn(cosmosResponse);
+
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, receiptCosmosClient, queueClient);
         function = new BizEventToReceipt(receiptService);
-
-        ReceiptQueueClientImpl serviceMock = mock(ReceiptQueueClientImpl.class);
-
-        BizEventToReceiptTest.setMock(serviceMock);
 
         List<BizEvent> bizEventItems = new ArrayList<>();
         bizEventItems.add(generateValidBizEvent("1"));
@@ -291,16 +327,36 @@ class BizEventToReceiptTest {
         assertEquals(1, captured.getEventData().getCart().size());
     }
 
-    private static void setMock(ReceiptQueueClientImpl mock) {
-        try {
-            Field instance = ReceiptQueueClientImpl.class.getDeclaredField("instance");
-            instance.setAccessible(true);
-            instance.set(instance, mock);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+    @Test
+    void errorSavingReceiptToCosmosThrowException() throws Exception {
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
 
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, receiptCosmosClient, queueClient);
+        function = new BizEventToReceipt(receiptService);
+
+        List<BizEvent> bizEventItems = new ArrayList<>();
+        bizEventItems.add(generateValidBizEvent("1"));
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+
+        // test execution
+        withEnvironmentVariable("COSMOS_RECEIPT_SERVICE_ENDPOINT", "wrong-endpoint").execute(() ->
+                assertDoesNotThrow(() ->
+                        function.processBizEventToReceipt(bizEventItems, documentdb, context))
+        );
+
+        verify(documentdb).setValue(receiptCaptor.capture());
+        Receipt captured = receiptCaptor.getValue().get(0);
+        assertEquals(ReceiptStatusType.FAILED, captured.getStatus());
+        assertEquals(ReasonErrorCode.ERROR_COSMOS.getCode(), captured.getReasonErr().getCode());
+        assertEquals(EVENT_ID, captured.getEventId());
+        assertEquals(TOKENIZED_PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
+        assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
+        assertNotNull(captured.getEventData().getCart());
+        assertEquals(1, captured.getEventData().getCart().size());
+    }
     private BizEvent generateValidBizEvent(String totalNotice){
         BizEvent item = new BizEvent();
 
