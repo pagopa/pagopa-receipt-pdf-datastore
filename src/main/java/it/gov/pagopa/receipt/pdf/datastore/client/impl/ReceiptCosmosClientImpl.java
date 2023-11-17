@@ -4,6 +4,7 @@ import com.azure.cosmos.CosmosClient;
 import com.azure.cosmos.CosmosClientBuilder;
 import com.azure.cosmos.CosmosContainer;
 import com.azure.cosmos.CosmosDatabase;
+import com.azure.cosmos.models.CosmosItemResponse;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.FeedResponse;
 import com.azure.cosmos.util.CosmosPagedIterable;
@@ -92,6 +93,21 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
                 .queryItems(query, new CosmosQueryRequestOptions(), Receipt.class)
                 .iterableByPage(continuationToken,pageSize);
 
+    }
+
+    /**
+     * Save Receipts on CosmosDB database
+     *
+     * @param receipt Receipts to save
+     * @return receipt documents
+     */
+    @Override
+    public CosmosItemResponse<Receipt> saveReceipts(Receipt receipt)  {
+        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
+
+        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
+
+        return cosmosContainer.createItem(receipt);
     }
 
 }
