@@ -87,22 +87,19 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             CosmosItemResponse<Receipt> response = receiptCosmosClient.saveReceipts(receipt);
 
             statusCode = response.getStatusCode();
-
-            if (statusCode == (HttpStatus.CREATED.value())) {
-                receipt.setId(response.getItem().getId());
-                return;
-            }
         } catch (Exception e) {
             statusCode = ReasonErrorCode.ERROR_COSMOS.getCode();
             logger.error(String.format("Save receipt with eventId %s on cosmos failed", receipt.getEventId()), e);
         }
 
-        String errorString = String.format(
-                "[BizEventToReceiptService] Error saving receipt to cosmos for receipt with eventId %s, cosmos client responded with status %s",
-                receipt.getEventId(), statusCode);
-        handleError(receipt, ReceiptStatusType.FAILED, errorString, statusCode);
-        //Error info
-        logger.error(errorString);
+        if (statusCode != (HttpStatus.CREATED.value())) {
+            String errorString = String.format(
+                    "[BizEventToReceiptService] Error saving receipt to cosmos for receipt with eventId %s, cosmos client responded with status %s",
+                    receipt.getEventId(), statusCode);
+            handleError(receipt, ReceiptStatusType.FAILED, errorString, statusCode);
+            //Error info
+            logger.error(errorString);
+        }
     }
 
     /**
