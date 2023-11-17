@@ -35,7 +35,6 @@ import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariable;
 @ExtendWith(MockitoExtension.class)
 class BizEventToReceiptTest {
     public static final String HTTP_MESSAGE_ERROR = "an error occured";
-    public static final String RECEIPT_ID = "receipt_id";
     private final String PAYER_FISCAL_CODE = "a valid payer CF";
     private final String DEBTOR_FISCAL_CODE = "a valid debtor CF";
     private final String TOKENIZED_DEBTOR_FISCAL_CODE = "tokenizedDebtorFiscalCode";
@@ -62,9 +61,6 @@ class BizEventToReceiptTest {
 
         CosmosItemResponse<Receipt> cosmosResponse = mock(CosmosItemResponse.class);
         when(cosmosResponse.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
-     Receipt cosmosMockReceipt = new Receipt();
-        cosmosMockReceipt.setId(RECEIPT_ID);
-        when(cosmosResponse.getItem()).thenReturn(cosmosMockReceipt);
         when(receiptCosmosClient.saveReceipts(any(Receipt.class))).thenReturn(cosmosResponse);
 
         Response<SendMessageResult> response = mock(Response.class);
@@ -97,9 +93,6 @@ class BizEventToReceiptTest {
 
         CosmosItemResponse<Receipt> cosmosResponse = mock(CosmosItemResponse.class);
         when(cosmosResponse.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
-     Receipt cosmosMockReceipt = new Receipt();
-        cosmosMockReceipt.setId(RECEIPT_ID);
-        when(cosmosResponse.getItem()).thenReturn(cosmosMockReceipt);
         when(receiptCosmosClient.saveReceipts(any(Receipt.class))).thenReturn(cosmosResponse);
 
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, receiptCosmosClient, queueClient);
@@ -226,7 +219,6 @@ class BizEventToReceiptTest {
 
         CosmosItemResponse<Receipt> cosmosResponse = mock(CosmosItemResponse.class);
         when(cosmosResponse.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
-          when(cosmosResponse.getItem()).thenReturn(new Receipt());
         when(receiptCosmosClient.saveReceipts(any(Receipt.class))).thenReturn(cosmosResponse);
 
         Response<SendMessageResult> response = mock(Response.class);
@@ -295,9 +287,6 @@ class BizEventToReceiptTest {
 
         CosmosItemResponse<Receipt> cosmosResponse = mock(CosmosItemResponse.class);
         when(cosmosResponse.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
-        Receipt cosmosMockReceipt = new Receipt();
-        cosmosMockReceipt.setId(RECEIPT_ID);
-        when(cosmosResponse.getItem()).thenReturn(cosmosMockReceipt);
 
         when(receiptCosmosClient.saveReceipts(any(Receipt.class))).thenReturn(cosmosResponse);
 
