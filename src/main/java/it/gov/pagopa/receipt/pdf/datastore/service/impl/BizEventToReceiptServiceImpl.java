@@ -1,9 +1,13 @@
 package it.gov.pagopa.receipt.pdf.datastore.service.impl;
 
 import com.azure.core.http.rest.Response;
+import com.azure.cosmos.models.CosmosItemResponse;
 import com.azure.storage.queue.models.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.HttpStatus;
+import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptCosmosClient;
+import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptQueueClient;
+import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptQueueClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
@@ -26,13 +30,19 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
     private final Logger logger = LoggerFactory.getLogger(BizEventToReceiptServiceImpl.class);
 
     private final PDVTokenizerServiceRetryWrapper pdvTokenizerService;
+    private final ReceiptCosmosClient receiptCosmosClient;
+    private final ReceiptQueueClient queueClient;
 
     public BizEventToReceiptServiceImpl() {
         this.pdvTokenizerService = new PDVTokenizerServiceRetryWrapperImpl();
+        this.receiptCosmosClient = ReceiptCosmosClientImpl.getInstance();
+        this.queueClient = ReceiptQueueClientImpl.getInstance();
     }
 
-    public BizEventToReceiptServiceImpl(PDVTokenizerServiceRetryWrapper pdvTokenizerService) {
+    public BizEventToReceiptServiceImpl(PDVTokenizerServiceRetryWrapper pdvTokenizerService, ReceiptCosmosClient receiptCosmosClient, ReceiptQueueClient queueClient) {
         this.pdvTokenizerService = pdvTokenizerService;
+        this.receiptCosmosClient = receiptCosmosClient;
+        this.queueClient = queueClient;
     }
 
     /**
@@ -43,35 +53,66 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         //Encode biz-event to base64 string
         String messageText = Base64.getMimeEncoder().encodeToString(Objects.requireNonNull(ObjectMapperUtils.writeValueAsString(bizEvent)).getBytes());
 
-        ReceiptQueueClientImpl queueService = ReceiptQueueClientImpl.getInstance();
-
         //Add message to the queue
+        int statusCode;
         try {
-            Response<SendMessageResult> sendMessageResult = queueService.sendMessageToQueue(messageText);
+            Response<SendMessageResult> sendMessageResult = queueClient.sendMessageToQueue(messageText);
 
-            if (sendMessageResult.getStatusCode() == HttpStatus.CREATED.value()) {
-                receipt.setStatus(ReceiptStatusType.INSERTED);
-                receipt.setInserted_at(System.currentTimeMillis());
-            } else {
-                handleError(receipt);
-            }
+            statusCode = sendMessageResult.getStatusCode();
         } catch (Exception e) {
-            handleError(receipt);
+            statusCode = ReasonErrorCode.ERROR_QUEUE.getCode();
+            logger.error(String.format("Sending BizEvent with id %s to queue failed", bizEvent.getId()), e);
+        }
+
+        if (statusCode != HttpStatus.CREATED.value()) {
+            String errorString = String.format(
+                    "[BizEventToReceiptService] Error sending message to queue for receipt with eventId %s",
+                    receipt.getEventId());
+            handleError(receipt, ReceiptStatusType.NOT_QUEUE_SENT, errorString, statusCode);
             //Error info
-            logger.error("Error sending to queue biz-event message with id {}", bizEvent.getId(), e);
+            logger.error(errorString);
         }
     }
 
     /**
-     * Handles errors for queue and updates receipt's status accordingly
+     * {@inheritDoc}
+     */
+    @Override
+    public void handleSaveReceipt(Receipt receipt) {
+        int statusCode;
+
+        try {
+            receipt.setStatus(ReceiptStatusType.INSERTED);
+            receipt.setInserted_at(System.currentTimeMillis());
+            CosmosItemResponse<Receipt> response = receiptCosmosClient.saveReceipts(receipt);
+
+            statusCode = response.getStatusCode();
+
+            if (statusCode == (HttpStatus.CREATED.value())) {
+                receipt.setId(response.getItem().getId());
+                return;
+            }
+        } catch (Exception e) {
+            statusCode = ReasonErrorCode.ERROR_COSMOS.getCode();
+            logger.error(String.format("Save receipt with eventId %s on cosmos failed", receipt.getEventId()), e);
+        }
+
+        String errorString = String.format(
+                "[BizEventToReceiptService] Error saving receipt to cosmos for receipt with eventId %s, cosmos client responded with status %s",
+                receipt.getEventId(), statusCode);
+        handleError(receipt, ReceiptStatusType.FAILED, errorString, statusCode);
+        //Error info
+        logger.error(errorString);
+    }
+
+    /**
+     * Handles errors for queue and cosmos and updates receipt's status accordingly
      *
      * @param receipt Receipt to update
      */
-    private void handleError(Receipt receipt) {
-        receipt.setStatus(ReceiptStatusType.NOT_QUEUE_SENT);
-        ReasonError reasonError = new ReasonError(ReasonErrorCode.ERROR_QUEUE.getCode(),
-                String.format("[BizEventToReceiptService] Error sending message to queue" +
-                        " for receipt with eventId %s", receipt.getEventId()));
+    private void handleError(Receipt receipt, ReceiptStatusType statusType, String errorMessage, int errorCode) {
+        receipt.setStatus(statusType);
+        ReasonError reasonError = new ReasonError(errorCode, errorMessage);
         receipt.setReasonErr(reasonError);
     }
 
@@ -109,7 +150,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         } catch (PDVTokenizerException e) {
             handleTokenizerException(receipt, e.getMessage(), e.getStatusCode());
             throw e;
-        } catch (JsonProcessingException e){
+        } catch (JsonProcessingException e) {
             handleTokenizerException(receipt, e.getMessage(), ReasonErrorCode.ERROR_PDV_MAPPING.getCode());
             throw e;
         }
@@ -118,9 +159,9 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
     /**
      * Handles errors for PDV tokenizer and updates receipt's status accordingly
      *
-     * @param receipt Receipt to update
+     * @param receipt      Receipt to update
      * @param errorMessage Message to save
-     * @param statusCode StatusCode to save
+     * @param statusCode   StatusCode to save
      */
     private void handleTokenizerException(Receipt receipt, String errorMessage, int statusCode) {
         receipt.setStatus(ReceiptStatusType.FAILED);
