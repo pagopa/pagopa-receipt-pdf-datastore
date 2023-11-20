@@ -22,6 +22,7 @@ import it.gov.pagopa.receipt.pdf.datastore.utils.ObjectMapperUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Objects;
 
@@ -51,7 +52,9 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
     @Override
     public void handleSendMessageToQueue(BizEvent bizEvent, Receipt receipt) {
         //Encode biz-event to base64 string
-        String messageText = Base64.getMimeEncoder().encodeToString(Objects.requireNonNull(ObjectMapperUtils.writeValueAsString(bizEvent)).getBytes());
+        String messageText = Base64.getMimeEncoder().encodeToString(
+                Objects.requireNonNull(ObjectMapperUtils.writeValueAsString(bizEvent)).getBytes(StandardCharsets.UTF_8)
+        );
 
         //Add message to the queue
         int statusCode;
