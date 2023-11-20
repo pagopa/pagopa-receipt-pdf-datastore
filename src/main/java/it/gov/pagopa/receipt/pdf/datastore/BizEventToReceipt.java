@@ -10,9 +10,7 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
-import it.gov.pagopa.receipt.pdf.datastore.service.PDVTokenizerService;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.BizEventToReceiptServiceImpl;
-import it.gov.pagopa.receipt.pdf.datastore.service.impl.PDVTokenizerServiceImpl;
 import it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,7 +69,8 @@ public class BizEventToReceipt {
             OutputBinding<List<Receipt>> documentdb,
             final ExecutionContext context) {
 
-        List<Receipt> itemsDone = new ArrayList<>();
+        int itemsDone = 0;
+        List<Receipt> receiptFailed = new ArrayList<>();
 
         logger.info("[{}] stat {} function - num events triggered {}",
                 context.getFunctionName(),
@@ -87,49 +86,50 @@ public class BizEventToReceipt {
                 discarder++;
                 continue;
             }
-            try {
 
-                Receipt receipt;
-                try {
-                    receipt = BizEventToReceiptUtils.createReceipt(bizEvent, bizEventToReceiptService, logger);
-                    if (ReceiptStatusType.FAILED.equals(receipt.getStatus())) {
-                        itemsDone.add(receipt);
-                        continue;
-                    }
-                } catch (Exception e) {
-                    logger.error("Error during receipt creation for bizEvent with Id {}", bizEvent.getId(), e);
-                    continue;
-                }
+            Receipt receipt = BizEventToReceiptUtils.createReceipt(bizEvent, bizEventToReceiptService, logger);
 
-                logger.info("[{}] function called at {} for event with id {} and status {}",
-                        context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
+            logger.info("[{}] function called at {} for event with id {} and status {}",
+                    context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
 
+            if (isReceiptStatusValid(receipt)) {
+                // Add receipt to items to be saved on CosmosDB
+                bizEventToReceiptService.handleSaveReceipt(receipt);
+            }
+
+            if (isReceiptStatusValid(receipt)) {
                 // Send biz event as message to queue (to be processed from the other function)
                 bizEventToReceiptService.handleSendMessageToQueue(bizEvent, receipt);
-
-                // Add receipt to items to be saved on CosmosDB
-                itemsDone.add(receipt);
-            } catch (Exception e) {
-                discarder++;
-                // Error info
-                logger.error("[{}] Error to process event with id {}", context.getFunctionName(), bizEvent.getId(), e);
             }
+
+            if (!isReceiptStatusValid(receipt)) {
+                receiptFailed.add(receipt);
+            }
+
+            itemsDone++;
         }
         // Discarder info
         logger.debug("[{}] itemsDone stat {} function - {} number of events in discarder", context.getFunctionName(),
                 context.getInvocationId(), discarder);
         // Call to queue info
         logger.debug("[{}] itemsDone stat {} function - number of events in DONE sent to the receipt queue {}",
-                context.getFunctionName(), context.getInvocationId(), itemsDone.size());
+                context.getFunctionName(), context.getInvocationId(), itemsDone);
         // Call to datastore info
         logger.debug("[{}] stat {} function - number of receipts inserted on the datastore {}",
                 context.getFunctionName(),
-                context.getInvocationId(), itemsDone.size());
+                context.getInvocationId(), itemsDone);
 
-        // Save receipts data to CosmosDB
-        if (!itemsDone.isEmpty()) {
-            documentdb.setValue(itemsDone);
+        // Save failed receipts to CosmosDB
+        if (!receiptFailed.isEmpty()) {
+            // Call to datastore info
+            logger.debug("[{}] stat {} function - number of receipts failed inserted on the datastore {}",
+                    context.getFunctionName(),
+                    context.getInvocationId(), receiptFailed.size());
+            documentdb.setValue(receiptFailed);
         }
     }
 
+    private static boolean isReceiptStatusValid(Receipt receipt) {
+        return receipt.getStatus() != ReceiptStatusType.FAILED && receipt.getStatus() != ReceiptStatusType.NOT_QUEUE_SENT;
+    }
 }

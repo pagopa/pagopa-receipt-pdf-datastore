@@ -5,6 +5,7 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
+import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptCosmosClient;
 
 public interface BizEventToReceiptService {
 
@@ -15,6 +16,13 @@ public interface BizEventToReceiptService {
      * @param receipt  Receipt to update
      */
     void handleSendMessageToQueue(BizEvent bizEvent, Receipt receipt);
+
+    /**
+     * Saves receipts on CosmosDB using {@link ReceiptCosmosClient}
+     *
+     * @param receipt Receipt to save
+     */
+    void handleSaveReceipt(Receipt receipt);
 
     /**
      * Retrieve conditionally the transaction creation date from biz-event
