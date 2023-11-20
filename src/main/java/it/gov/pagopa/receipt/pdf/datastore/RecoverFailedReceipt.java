@@ -154,9 +154,12 @@ public class RecoverFailedReceipt {
                         BizEventToReceiptUtils.tokenizeReceipt(bizEventToReceiptService, bizEvent, receipt);
                     }
                     bizEventToReceiptService.handleSendMessageToQueue(bizEvent, receipt);
-                    receipt.setStatus(ReceiptStatusType.INSERTED);
-                    receipt.setReasonErr(null);
-                    receipt.setReasonErrPayer(null);
+                    if(receipt.getStatus() != ReceiptStatusType.NOT_QUEUE_SENT){
+                        receipt.setStatus(ReceiptStatusType.INSERTED);
+                        receipt.setInserted_at(System.currentTimeMillis());
+                        receipt.setReasonErr(null);
+                        receipt.setReasonErrPayer(null);
+                    }
                     receiptList.add(receipt);
                 }
 

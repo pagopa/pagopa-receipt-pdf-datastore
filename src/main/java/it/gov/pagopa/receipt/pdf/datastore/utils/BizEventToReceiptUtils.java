@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 public class BizEventToReceiptUtils {
 
@@ -28,6 +29,7 @@ public class BizEventToReceiptUtils {
         Receipt receipt = new Receipt();
 
         // Insert biz-event data into receipt
+        receipt.setId(bizEvent.getId()+UUID.randomUUID());
         receipt.setEventId(bizEvent.getId());
 
         EventData eventData = new EventData();
@@ -58,9 +60,9 @@ public class BizEventToReceiptUtils {
     /**
      * Checks if the instance of Biz Event is in status DONE and contsains all required informations to process
      * in the receipt generation
-     * @param bizEvent
-     * @param context
-     * @param logger
+     * @param bizEvent BizEvent to validate
+     * @param context Function context
+     * @param logger Function logger
      * @return boolean to determine if the proposed event is invalid
      */
     public static boolean isBizEventInvalid(BizEvent bizEvent, ExecutionContext context, Logger logger) {
