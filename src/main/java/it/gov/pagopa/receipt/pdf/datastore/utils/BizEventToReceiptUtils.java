@@ -146,30 +146,33 @@ public class BizEventToReceiptUtils {
         if (bizEvent.getPaymentInfo() != null && bizEvent.getPaymentInfo().getRemittanceInformation() != null) {
             return bizEvent.getPaymentInfo().getRemittanceInformation();
         }
-        List<Transfer> transferList = new ArrayList<>(bizEvent.getTransferList());
-        if (!transferList.isEmpty()) {
-            double amount = 0;
-            String remittanceInformation = null;
-            for (Transfer transfer : transferList) {
-                double transferAmount;
-                try {
-                    transferAmount = Double.parseDouble(transfer.getAmount());
-                } catch (Exception ignored) {
-                    continue;
+        if(bizEvent.getTransferList() != null){
+            List<Transfer> transferList = new ArrayList<>(bizEvent.getTransferList());
+            if (!transferList.isEmpty()) {
+                double amount = 0;
+                String remittanceInformation = null;
+                for (Transfer transfer : transferList) {
+                    double transferAmount;
+                    try {
+                        transferAmount = Double.parseDouble(transfer.getAmount());
+                    } catch (Exception ignored) {
+                        continue;
+                    }
+                    if (amount < transferAmount) {
+                        amount = transferAmount;
+                        remittanceInformation = transfer.getRemittanceInformation();
+                    }
                 }
-                if (amount < transferAmount) {
-                    amount = transferAmount;
-                    remittanceInformation = transfer.getRemittanceInformation();
+                if (remittanceInformation != null && remittanceInformation.contains(REMITTANCE_INFORMATION_SUBSTRING)) {
+                    remittanceInformation = remittanceInformation.substring(
+                            remittanceInformation.indexOf(REMITTANCE_INFORMATION_SUBSTRING) + REMITTANCE_INFORMATION_SUBSTRING.length(),
+                            remittanceInformation.lastIndexOf("/")
+                    );
                 }
+                return remittanceInformation;
             }
-            if (remittanceInformation != null && remittanceInformation.contains(REMITTANCE_INFORMATION_SUBSTRING)) {
-                remittanceInformation = remittanceInformation.substring(
-                        remittanceInformation.indexOf(REMITTANCE_INFORMATION_SUBSTRING) + REMITTANCE_INFORMATION_SUBSTRING.length(),
-                        remittanceInformation.lastIndexOf("/")
-                );
-            }
-            return remittanceInformation;
         }
+
         return null;
     }
 
