@@ -89,6 +89,40 @@ class BizEventToReceiptTest {
     }
 
     @Test
+    void runOkWithoutPaymentInfoButWithTransferList() throws PDVTokenizerException, JsonProcessingException {
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock);
+        function = new BizEventToReceipt(receiptService);
+
+        ReceiptQueueClientImpl serviceMock = mock(ReceiptQueueClientImpl.class);
+        Response<SendMessageResult> response = mock(Response.class);
+        when(response.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
+        when(serviceMock.sendMessageToQueue(anyString())).thenReturn(response);
+
+        BizEventToReceiptTest.setMock(serviceMock);
+
+        List<BizEvent> bizEventItems = new ArrayList<>();
+        bizEventItems.add(generateValidBizEvent("1", true));
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+
+        // test execution
+        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
+
+        verify(documentdb).setValue(receiptCaptor.capture());
+        Receipt captured = receiptCaptor.getValue().get(0);
+        assertEquals(ReceiptStatusType.INSERTED, captured.getStatus());
+        assertEquals(EVENT_ID, captured.getEventId());
+        assertEquals(TOKENIZED_PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
+        assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
+        assertEquals(REMITTANCE_INFORMATION_TRANSFER_LIST_FORMATTED, captured.getEventData().getCart().get(0).getSubject());
+        assertNotNull(captured.getEventData().getCart());
+        assertEquals(1, captured.getEventData().getCart().size());
+    }
+
+    @Test
     void runOkTotalNoticeNull() throws PDVTokenizerException, JsonProcessingException {
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
