@@ -1,4 +1,4 @@
-package it.gov.pagopa.receipt.pdf.datastore.util;
+package it.gov.pagopa.receipt.pdf.datastore.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import it.gov.pagopa.receipt.pdf.datastore.utils.ObjectMapperUtils;

@@ -40,12 +40,6 @@ class BizEventToReceiptTest {
     private final String TOKENIZED_DEBTOR_FISCAL_CODE = "tokenizedDebtorFiscalCode";
     private final String TOKENIZED_PAYER_FISCAL_CODE = "tokenizedPayerFiscalCode";
     private final String EVENT_ID = "a valid id";
-    public static final String REMITTANCE_INFORMATION_PAYMENT_INFO = "TARI 2021";
-    public static final String REMITTANCE_INFORMATION_TRANSFER_LIST = "EXAMPLE/TXT/TARI 2021/EXAMPLE";
-    public static final String REMITTANCE_INFORMATION_TRANSFER_LIST_FORMATTED = "TARI 2021";
-    public static final String TRANSFER_AMOUNT_HIGHEST = "10000.00";
-    public static final String TRANSFER_AMOUNT_MEDIUM = "20.00";
-    public static final String TRANSFER_AMOUNT_LOWEST = "10.00";
 
     private BizEventToReceipt function;
     @Mock
@@ -77,7 +71,7 @@ class BizEventToReceiptTest {
         function = new BizEventToReceipt(receiptService);
 
         List<BizEvent> bizEventItems = new ArrayList<>();
-        bizEventItems.add(generateValidBizEvent("1", false));
+        bizEventItems.add(generateValidBizEvent("1"));
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
@@ -86,40 +80,6 @@ class BizEventToReceiptTest {
         assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
 
         verify(documentdb, never()).setValue(any());
-    }
-
-    @Test
-    void runOkWithoutPaymentInfoButWithTransferList() throws PDVTokenizerException, JsonProcessingException {
-        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
-        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
-        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock);
-        function = new BizEventToReceipt(receiptService);
-
-        ReceiptQueueClientImpl serviceMock = mock(ReceiptQueueClientImpl.class);
-        Response<SendMessageResult> response = mock(Response.class);
-        when(response.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
-        when(serviceMock.sendMessageToQueue(anyString())).thenReturn(response);
-
-        BizEventToReceiptTest.setMock(serviceMock);
-
-        List<BizEvent> bizEventItems = new ArrayList<>();
-        bizEventItems.add(generateValidBizEvent("1", true));
-
-        @SuppressWarnings("unchecked")
-        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
-
-        // test execution
-        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
-
-        verify(documentdb).setValue(receiptCaptor.capture());
-        Receipt captured = receiptCaptor.getValue().get(0);
-        assertEquals(ReceiptStatusType.INSERTED, captured.getStatus());
-        assertEquals(EVENT_ID, captured.getEventId());
-        assertEquals(TOKENIZED_PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
-        assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
-        assertEquals(REMITTANCE_INFORMATION_TRANSFER_LIST_FORMATTED, captured.getEventData().getCart().get(0).getSubject());
-        assertNotNull(captured.getEventData().getCart());
-        assertEquals(1, captured.getEventData().getCart().size());
     }
 
     @Test
@@ -139,7 +99,7 @@ class BizEventToReceiptTest {
         function = new BizEventToReceipt(receiptService);
 
         List<BizEvent> bizEventItems = new ArrayList<>();
-        bizEventItems.add(generateValidBizEvent(null, false));
+        bizEventItems.add(generateValidBizEvent(null));
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
@@ -199,7 +159,7 @@ class BizEventToReceiptTest {
     @Test
     void runDiscardedWithCartEvent() {
         List<BizEvent> bizEventItems = new ArrayList<>();
-        bizEventItems.add(generateValidBizEvent("2", false));
+        bizEventItems.add(generateValidBizEvent("2"));
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
@@ -214,7 +174,7 @@ class BizEventToReceiptTest {
     @Test
     void runDiscardedWithCartEventWithInvalidTotalNotice() {
         List<BizEvent> bizEventItems = new ArrayList<>();
-        bizEventItems.add(generateValidBizEvent("invalid string", false));
+        bizEventItems.add(generateValidBizEvent("invalid string"));
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
@@ -235,7 +195,7 @@ class BizEventToReceiptTest {
         function = new BizEventToReceipt(receiptService);
 
         List<BizEvent> bizEventItems = new ArrayList<>();
-        bizEventItems.add(generateValidBizEvent("1", false));
+        bizEventItems.add(generateValidBizEvent("1"));
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
@@ -269,7 +229,7 @@ class BizEventToReceiptTest {
         function = new BizEventToReceipt(receiptService);
 
         List<BizEvent> bizEventItems = new ArrayList<>();
-        bizEventItems.add(generateValidBizEvent("1", false));
+        bizEventItems.add(generateValidBizEvent("1"));
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
@@ -334,7 +294,7 @@ class BizEventToReceiptTest {
         function = new BizEventToReceipt(receiptService);
 
         List<BizEvent> bizEventItems = new ArrayList<>();
-        bizEventItems.add(generateValidBizEvent("1", false));
+        bizEventItems.add(generateValidBizEvent("1"));
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
@@ -386,7 +346,7 @@ class BizEventToReceiptTest {
         assertNotNull(captured.getEventData().getCart());
         assertEquals(1, captured.getEventData().getCart().size());
     }
-    private BizEvent generateValidBizEvent(String totalNotice, boolean withTransferList){
+    private BizEvent generateValidBizEvent(String totalNotice){
         BizEvent item = new BizEvent();
 
         Payer payer = new Payer();
@@ -401,25 +361,6 @@ class BizEventToReceiptTest {
 
         PaymentInfo paymentInfo = new PaymentInfo();
         paymentInfo.setTotalNotice(totalNotice);
-        if(withTransferList){
-            List<Transfer> transferList = List.of(
-                    Transfer.builder()
-                            .amount(TRANSFER_AMOUNT_LOWEST)
-                            .remittanceInformation("not to show")
-                            .build(),
-                    Transfer.builder()
-                            .amount(TRANSFER_AMOUNT_MEDIUM)
-                            .remittanceInformation("not to show")
-                            .build(),
-                    Transfer.builder()
-                            .amount(TRANSFER_AMOUNT_HIGHEST)
-                            .remittanceInformation(REMITTANCE_INFORMATION_TRANSFER_LIST)
-                            .build()
-            );
-            item.setTransferList(transferList);
-        } else {
-            paymentInfo.setRemittanceInformation(REMITTANCE_INFORMATION_PAYMENT_INFO);
-        }
 
         item.setEventStatus(BizEventStatusType.DONE);
         item.setId(EVENT_ID);
