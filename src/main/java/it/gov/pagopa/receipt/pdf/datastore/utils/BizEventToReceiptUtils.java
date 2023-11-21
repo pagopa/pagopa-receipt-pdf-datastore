@@ -3,6 +3,7 @@ package it.gov.pagopa.receipt.pdf.datastore.utils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.ExecutionContext;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
+import it.gov.pagopa.receipt.pdf.datastore.entity.event.Transfer;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.enumeration.BizEventStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.CartItem;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
@@ -12,10 +13,13 @@ import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
 import org.slf4j.Logger;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 public class BizEventToReceiptUtils {
+
+    private static final String REMITTANCE_INFORMATION_SUBSTRING = "/TXT/";
 
     /**
      * Creates a new instance of Receipt, using the tokenizer service to mask the PII, based on
@@ -47,7 +51,7 @@ public class BizEventToReceiptUtils {
 
         CartItem item = new CartItem();
         item.setPayeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null);
-        item.setSubject(bizEvent.getPaymentInfo() != null ? bizEvent.getPaymentInfo().getRemittanceInformation() : null);
+        item.setSubject(getItemSubject(bizEvent));
         List<CartItem> cartItems = Collections.singletonList(item);
         eventData.setCart(cartItems);
 
@@ -124,11 +128,47 @@ public class BizEventToReceiptUtils {
 
             CartItem item = new CartItem();
             item.setPayeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null);
-            item.setSubject(bizEvent.getPaymentInfo() != null ? bizEvent.getPaymentInfo().getRemittanceInformation() : null);
+            item.setSubject(getItemSubject(bizEvent));
             List<CartItem> cartItems = Collections.singletonList(item);
             eventData.setCart(cartItems);
         }
         service.tokenizeFiscalCodes(bizEvent, receipt, receipt.getEventData());
+    }
+
+    /**
+     * Retrieve RemittanceInformation from BizEvent
+     * @param bizEvent BizEvent from which retrieve the data
+     * @return the remittance information
+     */
+    private static String getItemSubject(BizEvent bizEvent) {
+        if (bizEvent.getPaymentInfo() != null && bizEvent.getPaymentInfo().getRemittanceInformation() != null) {
+            return bizEvent.getPaymentInfo().getRemittanceInformation();
+        }
+        List<Transfer> transferList = new ArrayList<>(bizEvent.getTransferList());
+        if (!transferList.isEmpty()) {
+            double amount = 0;
+            String remittanceInformation = null;
+            for (Transfer transfer : transferList) {
+                double transferAmount;
+                try {
+                    transferAmount = Double.parseDouble(transfer.getAmount());
+                } catch (Exception ignored) {
+                    continue;
+                }
+                if (amount < transferAmount) {
+                    amount = transferAmount;
+                    remittanceInformation = transfer.getRemittanceInformation();
+                }
+            }
+            if (remittanceInformation != null && remittanceInformation.contains(REMITTANCE_INFORMATION_SUBSTRING)) {
+                remittanceInformation = remittanceInformation.substring(
+                        remittanceInformation.indexOf(REMITTANCE_INFORMATION_SUBSTRING) + REMITTANCE_INFORMATION_SUBSTRING.length(),
+                        remittanceInformation.lastIndexOf("/")
+                );
+            }
+            return remittanceInformation;
+        }
+        return null;
     }
 
 }
