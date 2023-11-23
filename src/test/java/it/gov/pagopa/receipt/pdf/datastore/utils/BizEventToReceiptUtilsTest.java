@@ -37,7 +37,7 @@ class BizEventToReceiptUtilsTest {
     private final String TOKENIZED_PAYER_FISCAL_CODE = "tokenizedPayerFiscalCode";
     public static final String REMITTANCE_INFORMATION_PAYMENT_INFO = "TARI 2021";
     public static final String REMITTANCE_INFORMATION_TRANSFER_LIST = "EXAMPLE/TXT/TARI 2021/EXAMPLE";
-    public static final String REMITTANCE_INFORMATION_TRANSFER_LIST_FORMATTED = "TARI 2021";
+    public static final String REMITTANCE_INFORMATION_TRANSFER_LIST_FORMATTED = "TARI 2021/EXAMPLE";
     public static final String TRANSFER_AMOUNT_HIGHEST = "10000.00";
     public static final String TRANSFER_AMOUNT_MEDIUM = "20.00";
     public static final String TRANSFER_AMOUNT_LOWEST = "10.00";

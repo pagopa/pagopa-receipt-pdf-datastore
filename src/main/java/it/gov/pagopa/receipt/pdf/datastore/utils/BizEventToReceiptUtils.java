@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
 
 public class BizEventToReceiptUtils {
 
-    private static final String REMITTANCE_INFORMATION_REGEX = "/TXT/(.*)/";
+    private static final String REMITTANCE_INFORMATION_REGEX = "/TXT/(.*)";
 
     /**
      * Creates a new instance of Receipt, using the tokenizer service to mask the PII, based on
