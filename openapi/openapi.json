@@ -4,7 +4,7 @@
     "title": "Receipts Datastore",
     "description": "Microservice for exposing REST APIs about receipts datastore.",
     "termsOfService": "https://www.pagopa.gov.it/",
-    "version": "1.7.0-1"
+    "version": "1.7.1"
   },
   "servers": [
     {
