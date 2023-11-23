@@ -176,7 +176,7 @@ public class BizEventToReceiptUtils {
             Pattern pattern = Pattern.compile(REMITTANCE_INFORMATION_REGEX);
             Matcher matcher = pattern.matcher(remittanceInformation);
             if (matcher.find()) {
-                remittanceInformation = matcher.group(1);
+                return matcher.group(1);
             }
         }
         return remittanceInformation;
