@@ -29,11 +29,6 @@ Java Azure Functions that ingest a biz-event, convert it in a receipt object and
 
 ---
 
-## Api Documentation 📖
-
-See
-the [OpenApi 3 here](https://editor.swagger.io/?url=https://raw.githubusercontent.com/pagopa/pagopa-receipt-pdf-datastore/main/openapi/openapi.json)
-
 ## Start Project Locally 🚀
 
 ### Run locally with Docker
