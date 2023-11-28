@@ -144,23 +144,7 @@ function createReceipt(id, fiscalCode, pdfName) {
 	}
 	return receipt
 }
-async function recoverFailedEvent(eventId) {
-
-    var data = {}
-    if (eventId != null) {
-        data = JSON.stringify({ "eventId": eventId });
-    }
-
-  	return await axios.put(datastore_url, data, {})
-  		.then(res => {
-  			return res;
-  		})
-  		.catch(error => {
-  			return error.response;
-  		});
-
-}
 
 module.exports = {
-	createEvent, sleep, recoverFailedEvent
+	createEvent, sleep
 }

@@ -35,22 +35,6 @@ async function deleteDocumentFromReceiptsDatastore(id, partitionKey) {
     }
 }
 
-async function updateReceiptToFailed(id, partitionKey) {
-
-    const operations =
-    [
-        { op: 'replace', path: '/status', value: 'FAILED' }
-    ];
-
-    try {
-        return await receiptContainer.item(id, partitionKey).patch(operations);
-    } catch (error) {
-        if (error.code !== 404) {
-            console.log(error)
-        }
-    }
-}
-
 module.exports = {
-    getDocumentByIdFromReceiptsDatastore, deleteDocumentFromReceiptsDatastoreByEventId, deleteDocumentFromReceiptsDatastore, updateReceiptToFailed
+    getDocumentByIdFromReceiptsDatastore, deleteDocumentFromReceiptsDatastoreByEventId, deleteDocumentFromReceiptsDatastore
 }
