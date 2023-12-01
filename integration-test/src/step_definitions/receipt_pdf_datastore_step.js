@@ -20,8 +20,8 @@ After(async function () {
     if (this.eventId != null) {
         await deleteDocumentFromBizEventsDatastore(this.eventId);
     }
-    if (this.eventId != null && this.receiptId != null) {
-        await deleteDocumentFromReceiptsDatastore(this.receiptId, this.eventId);
+    if (this.receiptId != null) {
+        await deleteDocumentFromReceiptsDatastore(this.receiptId);
     }
     this.eventId = null;
     this.responseToCheck = null;
