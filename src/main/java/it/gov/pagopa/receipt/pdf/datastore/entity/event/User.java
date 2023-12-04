@@ -12,6 +12,8 @@ import lombok.*;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class User {
 	private String fullName;
+	private String name;
+	private String surname;
 	private UserType type;
 	private String fiscalCode;
 	private String notificationEmail;
