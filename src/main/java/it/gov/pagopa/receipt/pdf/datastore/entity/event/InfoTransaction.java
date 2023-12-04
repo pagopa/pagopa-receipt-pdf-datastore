@@ -9,10 +9,11 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class TransactionDetails {
-	private String origin;
-	private User user;
-	private Transaction transaction;
-	private WalletItem wallet;
-	private InfoTransaction info;
+public class InfoTransaction {
+
+    private String brand;
+    private String brandLogo;
+    private String clientId;
+    private String paymentMethodName;
+    private String type;
 }
