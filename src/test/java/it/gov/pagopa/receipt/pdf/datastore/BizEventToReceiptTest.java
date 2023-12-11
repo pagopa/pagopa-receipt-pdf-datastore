@@ -34,6 +34,7 @@ import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -532,8 +533,8 @@ class BizEventToReceiptTest {
                 pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, queueClient);
         function = new BizEventToReceipt(receiptService);
 
-        when(cartReceiptsCosmosClient.getCartItem(any())).thenReturn(CartForReceipt.builder().id("2332").totalNotice(2)
-                .cartPaymentId(new ArrayList<>(Collections.singletonList("1"))).build());
+        when(cartReceiptsCosmosClient.getCartItem(any())).thenReturn(CartForReceipt.builder().id(2332L).totalNotice(2)
+                .cartPaymentId(new HashSet<>(Collections.singletonList("1"))).build());
 
         List<BizEvent> bizEventItems = new ArrayList<>();
         bizEventItems.add(generateValidBizEvent("2"));
