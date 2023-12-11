@@ -1,18 +1,19 @@
 package it.gov.pagopa.receipt.pdf.datastore;
 
-import com.azure.cosmos.models.FeedResponse;
-import com.microsoft.azure.functions.annotation.*;
-import com.microsoft.azure.functions.*;
-import it.gov.pagopa.receipt.pdf.datastore.client.BizEventCosmosClient;
-import it.gov.pagopa.receipt.pdf.datastore.client.impl.BizEventCosmosClientImpl;
+import com.microsoft.azure.functions.ExecutionContext;
+import com.microsoft.azure.functions.OutputBinding;
+import com.microsoft.azure.functions.annotation.CosmosDBOutput;
+import com.microsoft.azure.functions.annotation.CosmosDBTrigger;
+import com.microsoft.azure.functions.annotation.FunctionName;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
+import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
+import it.gov.pagopa.receipt.pdf.datastore.service.impl.BizEventToReceiptServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -24,14 +25,10 @@ public class CartEventToReceipt {
 
     private final Logger logger = LoggerFactory.getLogger(CartEventToReceipt.class);
 
-    private final BizEventCosmosClient bizEventCosmosClient;
+    private final BizEventToReceiptService bizEventToReceiptService;
 
-    public CartEventToReceipt() {
-        this.bizEventCosmosClient = BizEventCosmosClientImpl.getInstance();
-    }
-
-    CartEventToReceipt(BizEventCosmosClient bizEventCosmosClient) {
-        this.bizEventCosmosClient = bizEventCosmosClient;
+    public CartEventToReceipt(BizEventToReceiptService bizEventToReceiptService) {
+        this.bizEventToReceiptService = new BizEventToReceiptServiceImpl();
     }
 
     /**
@@ -64,32 +61,16 @@ public class CartEventToReceipt {
         }
 
         // TODO: 1. retrieve all biz
-        List<BizEvent> bizEventList = getCartBizEvents(cartForReceipt.getId());
+        List<BizEvent> bizEventList = this.bizEventToReceiptService.getCartBizEvents(cartForReceipt.getId());
 
         // TODO: 2. create cart receipt (tokenize cf)
 
 
         // TODO: 2. send bizEvents to queue
+        this.bizEventToReceiptService.handleSendMessageToQueue(bizEventList, null);
 
 
         // TODO: 3. save receipt
         documentdb.setValue(null);
-    }
-
-    private List<BizEvent> getCartBizEvents(long cartId) {
-        List<BizEvent> bizEventList = new ArrayList<>();
-        String continuationToken = null;
-        do {
-            Iterable<FeedResponse<BizEvent>> feedResponseIterator =
-                    this.bizEventCosmosClient.getAllBizEventDocument(cartId, continuationToken, 100);
-
-            for (FeedResponse<BizEvent> page : feedResponseIterator) {
-                for (BizEvent bizEvent : page.getResults()) {
-                    bizEventList.add(bizEvent);
-                }
-                continuationToken = page.getContinuationToken();
-            }
-        } while (continuationToken != null);
-        return bizEventList;
     }
 }
