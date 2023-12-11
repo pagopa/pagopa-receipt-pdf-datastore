@@ -115,6 +115,11 @@ public class BizEventToReceiptUtils {
             // the receipt does not exist
         }
 
+        return false;
+    }
+
+    public static Integer getTotalNotice(BizEvent bizEvent, ExecutionContext context, Logger logger) {
+
         if (bizEvent.getPaymentInfo() != null) {
             String totalNotice = bizEvent.getPaymentInfo().getTotalNotice();
 
@@ -129,19 +134,15 @@ public class BizEventToReceiptUtils {
                             context.getFunctionName(), bizEvent.getId(),
                             totalNotice,
                             e);
-                    return true;
+                    throw e;
                 }
 
-                if (intTotalNotice > 1) {
-                    logger.debug("[{}] event with id {} discarded because is part of a payment cart ({} total notice)",
-                            context.getFunctionName(), bizEvent.getId(),
-                            intTotalNotice);
-                    return true;
-                }
+                return intTotalNotice;
             }
         }
 
-        return false;
+        return 1;
+
     }
 
     /**

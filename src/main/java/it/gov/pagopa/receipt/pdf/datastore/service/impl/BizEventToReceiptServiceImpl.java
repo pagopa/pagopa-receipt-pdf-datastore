@@ -5,10 +5,13 @@ import com.azure.cosmos.models.CosmosItemResponse;
 import com.azure.storage.queue.models.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.HttpStatus;
+import it.gov.pagopa.receipt.pdf.datastore.client.CartReceiptsCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptQueueClient;
+import it.gov.pagopa.receipt.pdf.datastore.client.impl.CartReceiptsCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptQueueClientImpl;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReasonError;
@@ -16,15 +19,19 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReasonErrorCode;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
+import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.datastore.service.PDVTokenizerServiceRetryWrapper;
+import it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils;
 import it.gov.pagopa.receipt.pdf.datastore.utils.ObjectMapperUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 import java.util.Objects;
 
 public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
@@ -33,18 +40,26 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
 
     private final PDVTokenizerServiceRetryWrapper pdvTokenizerService;
     private final ReceiptCosmosClient receiptCosmosClient;
+
+    private final CartReceiptsCosmosClient cartReceiptsCosmosClient;
+
     private final ReceiptQueueClient queueClient;
 
     public BizEventToReceiptServiceImpl() {
         this.pdvTokenizerService = new PDVTokenizerServiceRetryWrapperImpl();
         this.receiptCosmosClient = ReceiptCosmosClientImpl.getInstance();
+        this.cartReceiptsCosmosClient = CartReceiptsCosmosClientImpl.getInstance();
         this.queueClient = ReceiptQueueClientImpl.getInstance();
     }
 
-    public BizEventToReceiptServiceImpl(PDVTokenizerServiceRetryWrapper pdvTokenizerService, ReceiptCosmosClient receiptCosmosClient, ReceiptQueueClient queueClient) {
+    public BizEventToReceiptServiceImpl(PDVTokenizerServiceRetryWrapper pdvTokenizerService,
+                                        ReceiptCosmosClient receiptCosmosClient,
+                                        CartReceiptsCosmosClientImpl cartReceiptsCosmosClient,
+                                        ReceiptQueueClient queueClient) {
         this.pdvTokenizerService = pdvTokenizerService;
         this.receiptCosmosClient = receiptCosmosClient;
         this.queueClient = queueClient;
+        this.cartReceiptsCosmosClient = cartReceiptsCosmosClient;
     }
 
     /**
@@ -183,6 +198,23 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             handleTokenizerException(receipt, e.getMessage(), ReasonErrorCode.ERROR_PDV_MAPPING.getCode());
             throw e;
         }
+    }
+
+    @Override
+    public void handleSaveCart(BizEvent bizEvent) {
+        long transactionId = bizEvent.getTransactionDetails().getTransaction().getIdTransaction();
+        CartForReceipt cartForReceipt;
+        try {
+            cartForReceipt = cartReceiptsCosmosClient.getCartItem(String.valueOf(transactionId));
+            if (cartForReceipt == null) {
+                throw new CartNotFoundException("Missing Cart");
+            }
+        } catch (CartNotFoundException ignore) {
+            cartForReceipt = CartForReceipt.builder().id(String.valueOf(transactionId)).cartPaymentId(new ArrayList<>())
+                    .totalNotice(BizEventToReceiptUtils.getTotalNotice(bizEvent, null, null)).build();
+        }
+        cartForReceipt.getCartPaymentId().add(bizEvent.getId());
+        cartReceiptsCosmosClient.saveCart(cartForReceipt);
     }
 
     /**
