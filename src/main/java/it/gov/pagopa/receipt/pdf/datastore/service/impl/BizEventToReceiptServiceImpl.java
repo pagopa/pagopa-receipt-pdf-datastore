@@ -29,10 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
 
@@ -210,7 +207,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
                 throw new CartNotFoundException("Missing Cart");
             }
         } catch (CartNotFoundException ignore) {
-            cartForReceipt = CartForReceipt.builder().id(String.valueOf(transactionId)).cartPaymentId(new ArrayList<>())
+            cartForReceipt = CartForReceipt.builder().id(transactionId).cartPaymentId(new HashSet<>())
                     .totalNotice(BizEventToReceiptUtils.getTotalNotice(bizEvent, null, null)).build();
         }
         cartForReceipt.getCartPaymentId().add(bizEvent.getId());
