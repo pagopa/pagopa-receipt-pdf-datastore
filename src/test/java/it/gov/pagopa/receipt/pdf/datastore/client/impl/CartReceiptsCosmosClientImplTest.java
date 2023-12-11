@@ -90,4 +90,27 @@ class CartReceiptsCosmosClientImplTest {
         Assertions.assertThrows(CartNotFoundException.class, () -> client.getCartItem("an invalid receipt id"));
     }
 
+    @Test
+    void runOk_SaveCart() throws CartNotFoundException {
+        Long CART_ID = 1L;
+
+        CosmosClient mockClient = mock(CosmosClient.class);
+
+        CosmosDatabase mockDatabase = mock(CosmosDatabase.class);
+        CosmosContainer mockContainer = mock(CosmosContainer.class);
+
+        CartForReceipt cartForReceipt = new CartForReceipt();
+        cartForReceipt.setId(CART_ID);
+
+        when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
+        when(mockClient.getDatabase(any())).thenReturn(mockDatabase);
+
+        CartReceiptsCosmosClientImpl client = new CartReceiptsCosmosClientImpl(mockClient);
+
+        Assertions.assertDoesNotThrow(() -> client.saveCart(cartForReceipt));
+
+    }
+
+
+
 }
