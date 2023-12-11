@@ -87,6 +87,7 @@ microservice-chart:
     COSMOS_RECEIPT_DB_NAME: "db"
     COSMOS_BIZ_EVENT_DB_NAME: "db"
     COSMOS_RECEIPT_CONTAINER_NAME: "receipts"
+    CART_FOR_RECEIPT_CONTAINER_NAME: "cart-for-receipts"
     COSMOS_BIZ_EVENT_CONTAINER_NAME: "biz-events"
     PDV_TOKENIZER_BASE_PATH: "https://api.uat.tokenizer.pdv.pagopa.it/tokenizer/v1"
     PDV_TOKENIZER_INITIAL_INTERVAL: "200"

@@ -42,4 +42,10 @@ public interface BizEventToReceiptService {
      * @throws PDVTokenizerException if an error occur when invoking the PDV Tokenizer
      */
     void tokenizeFiscalCodes(BizEvent bizEvent, Receipt receipt, EventData eventData)  throws JsonProcessingException, PDVTokenizerException;
+
+    /**
+     * TODO
+     * @param bizEvent
+     */
+    void handleSaveCart(BizEvent bizEvent);
 }
