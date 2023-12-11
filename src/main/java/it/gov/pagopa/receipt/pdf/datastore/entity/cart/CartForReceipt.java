@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
+import java.util.Set;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -13,8 +13,8 @@ import java.util.List;
 @Data
 public class CartForReceipt {
 
-    private String id;
-    private List<String> cartPaymentId;
+    private Long id;
+    private Set<String> cartPaymentId;
 
     private Integer totalNotice;
 
