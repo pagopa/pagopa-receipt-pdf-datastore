@@ -32,7 +32,7 @@ class CartReceiptsCosmosClientImplTest {
 
     @Test
     void runOk_Cart() throws CartNotFoundException {
-        String CART_ID = "a valid cart id";
+        Long CART_ID = 1L;
 
         CosmosClient mockClient = mock(CosmosClient.class);
 
@@ -58,9 +58,9 @@ class CartReceiptsCosmosClientImplTest {
 
         CartReceiptsCosmosClientImpl client = new CartReceiptsCosmosClientImpl(mockClient);
 
-        Assertions.assertDoesNotThrow(() -> client.getCartItem(CART_ID));
+        Assertions.assertDoesNotThrow(() -> client.getCartItem(String.valueOf(CART_ID)));
 
-        CartForReceipt cartResponse = client.getCartItem(CART_ID);
+        CartForReceipt cartResponse = client.getCartItem(String.valueOf(CART_ID));
         Assertions.assertEquals(CART_ID, cartResponse.getId());
     }
 
