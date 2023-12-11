@@ -8,15 +8,17 @@ import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 
+import java.util.List;
+
 public interface BizEventToReceiptService {
 
     /**
      * Handles sending biz-events as message to queue and updates receipt's status
      *
-     * @param bizEvent Biz-event from CosmosDB
+     * @param bizEventList list of Biz-event from CosmosDB
      * @param receipt  Receipt to update
      */
-    void handleSendMessageToQueue(BizEvent bizEvent, Receipt receipt);
+    void handleSendMessageToQueue(List<BizEvent> bizEventList, Receipt receipt);
 
     /**
      * Recovers a receipt from the CosmosDB by the property eventId
@@ -57,4 +59,11 @@ public interface BizEventToReceiptService {
      * @param bizEvent
      */
     void handleSaveCart(BizEvent bizEvent);
+
+    /**
+     * Retrieve all events that are associated to the cart with the specified id
+     * @param cartId the id of the cart
+     * @return a list of biz-events
+     */
+    List<BizEvent> getCartBizEvents(long cartId);
 }

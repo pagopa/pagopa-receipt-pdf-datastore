@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -103,7 +104,7 @@ public class BizEventToReceipt {
 
                 if (isReceiptStatusValid(receipt)) {
                     // Send biz event as message to queue (to be processed from the other function)
-                    bizEventToReceiptService.handleSendMessageToQueue(bizEvent, receipt);
+                    bizEventToReceiptService.handleSendMessageToQueue(Collections.singletonList(bizEvent), receipt);
                 }
 
                 if (!isReceiptStatusValid(receipt)) {
