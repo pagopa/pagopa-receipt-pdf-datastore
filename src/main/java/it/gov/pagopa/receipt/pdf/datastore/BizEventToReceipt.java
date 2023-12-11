@@ -87,23 +87,31 @@ public class BizEventToReceipt {
                 continue;
             }
 
-            Receipt receipt = BizEventToReceiptUtils.createReceipt(bizEvent, bizEventToReceiptService, logger);
+            Integer totalNotice = BizEventToReceiptUtils.getTotalNotice(bizEvent, context, logger);
 
-            logger.info("[{}] function called at {} for event with id {} and status {}",
-                    context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
+            if (totalNotice == 1) {
 
-            if (isReceiptStatusValid(receipt)) {
-                // Add receipt to items to be saved on CosmosDB
-                bizEventToReceiptService.handleSaveReceipt(receipt);
-            }
+                Receipt receipt = BizEventToReceiptUtils.createReceipt(bizEvent, bizEventToReceiptService, logger);
 
-            if (isReceiptStatusValid(receipt)) {
-                // Send biz event as message to queue (to be processed from the other function)
-                bizEventToReceiptService.handleSendMessageToQueue(bizEvent, receipt);
-            }
+                logger.info("[{}] function called at {} for event with id {} and status {}",
+                        context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
 
-            if (!isReceiptStatusValid(receipt)) {
-                receiptFailed.add(receipt);
+                if (isReceiptStatusValid(receipt)) {
+                    // Add receipt to items to be saved on CosmosDB
+                    bizEventToReceiptService.handleSaveReceipt(receipt);
+                }
+
+                if (isReceiptStatusValid(receipt)) {
+                    // Send biz event as message to queue (to be processed from the other function)
+                    bizEventToReceiptService.handleSendMessageToQueue(bizEvent, receipt);
+                }
+
+                if (!isReceiptStatusValid(receipt)) {
+                    receiptFailed.add(receipt);
+                }
+
+            } else if (totalNotice > 1) {
+                bizEventToReceiptService.handleSaveCart(bizEvent);
             }
 
             itemsDone++;
@@ -132,4 +140,5 @@ public class BizEventToReceipt {
     private static boolean isReceiptStatusValid(Receipt receipt) {
         return receipt.getStatus() != ReceiptStatusType.FAILED && receipt.getStatus() != ReceiptStatusType.NOT_QUEUE_SENT;
     }
+
 }

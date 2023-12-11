@@ -19,4 +19,5 @@ public interface ReceiptCosmosClient {
     Iterable<FeedResponse<Receipt>> getFailedReceiptDocuments(String continuationToken, Integer pageSize);
 
     CosmosItemResponse<Receipt> saveReceipts(Receipt receipt);
+
 }
