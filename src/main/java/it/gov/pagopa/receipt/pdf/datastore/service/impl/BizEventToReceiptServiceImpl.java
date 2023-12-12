@@ -75,7 +75,6 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
      */
     @Override
     public void handleSendMessageToQueue(List<BizEvent> bizEventList, Receipt receipt) {
-        // TODO decidere se mandare sempre lista di biz al generator
         //Encode biz-event to base64 string
         String messageText = Base64.getMimeEncoder().encodeToString(
                 Objects.requireNonNull(ObjectMapperUtils.writeValueAsString(bizEventList)).getBytes(StandardCharsets.UTF_8));
@@ -241,9 +240,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
                     this.bizEventCosmosClient.getAllBizEventDocument(cartId, continuationToken, 100);
 
             for (FeedResponse<BizEvent> page : feedResponseIterator) {
-                for (BizEvent bizEvent : page.getResults()) {
-                    bizEventList.add(bizEvent);
-                }
+                bizEventList.addAll(page.getResults());
                 continuationToken = page.getContinuationToken();
             }
         } while (continuationToken != null);
