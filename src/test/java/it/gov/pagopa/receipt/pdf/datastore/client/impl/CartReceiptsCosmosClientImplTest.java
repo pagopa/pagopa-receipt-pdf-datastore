@@ -25,7 +25,7 @@ class CartReceiptsCosmosClientImplTest {
         String mockKey = "mockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeyMK==";
         withEnvironmentVariables(
                 "COSMOS_RECEIPT_KEY", mockKey,
-                "CART_FOR_RECEIPT_CONTAINER_NAME", ""
+                "COSMOS_RECEIPT_SERVICE_ENDPOINT", ""
         ).execute(() -> Assertions.assertThrows(IllegalArgumentException.class, CartReceiptsCosmosClientImpl::getInstance)
         );
     }
