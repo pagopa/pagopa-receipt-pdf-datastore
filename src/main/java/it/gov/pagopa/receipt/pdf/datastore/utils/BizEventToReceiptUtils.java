@@ -151,7 +151,7 @@ public class BizEventToReceiptUtils {
      * @param bizEvent BizEvent from which retrieve the data
      * @return the remittance information
      */
-    private static String getItemSubject(BizEvent bizEvent) {
+    public static String getItemSubject(BizEvent bizEvent) {
         if (bizEvent.getPaymentInfo() != null && bizEvent.getPaymentInfo().getRemittanceInformation() != null) {
             return bizEvent.getPaymentInfo().getRemittanceInformation();
         }
@@ -185,6 +185,10 @@ public class BizEventToReceiptUtils {
             }
         }
         return remittanceInformation;
+    }
+
+    public static boolean isReceiptStatusValid(Receipt receipt) {
+        return receipt.getStatus() != ReceiptStatusType.FAILED && receipt.getStatus() != ReceiptStatusType.NOT_QUEUE_SENT;
     }
 
     private BizEventToReceiptUtils() {}

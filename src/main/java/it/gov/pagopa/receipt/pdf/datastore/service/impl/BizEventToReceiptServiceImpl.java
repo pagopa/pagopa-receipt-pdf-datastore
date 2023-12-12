@@ -17,6 +17,7 @@ import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptQueueClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
+import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.CartItem;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReasonError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
@@ -34,6 +35,8 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+
+import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.getItemSubject;
 
 public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
 
@@ -137,7 +140,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             statusCode = response.getStatusCode();
         } catch (Exception e) {
             statusCode = ReasonErrorCode.ERROR_COSMOS.getCode();
-            logger.error(String.format("Save receipt with eventId %s on cosmos failed", receipt.getEventId()), e);
+            logger.error("Save receipt with eventId {} on cosmos failed", receipt.getEventId(), e);
         }
 
         if (statusCode != (HttpStatus.CREATED.value())) {
@@ -226,6 +229,9 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         cartReceiptsCosmosClient.saveCart(cartForReceipt);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<BizEvent> getCartBizEvents(long cartId) {
         List<BizEvent> bizEventList = new ArrayList<>();
@@ -242,6 +248,48 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             }
         } while (continuationToken != null);
         return bizEventList;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Receipt createCartReceipt(List<BizEvent> bizEventList) {
+        // TODO: capire come gestire la creazione della receipt
+        Receipt receipt = new Receipt();
+        // TODO il campo è transactionDetails.transaction.transactionId non idTransaction
+        long carId = bizEventList.get(0).getTransactionDetails().getTransaction().getIdTransaction();
+
+        // Insert biz-event data into receipt
+        receipt.setId(String.format("%s-%s", carId, UUID.randomUUID()));
+        receipt.setEventId(Long.toString(carId));
+
+        EventData eventData = new EventData();
+        try {
+            tokenizeFiscalCodes(bizEventList.get(0), receipt, eventData);
+        } catch (Exception e) {
+            logger.error("Error tokenizing receipt for cart with id {}",
+                    carId, e);
+            receipt.setStatus(ReceiptStatusType.FAILED);
+            return receipt;
+        }
+
+        eventData.setTransactionCreationDate(
+                getTransactionCreationDate(bizEventList.get(0)));
+        eventData.setAmount(bizEventList.get(0).getPaymentInfo() != null ?
+                bizEventList.get(0).getPaymentInfo().getAmount() : null);
+
+
+        List<CartItem> cartItems = new ArrayList<>();
+        bizEventList.forEach(bizEvent -> cartItems.add(
+                CartItem.builder()
+                        .payeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null)
+                        .subject(getItemSubject(bizEvent))
+                        .build()));
+        eventData.setCart(cartItems);
+
+        receipt.setEventData(eventData);
+        return receipt;
     }
 
     /**

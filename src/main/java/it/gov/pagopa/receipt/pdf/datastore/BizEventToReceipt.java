@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.isReceiptStatusValid;
+
 /**
  * Azure Functions with Azure CosmosDB trigger.
  */
@@ -137,9 +139,4 @@ public class BizEventToReceipt {
             documentdb.setValue(receiptFailed);
         }
     }
-
-    private static boolean isReceiptStatusValid(Receipt receipt) {
-        return receipt.getStatus() != ReceiptStatusType.FAILED && receipt.getStatus() != ReceiptStatusType.NOT_QUEUE_SENT;
-    }
-
 }

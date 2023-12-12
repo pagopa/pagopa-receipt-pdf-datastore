@@ -9,10 +9,10 @@ public interface BizEventCosmosClient {
     /**
      * Retrieve all biz-event documents related to a specific cart from CosmosDB database
      *
-     * @param idTransaction     id that identifies the cart
+     * @param transactionId     id that identifies the cart
      * @param continuationToken Paged query continuation token
      * @param pageSize          the page size
      * @return a list of biz-event document
      */
-    Iterable<FeedResponse<BizEvent>> getAllBizEventDocument(long idTransaction, String continuationToken, Integer pageSize);
+    Iterable<FeedResponse<BizEvent>> getAllBizEventDocument(long transactionId, String continuationToken, Integer pageSize);
 }

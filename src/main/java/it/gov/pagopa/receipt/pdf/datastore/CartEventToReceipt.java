@@ -16,6 +16,8 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.isReceiptStatusValid;
+
 /**
  * Azure Functions with Cosmos DB trigger.
  * <p>
@@ -27,7 +29,7 @@ public class CartEventToReceipt {
 
     private final BizEventToReceiptService bizEventToReceiptService;
 
-    public CartEventToReceipt(BizEventToReceiptService bizEventToReceiptService) {
+    public CartEventToReceipt() {
         this.bizEventToReceiptService = new BizEventToReceiptServiceImpl();
     }
 
@@ -60,17 +62,23 @@ public class CartEventToReceipt {
             return;
         }
 
-        // TODO: 1. retrieve all biz
         List<BizEvent> bizEventList = this.bizEventToReceiptService.getCartBizEvents(cartForReceipt.getId());
 
-        // TODO: 2. create cart receipt (tokenize cf)
+        Receipt receipt = this.bizEventToReceiptService.createCartReceipt(bizEventList);
 
+        if (isReceiptStatusValid(receipt)) {
+            // Add receipt to items to be saved on CosmosDB
+            this.bizEventToReceiptService.handleSaveReceipt(receipt);
+        }
 
-        // TODO: 2. send bizEvents to queue
-        this.bizEventToReceiptService.handleSendMessageToQueue(bizEventList, null);
+        if (isReceiptStatusValid(receipt)) {
+            // Send biz event as message to queue (to be processed from the other function)
+            this.bizEventToReceiptService.handleSendMessageToQueue(bizEventList, receipt);
+        }
 
-
-        // TODO: 3. save receipt
-        documentdb.setValue(null);
+        if (!isReceiptStatusValid(receipt)) {
+            // save only if receipt creation fail
+            documentdb.setValue(receipt);
+        }
     }
 }
