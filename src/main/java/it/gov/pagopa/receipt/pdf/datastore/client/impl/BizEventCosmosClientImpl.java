@@ -46,13 +46,13 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
      * {@inheritDoc}
      */
     @Override
-    public Iterable<FeedResponse<BizEvent>> getAllBizEventDocument(long idTransaction, String continuationToken, Integer pageSize) {
+    public Iterable<FeedResponse<BizEvent>> getAllBizEventDocument(long transactionId, String continuationToken, Integer pageSize) {
         CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
         //Build query
-        String query = String.format("SELECT * FROM c WHERE c.transactionDetails.transaction.idTransaction = '%s'",
-                idTransaction);
+        String query = String.format("SELECT * FROM c WHERE c.transactionDetails.transaction.transactionId = '%s'",
+                transactionId);
 
         //Query the container
         return cosmosContainer
