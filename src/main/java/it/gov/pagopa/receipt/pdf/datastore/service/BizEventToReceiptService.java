@@ -16,7 +16,7 @@ public interface BizEventToReceiptService {
      * Handles sending biz-events as message to queue and updates receipt's status
      *
      * @param bizEventList list of Biz-event from CosmosDB
-     * @param receipt  Receipt to update
+     * @param receipt      Receipt to update
      */
     void handleSendMessageToQueue(List<BizEvent> bizEventList, Receipt receipt);
 
@@ -46,29 +46,31 @@ public interface BizEventToReceiptService {
     /**
      * Calls PDVTokenizerService to tokenize the fiscal codes for both Debtor & Payer (if present)
      *
-     * @param bizEvent BizEvent where fiscalCodes are stored
-     * @param receipt Receipt to update in case of errors
+     * @param bizEvent  BizEvent where fiscalCodes are stored
+     * @param receipt   Receipt to update in case of errors
      * @param eventData Event data to update with tokenized fiscalCodes
      * @throws JsonProcessingException if an error occur when parsing input or output
-     * @throws PDVTokenizerException if an error occur when invoking the PDV Tokenizer
+     * @throws PDVTokenizerException   if an error occur when invoking the PDV Tokenizer
      */
-    void tokenizeFiscalCodes(BizEvent bizEvent, Receipt receipt, EventData eventData)  throws JsonProcessingException, PDVTokenizerException;
+    void tokenizeFiscalCodes(BizEvent bizEvent, Receipt receipt, EventData eventData) throws JsonProcessingException, PDVTokenizerException;
 
     /**
      * TODO
+     *
      * @param bizEvent
      */
     void handleSaveCart(BizEvent bizEvent);
 
     /**
      * Retrieve all events that are associated to the cart with the specified id
+     *
      * @param cartId the id of the cart
      * @return a list of biz-events
      */
     List<BizEvent> getCartBizEvents(long cartId);
 
     /**
-     * Creates a receipt for a cart, using the tokenizer service to mask the PII, based on
+     * Creates the receipt for a cart, using the tokenizer service to mask the PII, based on
      * the provided list of BizEvent
      *
      * @param bizEventList a list og BizEvent

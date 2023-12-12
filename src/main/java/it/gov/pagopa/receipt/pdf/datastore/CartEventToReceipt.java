@@ -34,7 +34,17 @@ public class CartEventToReceipt {
     }
 
     /**
-     * This function will be invoked when there are inserts or updates in the specified database and collection.
+     * This function will be invoked when a CosmosDB trigger occurs on cart-for-receipt collection
+     * <p>
+     * It checks if all biz-event that compose the cart are collected and if so it proceeds with the following steps:
+     * <ol>
+     *     <li>Retrieve all biz events
+     *     <li>Create the receipt ({@link Receipt})
+     *     <li>Save the receipt in receipts collection on CosmosDB
+     *     <li>Send the list of biz events in queue
+     * </ol>
+     * <p>
+     * Otherwise, it skips the event.
      */
     @FunctionName("CartEventToReceiptProcessor")
     public void run(
