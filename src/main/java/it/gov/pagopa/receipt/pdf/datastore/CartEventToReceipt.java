@@ -33,6 +33,10 @@ public class CartEventToReceipt {
         this.bizEventToReceiptService = new BizEventToReceiptServiceImpl();
     }
 
+    CartEventToReceipt(BizEventToReceiptService bizEventToReceiptService) {
+        this.bizEventToReceiptService = bizEventToReceiptService;
+    }
+
     /**
      * This function will be invoked when a CosmosDB trigger occurs on cart-for-receipt collection
      * <p>
