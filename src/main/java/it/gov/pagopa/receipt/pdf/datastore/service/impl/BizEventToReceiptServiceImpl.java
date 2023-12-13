@@ -12,6 +12,7 @@ import it.gov.pagopa.receipt.pdf.datastore.client.impl.CartReceiptsCosmosClientI
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptQueueClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReasonError;
@@ -207,7 +208,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
                 throw new CartNotFoundException("Missing Cart");
             }
         } catch (CartNotFoundException ignore) {
-            cartForReceipt = CartForReceipt.builder().id(transactionId).cartPaymentId(new HashSet<>())
+            cartForReceipt = CartForReceipt.builder().id(transactionId).status(CartStatusType.INSERTED).cartPaymentId(new HashSet<>())
                     .totalNotice(BizEventToReceiptUtils.getTotalNotice(bizEvent, null, null)).build();
         }
         cartForReceipt.getCartPaymentId().add(bizEvent.getId());
