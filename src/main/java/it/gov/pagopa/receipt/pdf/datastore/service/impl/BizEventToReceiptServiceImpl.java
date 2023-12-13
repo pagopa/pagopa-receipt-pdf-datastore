@@ -260,6 +260,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         // Insert biz-event data into receipt
         receipt.setId(String.format("%s-%s", carId, UUID.randomUUID()));
         receipt.setEventId(Long.toString(carId));
+        receipt.setIsCart(true);
 
         EventData eventData = new EventData();
         try {
