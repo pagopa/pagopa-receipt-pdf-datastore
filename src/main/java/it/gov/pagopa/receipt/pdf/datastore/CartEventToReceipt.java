@@ -6,6 +6,7 @@ import com.microsoft.azure.functions.annotation.CosmosDBOutput;
 import com.microsoft.azure.functions.annotation.CosmosDBTrigger;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
@@ -65,7 +66,13 @@ public class CartEventToReceipt {
                     databaseName = "db",
                     collectionName = "receipts",
                     connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING")
-            OutputBinding<Receipt> documentdb,
+            OutputBinding<Receipt> receiptDocumentdb,
+            @CosmosDBOutput(
+                    name = "CartReceiptDatastore",
+                    databaseName = "db",
+                    collectionName = "cart-for-receipt",
+                    connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING")
+            OutputBinding<CartForReceipt> cartForReceiptDocumentdb,
             final ExecutionContext context
     ) {
         logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
@@ -77,22 +84,40 @@ public class CartEventToReceipt {
         }
 
         List<BizEvent> bizEventList = this.bizEventToReceiptService.getCartBizEvents(cartForReceipt.getId());
-
         Receipt receipt = this.bizEventToReceiptService.createCartReceipt(bizEventList);
 
-        if (isReceiptStatusValid(receipt)) {
-            // Add receipt to items to be saved on CosmosDB
-            this.bizEventToReceiptService.handleSaveReceipt(receipt);
+        if (!isReceiptStatusValid(receipt)) {
+            logger.error("[{}] Failed to process cart with id {}: fail to tokenize fiscal codes",
+                    context.getFunctionName(), cartForReceipt.getId());
+            cartForReceipt.setStatus(CartStatusType.FAILED);
+            cartForReceipt.setReasonError(receipt.getReasonErr());
+            cartForReceiptDocumentdb.setValue(cartForReceipt);
+            return;
         }
 
-        if (isReceiptStatusValid(receipt)) {
-            // Send biz event as message to queue (to be processed from the other function)
-            this.bizEventToReceiptService.handleSendMessageToQueue(bizEventList, receipt);
-        }
+        // Add receipt to items to be saved on CosmosDB
+        this.bizEventToReceiptService.handleSaveReceipt(receipt);
 
         if (!isReceiptStatusValid(receipt)) {
-            // save only if receipt creation fail
-            documentdb.setValue(receipt);
+            logger.error("[{}] Failed to process cart with id {}: fail to save receipt",
+                    context.getFunctionName(), cartForReceipt.getId());
+            cartForReceipt.setStatus(CartStatusType.FAILED);
+            cartForReceipt.setReasonError(receipt.getReasonErr());
+            cartForReceiptDocumentdb.setValue(cartForReceipt);
+            return;
         }
+
+        // Send biz event as message to queue (to be processed from the other function)
+        this.bizEventToReceiptService.handleSendMessageToQueue(bizEventList, receipt);
+
+
+        if (!isReceiptStatusValid(receipt)) {
+            // save only if receipt save on cosmos or send on queue fail
+            receiptDocumentdb.setValue(receipt);
+        }
+        cartForReceipt.setStatus(CartStatusType.SENT);
+        logger.info("[{}] Cart with id {} processes successfully. Cart with status: {} and receipt with status: {}",
+                context.getFunctionName(), cartForReceipt.getId(), cartForReceipt.getStatus(), receipt.getStatus());
+        cartForReceiptDocumentdb.setValue(cartForReceipt);
     }
 }
