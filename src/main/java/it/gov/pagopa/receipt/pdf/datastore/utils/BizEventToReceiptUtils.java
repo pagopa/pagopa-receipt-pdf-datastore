@@ -10,6 +10,7 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
+import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
 import org.slf4j.Logger;
 
@@ -72,7 +73,7 @@ public class BizEventToReceiptUtils {
      * @param logger   Function logger
      * @return boolean to determine if the proposed event is invalid
      */
-    public static boolean isBizEventInvalid(BizEvent bizEvent, ExecutionContext context, Logger logger) {
+    public static boolean isBizEventInvalid(BizEvent bizEvent, ExecutionContext context, BizEventToReceiptService service, Logger logger) {
 
         if (bizEvent == null) {
             logger.debug("[{}] event is null", context.getFunctionName());
@@ -90,6 +91,15 @@ public class BizEventToReceiptUtils {
             logger.debug("[{}] event with id {} discarded because debtor identifier is missing or ANONIMO",
                     context.getFunctionName(), bizEvent.getId());
             return true;
+        }
+
+        try {
+            Receipt receipt = service.getReceipt(bizEvent.getId());
+            logger.debug("[{}] event with id {} discarded because already processed, receipt already exist with id {}",
+                    context.getFunctionName(), bizEvent.getId(), receipt.getId());
+            return true;
+        } catch (ReceiptNotFoundException ignored) {
+            // the receipt does not exist
         }
 
         if (bizEvent.getPaymentInfo() != null) {
@@ -181,4 +191,6 @@ public class BizEventToReceiptUtils {
         }
         return remittanceInformation;
     }
+
+    private BizEventToReceiptUtils() {}
 }

@@ -6,6 +6,7 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptCosmosClient;
+import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 
 public interface BizEventToReceiptService {
 
@@ -16,6 +17,14 @@ public interface BizEventToReceiptService {
      * @param receipt  Receipt to update
      */
     void handleSendMessageToQueue(BizEvent bizEvent, Receipt receipt);
+
+    /**
+     * Recovers a receipt from the CosmosDB by the property eventId
+     * @param bizEventId BizEvent id relative to the receipt
+     * @return the receipt found
+     * @throws ReceiptNotFoundException when no receipt has been found
+     */
+    Receipt getReceipt(String bizEventId) throws ReceiptNotFoundException;
 
     /**
      * Saves receipts on CosmosDB using {@link ReceiptCosmosClient}
