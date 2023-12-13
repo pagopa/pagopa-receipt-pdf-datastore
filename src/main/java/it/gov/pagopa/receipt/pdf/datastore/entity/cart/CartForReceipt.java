@@ -17,9 +17,6 @@ public class CartForReceipt {
     private Long id;
     private Set<String> cartPaymentId;
     private Integer totalNotice;
-
     private CartStatusType status;
-
     private ReasonError reasonError;
-
 }
