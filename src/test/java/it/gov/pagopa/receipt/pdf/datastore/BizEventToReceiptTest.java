@@ -83,6 +83,35 @@ class BizEventToReceiptTest {
     }
 
     @Test
+    void runOk_TDetails() throws PDVTokenizerException, JsonProcessingException {
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
+
+        CosmosItemResponse<Receipt> cosmosResponse = mock(CosmosItemResponse.class);
+        when(cosmosResponse.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
+        when(receiptCosmosClient.saveReceipts(any(Receipt.class))).thenReturn(cosmosResponse);
+
+        Response<SendMessageResult> response = mock(Response.class);
+        when(response.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
+        when(queueClient.sendMessageToQueue(anyString())).thenReturn(response);
+
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, receiptCosmosClient, queueClient);
+        function = new BizEventToReceipt(receiptService);
+
+        List<BizEvent> bizEventItems = new ArrayList<>();
+        bizEventItems.add(generateValidBizEventWithTDetails("1"));
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+
+        // test execution
+        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
+
+        verify(documentdb, never()).setValue(any());
+    }
+
+
+    @Test
     void runOkTotalNoticeNull() throws PDVTokenizerException, JsonProcessingException {
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
@@ -365,6 +394,30 @@ class BizEventToReceiptTest {
         item.setEventStatus(BizEventStatusType.DONE);
         item.setId(EVENT_ID);
         item.setPayer(payer);
+        item.setDebtor(debtor);
+        item.setTransactionDetails(transactionDetails);
+        item.setPaymentInfo(paymentInfo);
+
+        return item;
+    }
+
+    private BizEvent generateValidBizEventWithTDetails(String totalNotice){
+        BizEvent item = new BizEvent();
+
+        Debtor debtor = new Debtor();
+        debtor.setEntityUniqueIdentifierValue(DEBTOR_FISCAL_CODE);
+
+        TransactionDetails transactionDetails = new TransactionDetails();
+        Transaction transaction = new Transaction();
+        transaction.setCreationDate(String.valueOf(LocalDateTime.now()));
+        transactionDetails.setTransaction(transaction);
+        transactionDetails.setUser(User.builder().fiscalCode(PAYER_FISCAL_CODE).build());
+
+        PaymentInfo paymentInfo = new PaymentInfo();
+        paymentInfo.setTotalNotice(totalNotice);
+
+        item.setEventStatus(BizEventStatusType.DONE);
+        item.setId(EVENT_ID);
         item.setDebtor(debtor);
         item.setTransactionDetails(transactionDetails);
         item.setPaymentInfo(paymentInfo);
