@@ -146,6 +146,13 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
                 eventData.setPayerFiscalCode(
                         pdvTokenizerService.generateTokenForFiscalCodeWithRetry(bizEvent.getPayer().getEntityUniqueIdentifierValue())
                 );
+            } else if (bizEvent.getTransactionDetails() != null &&
+                    bizEvent.getTransactionDetails().getUser() != null &&
+                    bizEvent.getTransactionDetails().getUser().getFiscalCode() != null
+            ) {
+                eventData.setPayerFiscalCode(
+                        pdvTokenizerService.generateTokenForFiscalCodeWithRetry(
+                                bizEvent.getTransactionDetails().getUser().getFiscalCode()));
             }
         } catch (PDVTokenizerException e) {
             handleTokenizerException(receipt, e.getMessage(), e.getStatusCode());
