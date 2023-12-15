@@ -45,19 +45,16 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
     }
 
     /**
-     * Retrieve receipt document from CosmosDB database
-     *
-     * @param eventId Biz-event id
-     * @return receipt document
-     * @throws ReceiptNotFoundException in case no receipt has been found with the given idEvent
+     * {@inheritDoc}
      */
+    @Override
     public Receipt getReceiptDocument(String eventId) throws ReceiptNotFoundException {
         CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
 
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
         //Build query
-        String query = "SELECT * FROM c WHERE c.eventId = " + "'" + eventId + "'";
+        String query = String.format("SELECT * FROM c WHERE c.eventId = '%s'", eventId);
 
         //Query the container
         CosmosPagedIterable<Receipt> queryResponse = cosmosContainer
@@ -65,10 +62,8 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
 
         if (queryResponse.iterator().hasNext()) {
             return queryResponse.iterator().next();
-        } else {
-            throw new ReceiptNotFoundException("Document not found in the defined container");
         }
-
+        throw new ReceiptNotFoundException("Document not found in the defined container");
     }
 
     /**

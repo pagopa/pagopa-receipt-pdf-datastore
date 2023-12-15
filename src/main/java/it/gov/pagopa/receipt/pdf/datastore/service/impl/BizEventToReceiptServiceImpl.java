@@ -16,6 +16,7 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReasonErrorCode;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
+import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.datastore.service.PDVTokenizerServiceRetryWrapper;
 import it.gov.pagopa.receipt.pdf.datastore.utils.ObjectMapperUtils;
@@ -75,6 +76,26 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             //Error info
             logger.error(errorString);
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Receipt getReceipt(String bizEventId) throws ReceiptNotFoundException {
+        Receipt receipt;
+        try {
+            receipt = receiptCosmosClient.getReceiptDocument(bizEventId);
+        } catch (ReceiptNotFoundException e) {
+            String errorMsg = String.format("Receipt not found with the biz-event id %s", bizEventId);
+            throw new ReceiptNotFoundException(errorMsg, e);
+        }
+
+        if (receipt == null) {
+            String errorMsg = String.format("Receipt retrieved with the biz-event id %s is null", bizEventId);
+            throw new ReceiptNotFoundException(errorMsg);
+        }
+        return receipt;
     }
 
     /**
@@ -146,6 +167,13 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
                 eventData.setPayerFiscalCode(
                         pdvTokenizerService.generateTokenForFiscalCodeWithRetry(bizEvent.getPayer().getEntityUniqueIdentifierValue())
                 );
+            } else if (bizEvent.getTransactionDetails() != null &&
+                    bizEvent.getTransactionDetails().getUser() != null &&
+                    bizEvent.getTransactionDetails().getUser().getFiscalCode() != null
+            ) {
+                eventData.setPayerFiscalCode(
+                        pdvTokenizerService.generateTokenForFiscalCodeWithRetry(
+                                bizEvent.getTransactionDetails().getUser().getFiscalCode()));
             }
         } catch (PDVTokenizerException e) {
             handleTokenizerException(receipt, e.getMessage(), e.getStatusCode());

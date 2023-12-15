@@ -81,8 +81,8 @@ public class BizEventToReceipt {
         // Retrieve receipt data from biz-event
         for (BizEvent bizEvent : items) {
 
-            // Discard null biz events || not in status DONE || with totalNotice > 1
-            if (BizEventToReceiptUtils.isBizEventInvalid(bizEvent, context, logger)) {
+            // Discard null biz events or not in status DONE or with totalNotice > 1
+            if (BizEventToReceiptUtils.isBizEventInvalid(bizEvent, context, bizEventToReceiptService, logger)) {
                 discarder++;
                 continue;
             }

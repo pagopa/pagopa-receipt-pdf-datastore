@@ -7,7 +7,14 @@ import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 
 public interface ReceiptCosmosClient {
 
-    Receipt getReceiptDocument(String receiptId) throws ReceiptNotFoundException;
+    /**
+     * Retrieve receipt document from CosmosDB database
+     *
+     * @param eventId Biz-event id
+     * @return receipt document
+     * @throws ReceiptNotFoundException in case no receipt has been found with the given idEvent
+     */
+    Receipt getReceiptDocument(String eventId) throws ReceiptNotFoundException;
 
     Iterable<FeedResponse<Receipt>> getFailedReceiptDocuments(String continuationToken, Integer pageSize);
 
