@@ -23,6 +23,8 @@ import java.util.regex.Pattern;
 public class BizEventToReceiptUtils {
 
     private static final String REMITTANCE_INFORMATION_REGEX = "/TXT/(.*)";
+    private static final Boolean ECOMMERCE_FILTER_ENABLED = Boolean.parseBoolean(System.getenv().getOrDefault("ECOMMERCE_FILTER_ENABLED", "true"));
+    private static final String ECOMMERCE = "CHECKOUT";
 
     /**
      * Creates a new instance of Receipt, using the tokenizer service to mask the PII, based on
@@ -90,6 +92,16 @@ public class BizEventToReceiptUtils {
                 bizEvent.getDebtor().getEntityUniqueIdentifierValue().equals("ANONIMO")) {
             logger.debug("[{}] event with id {} discarded because debtor identifier is missing or ANONIMO",
                     context.getFunctionName(), bizEvent.getId());
+            return true;
+        }
+
+        if (Boolean.TRUE.equals(ECOMMERCE_FILTER_ENABLED)
+                && bizEvent.getTransactionDetails() != null
+                && bizEvent.getTransactionDetails().getInfo() != null
+                && ECOMMERCE.equals(bizEvent.getTransactionDetails().getInfo().getClientId())
+        ) {
+            logger.debug("[{}] event with id {} discarded because from e-commerce {}",
+                    context.getFunctionName(), bizEvent.getId(), bizEvent.getTransactionDetails().getInfo().getClientId());
             return true;
         }
 
