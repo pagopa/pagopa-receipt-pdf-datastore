@@ -87,7 +87,8 @@ public class BizEventToReceiptUtils {
         }
 
         if (bizEvent.getDebtor().getEntityUniqueIdentifierValue() == null ||
-                bizEvent.getDebtor().getEntityUniqueIdentifierValue().equals("ANONIMO")) {
+                (bizEvent.getDebtor().getEntityUniqueIdentifierValue().equals("ANONIMO") &&
+                        (bizEvent.getPayer() == null || bizEvent.getPayer().getEntityUniqueIdentifierValue() == null))) {
             logger.debug("[{}] event with id {} discarded because debtor identifier is missing or ANONIMO",
                     context.getFunctionName(), bizEvent.getId());
             return true;
@@ -129,25 +130,6 @@ public class BizEventToReceiptUtils {
         }
 
         return false;
-    }
-
-    public static void tokenizeReceipt(BizEventToReceiptService service, BizEvent bizEvent, Receipt receipt)
-            throws PDVTokenizerException, JsonProcessingException {
-        if (receipt.getEventData() == null) {
-            EventData eventData = new EventData();
-            receipt.setEventData(eventData);
-            eventData.setTransactionCreationDate(
-                    service.getTransactionCreationDate(bizEvent));
-            eventData.setAmount(bizEvent.getPaymentInfo() != null ?
-                    bizEvent.getPaymentInfo().getAmount() : null);
-
-            CartItem item = new CartItem();
-            item.setPayeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null);
-            item.setSubject(getItemSubject(bizEvent));
-            List<CartItem> cartItems = Collections.singletonList(item);
-            eventData.setCart(cartItems);
-        }
-        service.tokenizeFiscalCodes(bizEvent, receipt, receipt.getEventData());
     }
 
     /**

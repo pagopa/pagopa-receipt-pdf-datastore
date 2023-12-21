@@ -156,9 +156,10 @@ class BizEventToReceiptTest {
     }
 
     @Test
-    void runDiscardedWithAnonymousDebtor() {
+    void runDiscardedWithAnonymousDebtorAndMissingPayer() {
         List<BizEvent> bizEventItems = new ArrayList<>();
         bizEventItems.add(generateAnonymDebtorBizEvent("1"));
+        bizEventItems.get(0).setPayer(null);
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);

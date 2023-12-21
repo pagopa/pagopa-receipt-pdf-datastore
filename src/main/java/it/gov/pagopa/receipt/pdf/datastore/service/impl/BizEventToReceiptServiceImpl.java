@@ -159,7 +159,8 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
     public void tokenizeFiscalCodes(BizEvent bizEvent, Receipt receipt, EventData eventData) throws JsonProcessingException, PDVTokenizerException {
         try {
             if (bizEvent.getDebtor() != null && bizEvent.getDebtor().getEntityUniqueIdentifierValue() != null) {
-                eventData.setDebtorFiscalCode(
+                eventData.setDebtorFiscalCode("ANONIMO".equals(bizEvent.getDebtor().getEntityUniqueIdentifierValue()) ?
+                        bizEvent.getDebtor().getEntityUniqueIdentifierValue() :
                         pdvTokenizerService.generateTokenForFiscalCodeWithRetry(bizEvent.getDebtor().getEntityUniqueIdentifierValue())
                 );
             }
