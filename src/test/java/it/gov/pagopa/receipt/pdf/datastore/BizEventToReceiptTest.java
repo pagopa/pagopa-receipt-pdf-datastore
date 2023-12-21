@@ -15,6 +15,7 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReasonErrorCode;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
+import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.service.PDVTokenizerServiceRetryWrapper;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.BizEventToReceiptServiceImpl;
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
+import uk.org.webcompere.systemstubs.jupiter.SystemStub;
+import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -32,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariable;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, SystemStubsExtension.class})
 class BizEventToReceiptTest {
     public static final String HTTP_MESSAGE_ERROR = "an error occured";
     private final String PAYER_FISCAL_CODE = "a valid payer CF";
@@ -40,6 +44,9 @@ class BizEventToReceiptTest {
     private final String TOKENIZED_DEBTOR_FISCAL_CODE = "tokenizedDebtorFiscalCode";
     private final String TOKENIZED_PAYER_FISCAL_CODE = "tokenizedPayerFiscalCode";
     private final String EVENT_ID = "a valid id";
+
+    @SystemStub
+    private EnvironmentVariables environmentVariables = new EnvironmentVariables("ECOMMERCE_FILTER_ENABLED", "true");
 
     private BizEventToReceipt function;
     @Mock
@@ -160,6 +167,43 @@ class BizEventToReceiptTest {
         List<BizEvent> bizEventItems = new ArrayList<>();
         bizEventItems.add(generateAnonymDebtorBizEvent("1"));
         bizEventItems.get(0).setPayer(null);
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, receiptCosmosClient, queueClient);
+        function = new BizEventToReceipt(receiptService);
+        // test execution
+        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
+
+        verify(documentdb, never()).setValue(any());
+    }
+
+    @Test
+    void runDiscardedWithECommerceEvent() {
+        List<BizEvent> bizEventItems = new ArrayList<>();
+        BizEvent bizEvent = generateValidBizEvent("1");
+        bizEvent.getTransactionDetails()
+                .setInfo(InfoTransaction.builder()
+                        .clientId("CHECKOUT")
+                        .build());
+        bizEventItems.add(bizEvent);
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, receiptCosmosClient, queueClient);
+        function = new BizEventToReceipt(receiptService);
+        // test execution
+        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
+
+        verify(documentdb, never()).setValue(any());
+    }
+
+    @Test
+    void runDiscardedWithReceiptAlreadyInserted() throws ReceiptNotFoundException {
+        List<BizEvent> bizEventItems = new ArrayList<>();
+        bizEventItems.add(generateValidBizEvent("1"));
+
+        when(receiptCosmosClient.getReceiptDocument(any())).thenReturn(new Receipt());
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
