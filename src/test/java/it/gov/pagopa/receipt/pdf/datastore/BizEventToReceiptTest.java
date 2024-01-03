@@ -117,7 +117,8 @@ class BizEventToReceiptTest {
         when(response.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
         when(queueClient.sendMessageToQueue(anyString())).thenReturn(response);
 
-        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, receiptCosmosClient, queueClient);
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
         function = new BizEventToReceipt(receiptService);
 
         List<BizEvent> bizEventItems = new ArrayList<>();
@@ -187,7 +188,8 @@ class BizEventToReceiptTest {
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
-        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, receiptCosmosClient, queueClient);
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
         function = new BizEventToReceipt(receiptService);
         // test execution
         assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
@@ -207,7 +209,8 @@ class BizEventToReceiptTest {
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
-        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(pdvTokenizerServiceMock, receiptCosmosClient, queueClient);
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
         function = new BizEventToReceipt(receiptService);
         // test execution
         assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
