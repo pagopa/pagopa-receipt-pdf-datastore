@@ -4,7 +4,8 @@ import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.OutputBinding;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
-import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
+import it.gov.pagopa.receipt.pdf.datastore.entity.event.*;
+import it.gov.pagopa.receipt.pdf.datastore.entity.event.enumeration.BizEventStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReasonError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
@@ -18,6 +19,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -74,13 +76,11 @@ class CartEventToReceiptTest {
     void cartEventToReceiptSuccess() {
         CartForReceipt cartForReceipt = getCartForReceipt();
 
-        when(bizEventToReceiptServiceMock.getCartBizEvents(anyLong())).thenReturn(Collections.singletonList(new BizEvent()));
-        when(bizEventToReceiptServiceMock.createCartReceipt(anyList())).thenReturn(new Receipt());
+        when(bizEventToReceiptServiceMock.getCartBizEvents(anyLong())).thenReturn(Collections.singletonList(generateValidBizEvent()));
 
         assertDoesNotThrow(() -> sut.run(cartForReceipt, receiptDocumentdb, cartForReceiptDocumentdb, contextMock));
 
         verify(bizEventToReceiptServiceMock).getCartBizEvents(anyLong());
-        verify(bizEventToReceiptServiceMock).createCartReceipt(anyList());
         verify(bizEventToReceiptServiceMock).handleSaveReceipt(any());
         verify(bizEventToReceiptServiceMock).handleSendMessageToQueue(anyList(), any());
 
@@ -103,7 +103,6 @@ class CartEventToReceiptTest {
         assertDoesNotThrow(() -> sut.run(cartForReceipt, receiptDocumentdb, cartForReceiptDocumentdb, contextMock));
 
         verify(bizEventToReceiptServiceMock, never()).getCartBizEvents(anyLong());
-        verify(bizEventToReceiptServiceMock, never()).createCartReceipt(anyList());
         verify(bizEventToReceiptServiceMock, never()).handleSaveReceipt(any());
         verify(bizEventToReceiptServiceMock, never()).handleSendMessageToQueue(anyList(), any());
 
@@ -120,12 +119,10 @@ class CartEventToReceiptTest {
         receipt.setReasonErr(REASON_ERROR);
 
         when(bizEventToReceiptServiceMock.getCartBizEvents(anyLong())).thenReturn(Collections.singletonList(new BizEvent()));
-        when(bizEventToReceiptServiceMock.createCartReceipt(anyList())).thenReturn(receipt);
 
         assertDoesNotThrow(() -> sut.run(cartForReceipt, receiptDocumentdb, cartForReceiptDocumentdb, contextMock));
 
         verify(bizEventToReceiptServiceMock).getCartBizEvents(anyLong());
-        verify(bizEventToReceiptServiceMock).createCartReceipt(anyList());
         verify(bizEventToReceiptServiceMock, never()).handleSaveReceipt(any());
         verify(bizEventToReceiptServiceMock, never()).handleSendMessageToQueue(anyList(), any());
 
@@ -133,15 +130,14 @@ class CartEventToReceiptTest {
         verify(cartForReceiptDocumentdb).setValue(cartCaptor.capture());
 
         assertEquals(CartStatusType.FAILED, cartCaptor.getValue().getStatus());
-        assertEquals(REASON_ERROR, cartCaptor.getValue().getReasonError());
+        assertEquals(500, cartCaptor.getValue().getReasonError().getCode());
     }
 
     @Test
     void cartEventToReceiptFailToSaveReceipt() {
         CartForReceipt cartForReceipt = getCartForReceipt();
 
-        when(bizEventToReceiptServiceMock.getCartBizEvents(anyLong())).thenReturn(Collections.singletonList(new BizEvent()));
-        when(bizEventToReceiptServiceMock.createCartReceipt(anyList())).thenReturn(new Receipt());
+        when(bizEventToReceiptServiceMock.getCartBizEvents(anyLong())).thenReturn(Collections.singletonList(generateValidBizEvent()));
 
         doAnswer(invocation -> {
             Object[] args = invocation.getArguments();
@@ -154,7 +150,6 @@ class CartEventToReceiptTest {
         assertDoesNotThrow(() -> sut.run(cartForReceipt, receiptDocumentdb, cartForReceiptDocumentdb, contextMock));
 
         verify(bizEventToReceiptServiceMock).getCartBizEvents(anyLong());
-        verify(bizEventToReceiptServiceMock).createCartReceipt(anyList());
         verify(bizEventToReceiptServiceMock).handleSaveReceipt(any());
         verify(bizEventToReceiptServiceMock, never()).handleSendMessageToQueue(anyList(), any());
 
@@ -169,8 +164,7 @@ class CartEventToReceiptTest {
     void cartEventToReceiptFailToSendBizEventsOnQueue() {
         CartForReceipt cartForReceipt = getCartForReceipt();
 
-        when(bizEventToReceiptServiceMock.getCartBizEvents(anyLong())).thenReturn(Collections.singletonList(new BizEvent()));
-        when(bizEventToReceiptServiceMock.createCartReceipt(anyList())).thenReturn(new Receipt());
+        when(bizEventToReceiptServiceMock.getCartBizEvents(anyLong())).thenReturn(Collections.singletonList(generateValidBizEvent()));
 
         doAnswer(invocation -> {
             Object[] args = invocation.getArguments();
@@ -183,7 +177,6 @@ class CartEventToReceiptTest {
         assertDoesNotThrow(() -> sut.run(cartForReceipt, receiptDocumentdb, cartForReceiptDocumentdb, contextMock));
 
         verify(bizEventToReceiptServiceMock).getCartBizEvents(anyLong());
-        verify(bizEventToReceiptServiceMock).createCartReceipt(anyList());
         verify(bizEventToReceiptServiceMock).handleSaveReceipt(any());
         verify(bizEventToReceiptServiceMock).handleSendMessageToQueue(anyList(), any());
 
@@ -192,6 +185,24 @@ class CartEventToReceiptTest {
         assertEquals(REASON_ERROR, receiptCaptor.getValue().getReasonErr());
 
         verify(cartForReceiptDocumentdb).setValue(cartCaptor.capture());
+        assertEquals(CartStatusType.SENT, cartCaptor.getValue().getStatus());
+    }
+
+    @Test
+    void cartEventToReceiptSuccessWithRealCreateMethod() {
+        CartForReceipt cartForReceipt = getCartForReceipt();
+
+        when(bizEventToReceiptServiceMock.getCartBizEvents(anyLong())).thenReturn(Collections.singletonList(generateValidBizEvent()));
+
+        assertDoesNotThrow(() -> sut.run(cartForReceipt, receiptDocumentdb, cartForReceiptDocumentdb, contextMock));
+
+        verify(bizEventToReceiptServiceMock).getCartBizEvents(anyLong());
+        verify(bizEventToReceiptServiceMock).handleSaveReceipt(any());
+        verify(bizEventToReceiptServiceMock).handleSendMessageToQueue(anyList(), any());
+
+        verify(receiptDocumentdb, never()).setValue(receiptCaptor.capture());
+        verify(cartForReceiptDocumentdb).setValue(cartCaptor.capture());
+
         assertEquals(CartStatusType.SENT, cartCaptor.getValue().getStatus());
     }
 
@@ -204,5 +215,31 @@ class CartEventToReceiptTest {
                 .totalNotice(2)
                 .cartPaymentId(bizEventIds)
                 .build();
+    }
+
+    private BizEvent generateValidBizEvent(){
+        BizEvent item = new BizEvent();
+
+        Payer payer = new Payer();
+        payer.setEntityUniqueIdentifierValue("PAYER_FISCAL_CODE");
+        Debtor debtor = new Debtor();
+        debtor.setEntityUniqueIdentifierValue("DEBTOR_FISCAL_CODE");
+
+        TransactionDetails transactionDetails = new TransactionDetails();
+        Transaction transaction = new Transaction();
+        transaction.setCreationDate(String.valueOf(LocalDateTime.now()));
+        transactionDetails.setTransaction(transaction);
+
+        PaymentInfo paymentInfo = new PaymentInfo();
+        paymentInfo.setTotalNotice("2");
+
+        item.setEventStatus(BizEventStatusType.DONE);
+        item.setId("test1");
+        item.setPayer(payer);
+        item.setDebtor(debtor);
+        item.setTransactionDetails(transactionDetails);
+        item.setPaymentInfo(paymentInfo);
+
+        return item;
     }
 }

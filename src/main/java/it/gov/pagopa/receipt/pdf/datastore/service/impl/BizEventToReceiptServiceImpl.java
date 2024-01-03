@@ -33,8 +33,10 @@ import it.gov.pagopa.receipt.pdf.datastore.utils.ObjectMapperUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.getItemSubject;
 
@@ -245,49 +247,6 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             }
         } while (continuationToken != null);
         return bizEventList;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Receipt createCartReceipt(List<BizEvent> bizEventList) {
-        // TODO: capire come gestire la creazione della receipt
-        Receipt receipt = new Receipt();
-        // TODO il campo è transactionDetails.transaction.transactionId non idTransaction
-        long carId = bizEventList.get(0).getTransactionDetails().getTransaction().getIdTransaction();
-
-        // Insert biz-event data into receipt
-        receipt.setId(String.format("%s-%s", carId, UUID.randomUUID()));
-        receipt.setEventId(Long.toString(carId));
-        receipt.setIsCart(true);
-
-        EventData eventData = new EventData();
-        try {
-            tokenizeFiscalCodes(bizEventList.get(0), receipt, eventData);
-        } catch (Exception e) {
-            logger.error("Error tokenizing receipt for cart with id {}",
-                    carId, e);
-            receipt.setStatus(ReceiptStatusType.FAILED);
-            return receipt;
-        }
-
-        eventData.setTransactionCreationDate(
-                getTransactionCreationDate(bizEventList.get(0)));
-        eventData.setAmount(bizEventList.get(0).getPaymentInfo() != null ?
-                bizEventList.get(0).getPaymentInfo().getAmount() : null);
-
-
-        List<CartItem> cartItems = new ArrayList<>();
-        bizEventList.forEach(bizEvent -> cartItems.add(
-                CartItem.builder()
-                        .payeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null)
-                        .subject(getItemSubject(bizEvent))
-                        .build()));
-        eventData.setCart(cartItems);
-
-        receipt.setEventData(eventData);
-        return receipt;
     }
 
     /**

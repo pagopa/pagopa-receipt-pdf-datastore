@@ -8,9 +8,11 @@ import com.microsoft.azure.functions.annotation.FunctionName;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
+import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReasonError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.BizEventToReceiptServiceImpl;
+import it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,7 +86,15 @@ public class CartEventToReceipt {
         }
 
         List<BizEvent> bizEventList = this.bizEventToReceiptService.getCartBizEvents(cartForReceipt.getId());
-        Receipt receipt = this.bizEventToReceiptService.createCartReceipt(bizEventList);
+        Receipt receipt = null;
+        try {
+            receipt = BizEventToReceiptUtils.createCartReceipt(bizEventList, bizEventToReceiptService, logger);
+        } catch (Exception e) {
+            cartForReceipt.setStatus(CartStatusType.FAILED);
+            cartForReceipt.setReasonError(ReasonError.builder().code(500).message(e.getMessage()).build());
+            cartForReceiptDocumentdb.setValue(cartForReceipt);
+            return;
+        }
 
         if (!isReceiptStatusValid(receipt)) {
             logger.error("[{}] Failed to process cart with id {}: fail to tokenize fiscal codes",

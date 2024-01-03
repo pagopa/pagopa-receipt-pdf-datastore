@@ -69,12 +69,4 @@ public interface BizEventToReceiptService {
      */
     List<BizEvent> getCartBizEvents(long cartId);
 
-    /**
-     * Creates the receipt for a cart, using the tokenizer service to mask the PII, based on
-     * the provided list of BizEvent
-     *
-     * @param bizEventList a list og BizEvent
-     * @return a receipt
-     */
-    Receipt createCartReceipt(List<BizEvent> bizEventList);
 }

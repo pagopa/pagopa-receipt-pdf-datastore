@@ -12,9 +12,12 @@ import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
 import org.slf4j.Logger;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -51,8 +54,12 @@ public class BizEventToReceiptUtils {
 
         eventData.setTransactionCreationDate(
                 service.getTransactionCreationDate(bizEvent));
-        eventData.setAmount(bizEvent.getPaymentInfo() != null ?
-                bizEvent.getPaymentInfo().getAmount() : null);
+        eventData.setAmount(
+                bizEvent.getTransactionDetails() != null && bizEvent
+                        .getTransactionDetails().getTransaction() != null ?
+                        String.valueOf(bizEvent.getTransactionDetails().getTransaction().getGrandTotal()) :
+                        bizEvent.getPaymentInfo() != null ? bizEvent.getPaymentInfo().getAmount() : null
+        );
 
         CartItem item = new CartItem();
         item.setPayeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null);
@@ -172,6 +179,68 @@ public class BizEventToReceiptUtils {
             return formatRemittanceInformation(remittanceInformation);
         }
         return null;
+    }
+
+    /**
+     * Creates the receipt for a cart, using the tokenizer service to mask the PII, based on
+     * the provided list of BizEvent
+     *
+     * @param bizEventList a list og BizEvent
+     * @return a receipt
+     */
+    public static Receipt createCartReceipt(List<BizEvent> bizEventList, BizEventToReceiptService service, Logger logger) {
+        // TODO: capire come gestire la creazione della receipt
+        Receipt receipt = new Receipt();
+        // TODO il campo è transactionDetails.transaction.transactionId non idTransaction
+        long carId = bizEventList.get(0).getTransactionDetails().getTransaction().getIdTransaction();
+
+        // Insert biz-event data into receipt
+        receipt.setId(String.format("%s-%s", carId, UUID.randomUUID()));
+        receipt.setEventId(Long.toString(carId));
+        receipt.setIsCart(true);
+
+        EventData eventData = new EventData();
+        try {
+            service.tokenizeFiscalCodes(bizEventList.get(0), receipt, eventData);
+        } catch (Exception e) {
+            logger.error("Error tokenizing receipt for cart with id {}",
+                    carId, e);
+            receipt.setStatus(ReceiptStatusType.FAILED);
+            return receipt;
+        }
+
+        eventData.setTransactionCreationDate(
+                service.getTransactionCreationDate(bizEventList.get(0)));
+        AtomicReference<BigDecimal> amount = new AtomicReference<>(BigDecimal.ZERO);
+        boolean fromTransactionDetails = bizEventList.get(0).getTransactionDetails() != null && bizEventList.get(0)
+                .getTransactionDetails().getTransaction() != null;
+        boolean fromPaymentInfo = bizEventList.get(0).getPaymentInfo() != null && bizEventList.get(0)
+                .getPaymentInfo().getAmount() != null;
+
+
+        List<CartItem> cartItems = new ArrayList<>();
+        bizEventList.forEach(bizEvent -> {
+            BigDecimal amountExtracted =
+                    fromTransactionDetails ?
+                            new BigDecimal(bizEvent.getTransactionDetails().getTransaction().getGrandTotal())
+                            : (fromPaymentInfo ? new BigDecimal(bizEvent.getPaymentInfo().getAmount()) :
+                            BigDecimal.ZERO);
+            amount.updateAndGet(v -> v.add(amountExtracted));
+            cartItems.add(
+                    CartItem.builder()
+                            .payeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null)
+                            .subject(getItemSubject(bizEvent))
+                            .build());
+        });
+
+        if (!amount.get().equals(BigDecimal.ZERO)) {
+            eventData.setAmount(amount.get().toString());
+        }
+
+        eventData.setCart(cartItems);
+
+        receipt.setEventData(eventData);
+        return receipt;
     }
 
     private static String formatRemittanceInformation(String remittanceInformation) {
