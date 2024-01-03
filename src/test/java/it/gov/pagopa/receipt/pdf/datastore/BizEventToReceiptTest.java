@@ -528,13 +528,13 @@ class BizEventToReceiptTest {
     }
 
     @Test
-    void runOk_CartToCreate_ExistingCart() throws PDVTokenizerException, CartNotFoundException {
+    void runOk_CartToCreate_ExistingCart() throws CartNotFoundException {
 
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
                 pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, queueClient);
         function = new BizEventToReceipt(receiptService);
 
-        when(cartReceiptsCosmosClient.getCartItem(any())).thenReturn(CartForReceipt.builder().id(2332L).totalNotice(2)
+        when(cartReceiptsCosmosClient.getCartItem(any())).thenReturn(CartForReceipt.builder().id("2332").totalNotice(2)
                 .cartPaymentId(new HashSet<>(Collections.singletonList("1"))).build());
 
         List<BizEvent> bizEventItems = new ArrayList<>();
