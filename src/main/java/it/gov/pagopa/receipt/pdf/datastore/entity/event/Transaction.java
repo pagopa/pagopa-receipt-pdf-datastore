@@ -10,7 +10,8 @@ import lombok.*;
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Transaction {
-	private long idTransaction;
+	private String idTransaction;
+	private String transactionId;
 	private long grandTotal;
 	private long amount;
 	private long fee;

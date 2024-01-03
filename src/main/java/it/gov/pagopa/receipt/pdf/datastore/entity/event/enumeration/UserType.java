@@ -10,5 +10,9 @@ public enum UserType {
 	@Value("F")
     F, 
     @Value("G")
-    G
+    G,
+    @Value("GUEST")
+    GUEST,
+    @Value("REGISTERED")
+    REGISTERED
 }

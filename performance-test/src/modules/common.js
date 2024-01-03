@@ -105,8 +105,8 @@ export function createEvent(id, customCF) {
 				"userStatusDescription": "REGISTERED_SPID"
 			},
 			"transaction": {
-				"idTransaction": 123456,
-				"transactionId": 123456,
+				"idTransaction": "123456",
+				"transactionId": "123456",
 				"grandTotal": 0,
 				"amount": 0,
 				"fee": 0
