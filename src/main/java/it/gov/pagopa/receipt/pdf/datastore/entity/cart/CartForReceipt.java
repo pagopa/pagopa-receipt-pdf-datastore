@@ -15,6 +15,7 @@ import java.util.Set;
 public class CartForReceipt {
 
     private String id;
+
     private Set<String> cartPaymentId;
 
     private Integer totalNotice;

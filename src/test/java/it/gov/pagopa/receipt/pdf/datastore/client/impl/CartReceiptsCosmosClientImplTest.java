@@ -61,7 +61,9 @@ class CartReceiptsCosmosClientImplTest {
         Assertions.assertDoesNotThrow(() -> client.getCartItem(String.valueOf(CART_ID)));
 
         CartForReceipt cartResponse = client.getCartItem(String.valueOf(CART_ID));
+
         Assertions.assertEquals(CART_ID.toString(), cartResponse.getId());
+
     }
 
     @Test
@@ -100,6 +102,7 @@ class CartReceiptsCosmosClientImplTest {
         CosmosContainer mockContainer = mock(CosmosContainer.class);
 
         CartForReceipt cartForReceipt = new CartForReceipt();
+
         cartForReceipt.setId(CART_ID.toString());
 
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
