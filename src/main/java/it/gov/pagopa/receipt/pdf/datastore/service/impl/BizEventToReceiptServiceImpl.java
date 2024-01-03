@@ -200,7 +200,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
 
     @Override
     public void handleSaveCart(BizEvent bizEvent) {
-        long transactionId = bizEvent.getTransactionDetails().getTransaction().getIdTransaction();
+        String transactionId = bizEvent.getTransactionDetails().getTransaction().getIdTransaction();
         CartForReceipt cartForReceipt;
         try {
             cartForReceipt = cartReceiptsCosmosClient.getCartItem(String.valueOf(transactionId));
