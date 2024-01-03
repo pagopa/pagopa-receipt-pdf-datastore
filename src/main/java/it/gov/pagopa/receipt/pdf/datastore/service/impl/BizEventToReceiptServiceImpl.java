@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 
@@ -87,10 +88,9 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         } catch (Exception e) {
             statusCode = ReasonErrorCode.ERROR_QUEUE.getCode();
             if (bizEventList.size() == 1) {
-                logger.error("Sending BizEvent with id {} to queue failed", bizEventList.get(0).getId(), e);
+                logger.error("Sending BizEvent with id {} to queue failed", receipt.getEventId(), e);
             } else {
-                logger.error("Failed to enqueue cart with id {}",
-                        bizEventList.get(0).getTransactionDetails().getTransaction().getIdTransaction(), e);
+                logger.error("Failed to enqueue cart with id {}", receipt.getEventId(), e);
             }
         }
 
@@ -213,7 +213,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
 
     @Override
     public void handleSaveCart(BizEvent bizEvent) {
-        String transactionId = bizEvent.getTransactionDetails().getTransaction().getIdTransaction();
+        String transactionId = bizEvent.getTransactionDetails().getTransaction().getTransactionId();
         CartForReceipt cartForReceipt;
         try {
             cartForReceipt = cartReceiptsCosmosClient.getCartItem(String.valueOf(transactionId));
@@ -232,7 +232,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
      * {@inheritDoc}
      */
     @Override
-    public List<BizEvent> getCartBizEvents(long cartId) {
+    public List<BizEvent> getCartBizEvents(String cartId) {
         List<BizEvent> bizEventList = new ArrayList<>();
         String continuationToken = null;
         do {

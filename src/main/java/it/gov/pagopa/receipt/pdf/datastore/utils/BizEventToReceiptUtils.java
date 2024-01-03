@@ -189,42 +189,30 @@ public class BizEventToReceiptUtils {
      * @return a receipt
      */
     public static Receipt createCartReceipt(List<BizEvent> bizEventList, BizEventToReceiptService service, Logger logger) {
-        // TODO: capire come gestire la creazione della receipt
         Receipt receipt = new Receipt();
-        // TODO il campo è transactionDetails.transaction.transactionId non idTransaction
-        long carId = bizEventList.get(0).getTransactionDetails().getTransaction().getIdTransaction();
+        BizEvent firstBizEvent = bizEventList.get(0);
+        String carId = firstBizEvent.getTransactionDetails().getTransaction().getTransactionId();
 
         // Insert biz-event data into receipt
         receipt.setId(String.format("%s-%s", carId, UUID.randomUUID()));
-        receipt.setEventId(Long.toString(carId));
+        receipt.setEventId(carId);
         receipt.setIsCart(true);
 
         EventData eventData = new EventData();
         try {
-            service.tokenizeFiscalCodes(bizEventList.get(0), receipt, eventData);
+            service.tokenizeFiscalCodes(firstBizEvent, receipt, eventData);
         } catch (Exception e) {
-            logger.error("Error tokenizing receipt for cart with id {}",
-                    carId, e);
+            logger.error("Error tokenizing receipt for cart with id {}", carId, e);
             receipt.setStatus(ReceiptStatusType.FAILED);
             return receipt;
         }
 
-        eventData.setTransactionCreationDate(
-                service.getTransactionCreationDate(bizEventList.get(0)));
+        eventData.setTransactionCreationDate(service.getTransactionCreationDate(firstBizEvent));
+
         AtomicReference<BigDecimal> amount = new AtomicReference<>(BigDecimal.ZERO);
-        boolean fromTransactionDetails = bizEventList.get(0).getTransactionDetails() != null && bizEventList.get(0)
-                .getTransactionDetails().getTransaction() != null;
-        boolean fromPaymentInfo = bizEventList.get(0).getPaymentInfo() != null && bizEventList.get(0)
-                .getPaymentInfo().getAmount() != null;
-
-
         List<CartItem> cartItems = new ArrayList<>();
         bizEventList.forEach(bizEvent -> {
-            BigDecimal amountExtracted =
-                    fromTransactionDetails ?
-                            new BigDecimal(bizEvent.getTransactionDetails().getTransaction().getGrandTotal())
-                            : (fromPaymentInfo ? new BigDecimal(bizEvent.getPaymentInfo().getAmount()) :
-                            BigDecimal.ZERO);
+            BigDecimal amountExtracted = getAmount(bizEvent);
             amount.updateAndGet(v -> v.add(amountExtracted));
             cartItems.add(
                     CartItem.builder()
@@ -243,6 +231,16 @@ public class BizEventToReceiptUtils {
         return receipt;
     }
 
+    private static BigDecimal getAmount(BizEvent bizEvent) {
+        if (bizEvent.getTransactionDetails() != null && bizEvent.getTransactionDetails().getTransaction() != null) {
+           return new BigDecimal(bizEvent.getTransactionDetails().getTransaction().getGrandTotal());
+        }
+        if (bizEvent.getPaymentInfo() != null && bizEvent.getPaymentInfo().getAmount() != null) {
+           return new BigDecimal(bizEvent.getPaymentInfo().getAmount());
+        }
+        return BigDecimal.ZERO;
+    }
+
     private static String formatRemittanceInformation(String remittanceInformation) {
         if (remittanceInformation != null) {
             Pattern pattern = Pattern.compile(REMITTANCE_INFORMATION_REGEX);
@@ -258,5 +256,6 @@ public class BizEventToReceiptUtils {
         return receipt.getStatus() != ReceiptStatusType.FAILED && receipt.getStatus() != ReceiptStatusType.NOT_QUEUE_SENT;
     }
 
-    private BizEventToReceiptUtils() {}
+    private BizEventToReceiptUtils() {
+    }
 }

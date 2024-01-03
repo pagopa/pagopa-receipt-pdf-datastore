@@ -14,5 +14,5 @@ public interface BizEventCosmosClient {
      * @param pageSize          the page size
      * @return a list of biz-event document
      */
-    Iterable<FeedResponse<BizEvent>> getAllBizEventDocument(long transactionId, String continuationToken, Integer pageSize);
+    Iterable<FeedResponse<BizEvent>> getAllBizEventDocument(String transactionId, String continuationToken, Integer pageSize);
 }

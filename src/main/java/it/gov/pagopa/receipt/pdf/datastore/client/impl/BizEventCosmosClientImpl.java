@@ -46,7 +46,7 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
      * {@inheritDoc}
      */
     @Override
-    public Iterable<FeedResponse<BizEvent>> getAllBizEventDocument(long transactionId, String continuationToken, Integer pageSize) {
+    public Iterable<FeedResponse<BizEvent>> getAllBizEventDocument(String transactionId, String continuationToken, Integer pageSize) {
         CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 

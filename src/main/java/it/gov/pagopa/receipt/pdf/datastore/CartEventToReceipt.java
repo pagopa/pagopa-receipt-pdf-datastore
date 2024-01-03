@@ -86,7 +86,7 @@ public class CartEventToReceipt {
         }
 
         List<BizEvent> bizEventList = this.bizEventToReceiptService.getCartBizEvents(cartForReceipt.getId());
-        Receipt receipt = null;
+        Receipt receipt;
         try {
             receipt = BizEventToReceiptUtils.createCartReceipt(bizEventList, bizEventToReceiptService, logger);
         } catch (Exception e) {

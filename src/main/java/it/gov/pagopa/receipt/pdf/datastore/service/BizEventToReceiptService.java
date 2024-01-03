@@ -55,9 +55,10 @@ public interface BizEventToReceiptService {
     void tokenizeFiscalCodes(BizEvent bizEvent, Receipt receipt, EventData eventData) throws JsonProcessingException, PDVTokenizerException;
 
     /**
-     * TODO
+     * Search for a cart associated with the provided biz-event, if present it updates the cart with the biz-event id
+     * otherwise it saves a new cart
      *
-     * @param bizEvent
+     * @param bizEvent the biz-event
      */
     void handleSaveCart(BizEvent bizEvent);
 
@@ -67,6 +68,6 @@ public interface BizEventToReceiptService {
      * @param cartId the id of the cart
      * @return a list of biz-events
      */
-    List<BizEvent> getCartBizEvents(long cartId);
+    List<BizEvent> getCartBizEvents(String cartId);
 
 }
