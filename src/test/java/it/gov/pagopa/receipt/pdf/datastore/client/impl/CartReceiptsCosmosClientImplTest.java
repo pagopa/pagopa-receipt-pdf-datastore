@@ -4,11 +4,10 @@ import com.azure.cosmos.CosmosClient;
 import com.azure.cosmos.CosmosContainer;
 import com.azure.cosmos.CosmosDatabase;
 import com.azure.cosmos.util.CosmosPagedIterable;
-import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
+import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
-import org.checkerframework.checker.units.qual.C;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -19,7 +18,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariables;
 
-class ReceiptCosmosClientImplTest {
+class CartReceiptsCosmosClientImplTest {
 
     @Test
     void testSingletonConnectionError() throws Exception {
@@ -27,13 +26,13 @@ class ReceiptCosmosClientImplTest {
         withEnvironmentVariables(
                 "COSMOS_RECEIPT_KEY", mockKey,
                 "COSMOS_RECEIPT_SERVICE_ENDPOINT", ""
-        ).execute(() -> Assertions.assertThrows(IllegalArgumentException.class, ReceiptCosmosClientImpl::getInstance)
+        ).execute(() -> Assertions.assertThrows(IllegalArgumentException.class, CartReceiptsCosmosClientImpl::getInstance)
         );
     }
 
     @Test
-    void runOk() throws ReceiptNotFoundException {
-        String RECEIPT_ID = "a valid receipt id";
+    void runOk_Cart() throws CartNotFoundException {
+        Long CART_ID = 1L;
 
         CosmosClient mockClient = mock(CosmosClient.class);
 
@@ -42,31 +41,33 @@ class ReceiptCosmosClientImplTest {
 
         CosmosPagedIterable mockIterable = mock(CosmosPagedIterable.class);
 
-        Iterator<Receipt> mockIterator = mock(Iterator.class);
-        Receipt receipt = new Receipt();
-        receipt.setId(RECEIPT_ID);
+        Iterator<CartForReceipt> mockIterator = mock(Iterator.class);
+        CartForReceipt cartForReceipt = new CartForReceipt();
+        cartForReceipt.setId(CART_ID.toString());
 
         when(mockIterator.hasNext()).thenReturn(true);
-        when(mockIterator.next()).thenReturn(receipt);
+        when(mockIterator.next()).thenReturn(cartForReceipt);
 
         when(mockIterable.iterator()).thenReturn(mockIterator);
 
-        when(mockContainer.queryItems(anyString(), any(), eq(Receipt.class))).thenReturn(
+        when(mockContainer.queryItems(anyString(), any(), eq(CartForReceipt.class))).thenReturn(
                 mockIterable
         );
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
         when(mockClient.getDatabase(any())).thenReturn(mockDatabase);
 
-        ReceiptCosmosClientImpl client = new ReceiptCosmosClientImpl(mockClient);
+        CartReceiptsCosmosClientImpl client = new CartReceiptsCosmosClientImpl(mockClient);
 
-        Assertions.assertDoesNotThrow(() -> client.getReceiptDocument(RECEIPT_ID));
+        Assertions.assertDoesNotThrow(() -> client.getCartItem(String.valueOf(CART_ID)));
 
-        Receipt receiptResponse = client.getReceiptDocument(RECEIPT_ID);
-        Assertions.assertEquals(RECEIPT_ID, receiptResponse.getId());
+        CartForReceipt cartResponse = client.getCartItem(String.valueOf(CART_ID));
+
+        Assertions.assertEquals(CART_ID.toString(), cartResponse.getId());
+
     }
 
     @Test
-    void runKo() {
+    void runKo_Cart() {
         CosmosClient mockClient = mock(CosmosClient.class);
 
         CosmosDatabase mockDatabase = mock(CosmosDatabase.class);
@@ -80,46 +81,36 @@ class ReceiptCosmosClientImplTest {
 
         when(mockIterable.iterator()).thenReturn(mockIterator);
 
-        when(mockContainer.queryItems(anyString(), any(), eq(Receipt.class))).thenReturn(
+        when(mockContainer.queryItems(anyString(), any(), eq(CartForReceipt.class))).thenReturn(
                 mockIterable
         );
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
         when(mockClient.getDatabase(any())).thenReturn(mockDatabase);
 
-        ReceiptCosmosClientImpl client = new ReceiptCosmosClientImpl(mockClient);
+        CartReceiptsCosmosClientImpl client = new CartReceiptsCosmosClientImpl(mockClient);
 
-        Assertions.assertThrows(ReceiptNotFoundException.class, () -> client.getReceiptDocument("an invalid receipt id"));
+        Assertions.assertThrows(CartNotFoundException.class, () -> client.getCartItem("an invalid receipt id"));
     }
 
     @Test
-    void runOk_FailedQueryClient() throws ReceiptNotFoundException {
-        String RECEIPT_ID = "a valid receipt id";
+    void runOk_SaveCart() throws CartNotFoundException {
+        Long CART_ID = 1L;
 
         CosmosClient mockClient = mock(CosmosClient.class);
 
         CosmosDatabase mockDatabase = mock(CosmosDatabase.class);
         CosmosContainer mockContainer = mock(CosmosContainer.class);
 
-        CosmosPagedIterable mockIterable = mock(CosmosPagedIterable.class);
+        CartForReceipt cartForReceipt = new CartForReceipt();
 
-        Iterator<Receipt> mockIterator = mock(Iterator.class);
-        Receipt receipt = new Receipt();
-        receipt.setId(RECEIPT_ID);
+        cartForReceipt.setId(CART_ID.toString());
 
-        when(mockIterator.hasNext()).thenReturn(true);
-        when(mockIterator.next()).thenReturn(receipt);
-
-        when(mockIterable.iterator()).thenReturn(mockIterator);
-
-        when(mockContainer.queryItems(anyString(), any(), eq(Receipt.class))).thenReturn(
-                mockIterable
-        );
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
         when(mockClient.getDatabase(any())).thenReturn(mockDatabase);
 
-        ReceiptCosmosClientImpl client = new ReceiptCosmosClientImpl(mockClient);
+        CartReceiptsCosmosClientImpl client = new CartReceiptsCosmosClientImpl(mockClient);
 
-        Assertions.assertDoesNotThrow(() -> client.getFailedReceiptDocuments(null, 100));
+        Assertions.assertDoesNotThrow(() -> client.saveCart(cartForReceipt));
 
     }
 
