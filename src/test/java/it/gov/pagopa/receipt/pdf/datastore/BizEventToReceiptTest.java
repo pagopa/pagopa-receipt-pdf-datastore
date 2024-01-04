@@ -22,7 +22,6 @@ import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.service.PDVTokenizerServiceRetryWrapper;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.BizEventToReceiptServiceImpl;
-import it.gov.pagopa.receipt.pdf.datastore.service.impl.BizEventToReceiptServiceImplTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -434,6 +433,56 @@ class BizEventToReceiptTest {
         assertNotNull(captured.getEventData().getCart());
         assertEquals(1, captured.getEventData().getCart().size());
     }
+
+    @Test
+    void runOk_CartToCreate() throws CartNotFoundException {
+
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
+        function = new BizEventToReceipt(receiptService);
+
+        List<BizEvent> bizEventItems = new ArrayList<>();
+        bizEventItems.add(generateValidBizEvent("2"));
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+
+        // test execution
+        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
+
+        verify(documentdb, never()).setValue(any());
+        verify(cartReceiptsCosmosClient).getCartItem(any());
+        verify(cartReceiptsCosmosClient).saveCart(cartForReceiptArgumentCaptor.capture());
+        CartForReceipt cartForReceipt = cartForReceiptArgumentCaptor.getValue();
+        assertEquals(1, cartForReceipt.getCartPaymentId().size());
+    }
+
+    @Test
+    void runOk_CartToCreate_ExistingCart() throws CartNotFoundException {
+
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
+        function = new BizEventToReceipt(receiptService);
+
+        when(cartReceiptsCosmosClient.getCartItem(any())).thenReturn(CartForReceipt.builder().id("2332").totalNotice(2)
+                .cartPaymentId(new HashSet<>(Collections.singletonList("1"))).build());
+
+        List<BizEvent> bizEventItems = new ArrayList<>();
+        bizEventItems.add(generateValidBizEvent("2"));
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+
+        // test execution
+        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
+
+        verify(documentdb, never()).setValue(any());
+        verify(cartReceiptsCosmosClient).getCartItem(any());
+        verify(cartReceiptsCosmosClient).saveCart(cartForReceiptArgumentCaptor.capture());
+        CartForReceipt cartForReceipt = cartForReceiptArgumentCaptor.getValue();
+        assertEquals(2, cartForReceipt.getCartPaymentId().size());
+    }
+
     private BizEvent generateValidBizEvent(String totalNotice){
         BizEvent item = new BizEvent();
 
@@ -509,57 +558,6 @@ class BizEventToReceiptTest {
 
         return item;
     }
-
-    @Test
-    void runOk_CartToCreate() throws PDVTokenizerException, CartNotFoundException {
-
-        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
-                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
-        function = new BizEventToReceipt(receiptService);
-
-        List<BizEvent> bizEventItems = new ArrayList<>();
-        bizEventItems.add(generateValidBizEvent("2"));
-
-        @SuppressWarnings("unchecked")
-        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
-
-        // test execution
-        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
-
-        verify(documentdb, never()).setValue(any());
-        verify(cartReceiptsCosmosClient).getCartItem(any());
-        verify(cartReceiptsCosmosClient).saveCart(cartForReceiptArgumentCaptor.capture());
-        CartForReceipt cartForReceipt = cartForReceiptArgumentCaptor.getValue();
-        assertEquals(1, cartForReceipt.getCartPaymentId().size());
-    }
-
-    @Test
-    void runOk_CartToCreate_ExistingCart() throws PDVTokenizerException, CartNotFoundException {
-
-        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
-                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
-        function = new BizEventToReceipt(receiptService);
-
-        when(cartReceiptsCosmosClient.getCartItem(any())).thenReturn(CartForReceipt.builder().id(2332L).totalNotice(2)
-                .cartPaymentId(new HashSet<>(Collections.singletonList("1"))).build());
-
-        List<BizEvent> bizEventItems = new ArrayList<>();
-        bizEventItems.add(generateValidBizEvent("2"));
-
-        @SuppressWarnings("unchecked")
-        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
-
-        // test execution
-        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
-
-        verify(documentdb, never()).setValue(any());
-        verify(cartReceiptsCosmosClient).getCartItem(any());
-        verify(cartReceiptsCosmosClient).saveCart(cartForReceiptArgumentCaptor.capture());
-        CartForReceipt cartForReceipt = cartForReceiptArgumentCaptor.getValue();
-        assertEquals(2, cartForReceipt.getCartPaymentId().size());
-    }
-
-
 
     private BizEvent generateNotDoneBizEvent(){
         BizEvent item = new BizEvent();

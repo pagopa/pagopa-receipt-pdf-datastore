@@ -26,7 +26,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoExtension.class, SystemStubsExtension.class})
 @MockitoSettings(strictness = Strictness.LENIENT)
-public class BizEventToReceiptServiceImplTest {
+class BizEventToReceiptServiceImplTest {
 
     private BizEventToReceiptServiceImpl bizEventToReceiptService;
     @Mock
@@ -55,12 +55,12 @@ public class BizEventToReceiptServiceImplTest {
     }
 
     @Test
-    public void run_OK_getCartBizEvents() {
+    void run_OK_getCartBizEvents() {
         FeedResponse feedResponseMock = mock(FeedResponse.class);
         when(feedResponseMock.getResults()).thenReturn(Collections.singletonList(new BizEvent()));
         doReturn(Collections.singletonList(feedResponseMock)).when(bizEventCosmosClientMock)
-                .getAllBizEventDocument(Mockito.eq(1), any(), any());
-        assertDoesNotThrow(() -> bizEventToReceiptService.getCartBizEvents(1));
+                .getAllBizEventDocument(Mockito.eq("1"), any(), any());
+        assertDoesNotThrow(() -> bizEventToReceiptService.getCartBizEvents("1"));
     }
 
 }
