@@ -41,7 +41,7 @@ public class CartEventToReceipt {
     }
 
     /**
-     * This function will be invoked when a CosmosDB trigger occurs on cart-for-receipt collection
+     * This function will be invoked when a CosmosDB trigger occurs on cart-for-receipts collection
      * <p>
      * It checks if all biz-event that compose the cart are collected and if so it proceeds with the following steps:
      * <ol>
@@ -58,8 +58,8 @@ public class CartEventToReceipt {
             @CosmosDBTrigger(
                     name = "CartReceiptDatastore",
                     databaseName = "db",
-                    collectionName = "cart-for-receipt",
-                    leaseCollectionName = "cart-for-receipt-leases",
+                    collectionName = "cart-for-receipts",
+                    leaseCollectionName = "cart-for-receipts-leases",
                     connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING",
                     createLeaseCollectionIfNotExists = true)
             CartForReceipt cartForReceipt,
@@ -72,7 +72,7 @@ public class CartEventToReceipt {
             @CosmosDBOutput(
                     name = "CartReceiptDatastore",
                     databaseName = "db",
-                    collectionName = "cart-for-receipt",
+                    collectionName = "cart-for-receipts",
                     connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING")
             OutputBinding<CartForReceipt> cartForReceiptDocumentdb,
             final ExecutionContext context
