@@ -87,6 +87,8 @@ then replace env variables with correct values
 | `PDV_TOKENIZER_RANDOMIZATION_FACTOR`  | PDV Tokenizer randomization factor for interval retry calculation                 |                          0.6                           |
 | `PDV_TOKENIZER_MAX_RETRIES`           | PDV Tokenizer max request retry                                                   |                           3                            |
 | `TOKENIZER_APIM_HEADER_KEY`           | Tokenizer APIM header key                                                         |                       x-api-key                        |
+| `ECOMMERCE_FILTER_ENABLED`            | Enable/Disable e-commerce event processing                                        |                                                        |
+| `ENABLE_CART`                         | Enable/Disable cart biz event processing                                          |                                                        |
 
 > to doc details about AZ fn config
 > see [here](https://stackoverflow.com/questions/62669672/azure-functions-what-is-the-purpose-of-having-host-json-and-local-settings-jso)

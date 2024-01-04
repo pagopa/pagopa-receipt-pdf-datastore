@@ -52,7 +52,9 @@ class BizEventToReceiptTest {
     private final String EVENT_ID = "a valid id";
 
     @SystemStub
-    private EnvironmentVariables environmentVariables = new EnvironmentVariables("ECOMMERCE_FILTER_ENABLED", "true");
+    private EnvironmentVariables environmentVariables = new EnvironmentVariables(
+            "ECOMMERCE_FILTER_ENABLED", "true",
+            "ENABLE_CART", "true");
 
     private BizEventToReceipt function;
     @Mock
@@ -481,6 +483,28 @@ class BizEventToReceiptTest {
         verify(cartReceiptsCosmosClient).saveCart(cartForReceiptArgumentCaptor.capture());
         CartForReceipt cartForReceipt = cartForReceiptArgumentCaptor.getValue();
         assertEquals(2, cartForReceipt.getCartPaymentId().size());
+    }
+
+
+    @Test
+    void bizEventNotProcessedCartNotEnabled() throws CartNotFoundException {
+        environmentVariables.set("ENABLE_CART", "false");
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
+        function = new BizEventToReceipt(receiptService);
+
+        List<BizEvent> bizEventItems = new ArrayList<>();
+        bizEventItems.add(generateValidBizEvent("2"));
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+
+        // test execution
+        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
+
+        verify(documentdb, never()).setValue(any());
+        verify(cartReceiptsCosmosClient, never()).getCartItem(any());
+        verify(cartReceiptsCosmosClient, never()).saveCart(any());
     }
 
     private BizEvent generateValidBizEvent(String totalNotice){

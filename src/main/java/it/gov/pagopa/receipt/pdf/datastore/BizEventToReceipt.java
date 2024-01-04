@@ -28,6 +28,8 @@ public class BizEventToReceipt {
 
     private final Logger logger = LoggerFactory.getLogger(BizEventToReceipt.class);
 
+    private final Boolean isCartEnabled = Boolean.parseBoolean(System.getenv().getOrDefault("ENABLE_CART", "false"));
+
     private final BizEventToReceiptService bizEventToReceiptService;
 
     public BizEventToReceipt(){ this.bizEventToReceiptService = new BizEventToReceiptServiceImpl();}
@@ -112,7 +114,7 @@ public class BizEventToReceipt {
                     receiptFailed.add(receipt);
                 }
 
-            } else if (totalNotice > 1) {
+            } else if (Boolean.TRUE.equals(isCartEnabled) && totalNotice > 1) {
                 bizEventToReceiptService.handleSaveCart(bizEvent);
             }
 
