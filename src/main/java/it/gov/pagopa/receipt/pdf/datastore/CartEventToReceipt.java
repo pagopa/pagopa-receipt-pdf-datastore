@@ -70,7 +70,7 @@ public class CartEventToReceipt {
                     connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING")
             OutputBinding<Receipt> receiptDocumentdb,
             @CosmosDBOutput(
-                    name = "CartReceiptDatastore",
+                    name = "CartReceiptDatastoreOutput",
                     databaseName = "db",
                     collectionName = "cart-for-receipts",
                     connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING")
