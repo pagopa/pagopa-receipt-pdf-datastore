@@ -1,6 +1,5 @@
 package it.gov.pagopa.receipt.pdf.datastore.utils;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.ExecutionContext;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.Transfer;
@@ -9,14 +8,16 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.CartItem;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
-import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
 import org.slf4j.Logger;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -53,8 +54,12 @@ public class BizEventToReceiptUtils {
 
         eventData.setTransactionCreationDate(
                 service.getTransactionCreationDate(bizEvent));
-        eventData.setAmount(bizEvent.getPaymentInfo() != null ?
-                bizEvent.getPaymentInfo().getAmount() : null);
+        eventData.setAmount(
+                bizEvent.getTransactionDetails() != null && bizEvent
+                        .getTransactionDetails().getTransaction() != null ?
+                        String.valueOf(bizEvent.getTransactionDetails().getTransaction().getGrandTotal()) :
+                        bizEvent.getPaymentInfo() != null ? bizEvent.getPaymentInfo().getAmount() : null
+        );
 
         CartItem item = new CartItem();
         item.setPayeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null);
@@ -151,7 +156,7 @@ public class BizEventToReceiptUtils {
      * @param bizEvent BizEvent from which retrieve the data
      * @return the remittance information
      */
-    private static String getItemSubject(BizEvent bizEvent) {
+    public static String getItemSubject(BizEvent bizEvent) {
         if (bizEvent.getPaymentInfo() != null && bizEvent.getPaymentInfo().getRemittanceInformation() != null) {
             return bizEvent.getPaymentInfo().getRemittanceInformation();
         }
@@ -176,6 +181,66 @@ public class BizEventToReceiptUtils {
         return null;
     }
 
+    /**
+     * Creates the receipt for a cart, using the tokenizer service to mask the PII, based on
+     * the provided list of BizEvent
+     *
+     * @param bizEventList a list og BizEvent
+     * @return a receipt
+     */
+    public static Receipt createCartReceipt(List<BizEvent> bizEventList, BizEventToReceiptService service, Logger logger) {
+        Receipt receipt = new Receipt();
+        BizEvent firstBizEvent = bizEventList.get(0);
+        String carId = firstBizEvent.getTransactionDetails().getTransaction().getTransactionId();
+
+        // Insert biz-event data into receipt
+        receipt.setId(String.format("%s-%s", carId, UUID.randomUUID()));
+        receipt.setEventId(carId);
+        receipt.setIsCart(true);
+
+        EventData eventData = new EventData();
+        try {
+            service.tokenizeFiscalCodes(firstBizEvent, receipt, eventData);
+        } catch (Exception e) {
+            logger.error("Error tokenizing receipt for cart with id {}", carId, e);
+            receipt.setStatus(ReceiptStatusType.FAILED);
+            return receipt;
+        }
+
+        eventData.setTransactionCreationDate(service.getTransactionCreationDate(firstBizEvent));
+
+        AtomicReference<BigDecimal> amount = new AtomicReference<>(BigDecimal.ZERO);
+        List<CartItem> cartItems = new ArrayList<>();
+        bizEventList.forEach(bizEvent -> {
+            BigDecimal amountExtracted = getAmount(bizEvent);
+            amount.updateAndGet(v -> v.add(amountExtracted));
+            cartItems.add(
+                    CartItem.builder()
+                            .payeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null)
+                            .subject(getItemSubject(bizEvent))
+                            .build());
+        });
+
+        if (!amount.get().equals(BigDecimal.ZERO)) {
+            eventData.setAmount(amount.get().toString());
+        }
+
+        eventData.setCart(cartItems);
+
+        receipt.setEventData(eventData);
+        return receipt;
+    }
+
+    private static BigDecimal getAmount(BizEvent bizEvent) {
+        if (bizEvent.getTransactionDetails() != null && bizEvent.getTransactionDetails().getTransaction() != null) {
+           return new BigDecimal(bizEvent.getTransactionDetails().getTransaction().getGrandTotal());
+        }
+        if (bizEvent.getPaymentInfo() != null && bizEvent.getPaymentInfo().getAmount() != null) {
+           return new BigDecimal(bizEvent.getPaymentInfo().getAmount());
+        }
+        return BigDecimal.ZERO;
+    }
+
     private static String formatRemittanceInformation(String remittanceInformation) {
         if (remittanceInformation != null) {
             Pattern pattern = Pattern.compile(REMITTANCE_INFORMATION_REGEX);
@@ -187,5 +252,10 @@ public class BizEventToReceiptUtils {
         return remittanceInformation;
     }
 
-    private BizEventToReceiptUtils() {}
+    public static boolean isReceiptStatusValid(Receipt receipt) {
+        return receipt.getStatus() != ReceiptStatusType.FAILED && receipt.getStatus() != ReceiptStatusType.NOT_QUEUE_SENT;
+    }
+
+    private BizEventToReceiptUtils() {
+    }
 }

@@ -2,12 +2,15 @@ package it.gov.pagopa.receipt.pdf.datastore.service.impl;
 
 import com.azure.core.http.rest.Response;
 import com.azure.cosmos.models.CosmosItemResponse;
+import com.azure.cosmos.models.FeedResponse;
 import com.azure.storage.queue.models.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.HttpStatus;
+import it.gov.pagopa.receipt.pdf.datastore.client.BizEventCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.client.CartReceiptsCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptQueueClient;
+import it.gov.pagopa.receipt.pdf.datastore.client.impl.BizEventCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.CartReceiptsCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptQueueClientImpl;
@@ -19,10 +22,9 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReasonError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReasonErrorCode;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
-import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
-import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.datastore.service.PDVTokenizerServiceRetryWrapper;
 import it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils;
@@ -31,7 +33,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
 
 public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
 
@@ -41,6 +47,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
     private final ReceiptCosmosClient receiptCosmosClient;
 
     private final CartReceiptsCosmosClient cartReceiptsCosmosClient;
+    private final BizEventCosmosClient bizEventCosmosClient;
 
     private final ReceiptQueueClient queueClient;
 
@@ -48,38 +55,43 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         this.pdvTokenizerService = new PDVTokenizerServiceRetryWrapperImpl();
         this.receiptCosmosClient = ReceiptCosmosClientImpl.getInstance();
         this.cartReceiptsCosmosClient = CartReceiptsCosmosClientImpl.getInstance();
+        this.bizEventCosmosClient = BizEventCosmosClientImpl.getInstance();
         this.queueClient = ReceiptQueueClientImpl.getInstance();
     }
 
     public BizEventToReceiptServiceImpl(PDVTokenizerServiceRetryWrapper pdvTokenizerService,
                                         ReceiptCosmosClient receiptCosmosClient,
-                                        CartReceiptsCosmosClientImpl cartReceiptsCosmosClient,
+                                        CartReceiptsCosmosClient cartReceiptsCosmosClient,
+                                        BizEventCosmosClient bizEventCosmosClient,
                                         ReceiptQueueClient queueClient) {
         this.pdvTokenizerService = pdvTokenizerService;
         this.receiptCosmosClient = receiptCosmosClient;
-        this.queueClient = queueClient;
         this.cartReceiptsCosmosClient = cartReceiptsCosmosClient;
+        this.bizEventCosmosClient = bizEventCosmosClient;
+        this.queueClient = queueClient;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void handleSendMessageToQueue(BizEvent bizEvent, Receipt receipt) {
+    public void handleSendMessageToQueue(List<BizEvent> bizEventList, Receipt receipt) {
         //Encode biz-event to base64 string
         String messageText = Base64.getMimeEncoder().encodeToString(
-                Objects.requireNonNull(ObjectMapperUtils.writeValueAsString(bizEvent)).getBytes(StandardCharsets.UTF_8)
-        );
+                Objects.requireNonNull(ObjectMapperUtils.writeValueAsString(bizEventList)).getBytes(StandardCharsets.UTF_8));
 
         //Add message to the queue
         int statusCode;
         try {
             Response<SendMessageResult> sendMessageResult = queueClient.sendMessageToQueue(messageText);
-
             statusCode = sendMessageResult.getStatusCode();
         } catch (Exception e) {
             statusCode = ReasonErrorCode.ERROR_QUEUE.getCode();
-            logger.error(String.format("Sending BizEvent with id %s to queue failed", bizEvent.getId()), e);
+            if (bizEventList.size() == 1) {
+                logger.error("Sending BizEvent with id {} to queue failed", receipt.getEventId(), e);
+            } else {
+                logger.error("Failed to enqueue cart with id {}", receipt.getEventId(), e);
+            }
         }
 
         if (statusCode != HttpStatus.CREATED.value()) {
@@ -127,7 +139,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             statusCode = response.getStatusCode();
         } catch (Exception e) {
             statusCode = ReasonErrorCode.ERROR_COSMOS.getCode();
-            logger.error(String.format("Save receipt with eventId %s on cosmos failed", receipt.getEventId()), e);
+            logger.error("Save receipt with eventId {} on cosmos failed", receipt.getEventId(), e);
         }
 
         if (statusCode != (HttpStatus.CREATED.value())) {
@@ -201,7 +213,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
 
     @Override
     public void handleSaveCart(BizEvent bizEvent) {
-        String transactionId = bizEvent.getTransactionDetails().getTransaction().getIdTransaction();
+        String transactionId = bizEvent.getTransactionDetails().getTransaction().getTransactionId();
         CartForReceipt cartForReceipt;
         try {
             cartForReceipt = cartReceiptsCosmosClient.getCartItem(String.valueOf(transactionId));
@@ -214,6 +226,25 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         }
         cartForReceipt.getCartPaymentId().add(bizEvent.getId());
         cartReceiptsCosmosClient.saveCart(cartForReceipt);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<BizEvent> getCartBizEvents(String cartId) {
+        List<BizEvent> bizEventList = new ArrayList<>();
+        String continuationToken = null;
+        do {
+            Iterable<FeedResponse<BizEvent>> feedResponseIterator =
+                    this.bizEventCosmosClient.getAllBizEventDocument(cartId, continuationToken, 100);
+
+            for (FeedResponse<BizEvent> page : feedResponseIterator) {
+                bizEventList.addAll(page.getResults());
+                continuationToken = page.getContinuationToken();
+            }
+        } while (continuationToken != null);
+        return bizEventList;
     }
 
     /**

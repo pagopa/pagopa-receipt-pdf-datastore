@@ -8,7 +8,6 @@ import com.microsoft.azure.functions.annotation.ExponentialBackoffRetry;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.BizEventToReceiptServiceImpl;
 import it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils;
@@ -17,7 +16,10 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+
+import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.isReceiptStatusValid;
 
 /**
  * Azure Functions with Azure CosmosDB trigger.
@@ -103,7 +105,7 @@ public class BizEventToReceipt {
 
                 if (isReceiptStatusValid(receipt)) {
                     // Send biz event as message to queue (to be processed from the other function)
-                    bizEventToReceiptService.handleSendMessageToQueue(bizEvent, receipt);
+                    bizEventToReceiptService.handleSendMessageToQueue(Collections.singletonList(bizEvent), receipt);
                 }
 
                 if (!isReceiptStatusValid(receipt)) {
@@ -136,9 +138,4 @@ public class BizEventToReceipt {
             documentdb.setValue(receiptFailed);
         }
     }
-
-    private static boolean isReceiptStatusValid(Receipt receipt) {
-        return receipt.getStatus() != ReceiptStatusType.FAILED && receipt.getStatus() != ReceiptStatusType.NOT_QUEUE_SENT;
-    }
-
 }
