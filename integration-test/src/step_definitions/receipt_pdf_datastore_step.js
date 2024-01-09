@@ -122,7 +122,7 @@ Then('the receipt has not the status {string}', function (targetStatus) {
 Then("the receipt has not a datastore reason error message", function(){
     let receiptResponse = this.responseToCheck.resources[0];
     if(receiptResponse?.reasonErr.message){
-        let booleanResponseErr = receiptResponse.reasonErr.message.includes("BizEventToReceiptService");
+        let booleanResponseErr = receiptResponse.reasonErr.message.includes("BizEventToReceiptService") || !receiptResponse?.event?.mount;
 
         assert.strictEqual(booleanResponseErr, false);
     }
