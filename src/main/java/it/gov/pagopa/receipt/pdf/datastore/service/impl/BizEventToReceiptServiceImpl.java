@@ -216,20 +216,26 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
     public void handleSaveCart(BizEvent bizEvent) {
         String transactionId = bizEvent.getTransactionDetails().getTransaction().getTransactionId();
         CartForReceipt cartForReceipt;
+        Set<String> cartPaymentId = new HashSet<>();
         try {
             cartForReceipt = cartReceiptsCosmosClient.getCartItem(transactionId);
             if (cartForReceipt == null) {
                 throw new CartNotFoundException("Missing Cart");
             }
         } catch (CartNotFoundException ignore) {
-            cartForReceipt = CartForReceipt.builder().id(transactionId).status(CartStatusType.INSERTED).cartPaymentId(new HashSet<>())
-                    .totalNotice(BizEventToReceiptUtils.getTotalNotice(bizEvent, null, null)).build();
+            cartPaymentId.add(bizEvent.getId());
+            cartForReceipt = CartForReceipt.builder()
+                    .id(transactionId)
+                    .status(CartStatusType.INSERTED)
+                    .cartPaymentId(cartPaymentId)
+                    .totalNotice(BizEventToReceiptUtils.getTotalNotice(bizEvent, null, null))
+                    .build();
             cartReceiptsCosmosClient.saveCart(cartForReceipt);
 
             return;
         }
 
-        Set<String> cartPaymentId = cartForReceipt.getCartPaymentId();
+        cartPaymentId = cartForReceipt.getCartPaymentId();
         cartPaymentId.add(bizEvent.getId());
         cartForReceipt.setCartPaymentId(cartPaymentId);
         cartReceiptsCosmosClient.updateCart(cartForReceipt);
