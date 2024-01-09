@@ -79,7 +79,7 @@ class CartEventToReceiptTest {
 
     @Test
     void cartEventToReceiptSuccess() {
-        CartForReceipt cartForReceipt = getCartForReceipt();
+        List<CartForReceipt> cartForReceipt = Collections.singletonList(getCartForReceipt());
         List<BizEvent> bizEventList = new ArrayList<>();
         bizEventList.add(generateValidBizEventWithAmount());
         bizEventList.add(generateValidBizEventWithGrandTotal());
@@ -100,8 +100,8 @@ class CartEventToReceiptTest {
 
     @Test
     void cartEventToReceiptSkipNotInStatusInserted() {
-        CartForReceipt cartForReceipt = getCartForReceipt();
-        cartForReceipt.setStatus(CartStatusType.FAILED);
+        List<CartForReceipt> cartForReceipt = Collections.singletonList(getCartForReceipt());
+        cartForReceipt.get(0).setStatus(CartStatusType.FAILED);
         assertDoesNotThrow(() -> sut.run(cartForReceipt, receiptDocumentdb, cartForReceiptDocumentdb, contextMock));
 
         verify(bizEventToReceiptServiceMock, never()).getCartBizEvents(anyString());
@@ -116,12 +116,12 @@ class CartEventToReceiptTest {
     void cartEventToReceiptSkipNotAllBizEventsCollected() {
         Set<String> bizEventIds = new HashSet<>();
         bizEventIds.add("id");
-        CartForReceipt cartForReceipt = CartForReceipt.builder()
+        List<CartForReceipt> cartForReceipt = Collections.singletonList( CartForReceipt.builder()
                 .id("123")
                 .totalNotice(2)
                 .status(CartStatusType.INSERTED)
                 .cartPaymentId(bizEventIds)
-                .build();
+                .build());
 
         assertDoesNotThrow(() -> sut.run(cartForReceipt, receiptDocumentdb, cartForReceiptDocumentdb, contextMock));
 
@@ -135,7 +135,7 @@ class CartEventToReceiptTest {
 
     @Test
     void cartEventToReceiptFailToCreateReceiptForGenericException() {
-        CartForReceipt cartForReceipt = getCartForReceipt();
+        List<CartForReceipt> cartForReceipt = Collections.singletonList(getCartForReceipt());
 
         Receipt receipt = new Receipt();
         receipt.setStatus(ReceiptStatusType.FAILED);
@@ -158,7 +158,7 @@ class CartEventToReceiptTest {
 
     @Test
     void cartEventToReceiptFailToCreateReceiptTokenizerThrowsException() throws PDVTokenizerException, JsonProcessingException {
-        CartForReceipt cartForReceipt = getCartForReceipt();
+        List<CartForReceipt> cartForReceipt = Collections.singletonList(getCartForReceipt());
 
         Receipt receipt = new Receipt();
         receipt.setStatus(ReceiptStatusType.FAILED);
@@ -181,7 +181,7 @@ class CartEventToReceiptTest {
 
     @Test
     void cartEventToReceiptFailToSaveReceipt() {
-        CartForReceipt cartForReceipt = getCartForReceipt();
+        List<CartForReceipt> cartForReceipt = Collections.singletonList(getCartForReceipt());
 
         when(bizEventToReceiptServiceMock.getCartBizEvents(anyString())).thenReturn(Collections.singletonList(generateValidBizEventWithAmount()));
 
@@ -208,7 +208,7 @@ class CartEventToReceiptTest {
 
     @Test
     void cartEventToReceiptFailToSendBizEventsOnQueue() {
-        CartForReceipt cartForReceipt = getCartForReceipt();
+        List<CartForReceipt> cartForReceipt = Collections.singletonList(getCartForReceipt());
 
         when(bizEventToReceiptServiceMock.getCartBizEvents(anyString())).thenReturn(Collections.singletonList(generateValidBizEventWithAmount()));
 
