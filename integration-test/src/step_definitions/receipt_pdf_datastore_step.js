@@ -28,9 +28,9 @@ After(async function () {
     if(this.cartId != null) {
         await deleteDocumentFromCartDatastore(this.cartId);
     }
-    if(this.listOfBizEventsIds.length > 0) {
+    if(this.listOfBizEventsIds?.length > 0) {
         for(bizEvent of this.listOfBizEventsIds){
-            await deleteDocumentFromBizEventsDatastore(bizEvent.id);
+            await deleteDocumentFromBizEventsDatastore(bizEvent);
         }
     }
     this.eventId = null;
@@ -75,14 +75,19 @@ Given('a cart event with id {string} containing the ids the bizEvents', async fu
 
     let cartResponse = await createDocumentInCartDatastore(id, this.listOfBizEventsIds);
     assert.strictEqual(cartResponse.statusCode, 201);
-  });
+});
+
+When('biz event has been properly stored into receipt datastore after {int} ms with eventId {string}', async function (time, eventId) {
+    // boundary time spent by azure function to process event
+    await sleep(time);
+    this.responseToCheck = await getDocumentByIdFromReceiptsDatastore(eventId);
+});
 
 When('receipt has been properly stored into receipt datastore after {int} ms with eventId {string}', async function (time, id) {
     // boundary time spent by azure function to process event
     await sleep(time);
     this.responseToCheck = await getDocumentByIdFromReceiptsDatastore(id);
 });
-
 
 When('cart event has been properly stored into receipt datastore after {int} ms with id {string}', async function (time, id) {
     // boundary time spent by azure function to process event
