@@ -81,4 +81,17 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
         return cosmosContainer.createItem(receipt);
     }
 
+    /**
+     * Update Cart For Receipt on CosmosDB database
+     *
+     * @param receipt Cart Data to save
+     * @return cart-to-receipts documents
+     */
+    @Override
+    public CosmosItemResponse<CartForReceipt> updateCart(CartForReceipt receipt)  {
+        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
+        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(cartForReceiptContainerName);
+        return cosmosContainer.upsertItem(receipt);
+    }
+
 }

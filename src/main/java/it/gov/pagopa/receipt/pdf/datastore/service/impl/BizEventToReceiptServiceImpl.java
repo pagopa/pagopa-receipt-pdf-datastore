@@ -38,6 +38,7 @@ import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
 
@@ -216,16 +217,22 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         String transactionId = bizEvent.getTransactionDetails().getTransaction().getTransactionId();
         CartForReceipt cartForReceipt;
         try {
-            cartForReceipt = cartReceiptsCosmosClient.getCartItem(String.valueOf(transactionId));
+            cartForReceipt = cartReceiptsCosmosClient.getCartItem(transactionId);
             if (cartForReceipt == null) {
                 throw new CartNotFoundException("Missing Cart");
             }
         } catch (CartNotFoundException ignore) {
             cartForReceipt = CartForReceipt.builder().id(transactionId).status(CartStatusType.INSERTED).cartPaymentId(new HashSet<>())
                     .totalNotice(BizEventToReceiptUtils.getTotalNotice(bizEvent, null, null)).build();
+            cartReceiptsCosmosClient.saveCart(cartForReceipt);
+
+            return;
         }
-        cartForReceipt.getCartPaymentId().add(bizEvent.getId());
-        cartReceiptsCosmosClient.saveCart(cartForReceipt);
+
+        Set<String> cartPaymentId = cartForReceipt.getCartPaymentId();
+        cartPaymentId.add(bizEvent.getId());
+        cartForReceipt.setCartPaymentId(cartPaymentId);
+        cartReceiptsCosmosClient.updateCart(cartForReceipt);
     }
 
     /**

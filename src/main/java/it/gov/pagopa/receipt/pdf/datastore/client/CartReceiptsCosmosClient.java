@@ -10,4 +10,6 @@ public interface CartReceiptsCosmosClient {
     CartForReceipt getCartItem(String eventId) throws CartNotFoundException;
 
     CosmosItemResponse<CartForReceipt> saveCart(CartForReceipt receipt);
+
+    CosmosItemResponse<CartForReceipt> updateCart(CartForReceipt receipt);
 }
