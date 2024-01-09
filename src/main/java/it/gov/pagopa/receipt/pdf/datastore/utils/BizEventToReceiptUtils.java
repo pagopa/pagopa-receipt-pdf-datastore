@@ -13,6 +13,7 @@ import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
 import org.slf4j.Logger;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -54,12 +55,8 @@ public class BizEventToReceiptUtils {
 
         eventData.setTransactionCreationDate(
                 service.getTransactionCreationDate(bizEvent));
-        eventData.setAmount(
-                bizEvent.getTransactionDetails() != null && bizEvent
-                        .getTransactionDetails().getTransaction() != null ?
-                        String.valueOf(bizEvent.getTransactionDetails().getTransaction().getGrandTotal()) :
-                        bizEvent.getPaymentInfo() != null ? bizEvent.getPaymentInfo().getAmount() : null
-        );
+        BigDecimal amount = getAmount(bizEvent);
+        eventData.setAmount(!amount.equals(BigDecimal.ZERO) ? amount.toString() : null);
 
         CartItem item = new CartItem();
         item.setPayeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null);
@@ -233,12 +230,18 @@ public class BizEventToReceiptUtils {
 
     private static BigDecimal getAmount(BizEvent bizEvent) {
         if (bizEvent.getTransactionDetails() != null && bizEvent.getTransactionDetails().getTransaction() != null) {
-           return new BigDecimal(bizEvent.getTransactionDetails().getTransaction().getGrandTotal());
+            return formatAmount(bizEvent.getTransactionDetails().getTransaction().getGrandTotal());
         }
         if (bizEvent.getPaymentInfo() != null && bizEvent.getPaymentInfo().getAmount() != null) {
            return new BigDecimal(bizEvent.getPaymentInfo().getAmount());
         }
         return BigDecimal.ZERO;
+    }
+
+    private static BigDecimal formatAmount(long grandTotal) {
+        BigDecimal amount = new BigDecimal(grandTotal);
+        BigDecimal divider = new BigDecimal(100);
+        return amount.divide(divider, 2, RoundingMode.UNNECESSARY);
     }
 
     private static String formatRemittanceInformation(String remittanceInformation) {
