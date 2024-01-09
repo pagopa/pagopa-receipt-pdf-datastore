@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashSet;
@@ -229,6 +230,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
                     .status(CartStatusType.INSERTED)
                     .cartPaymentId(cartPaymentId)
                     .totalNotice(BizEventToReceiptUtils.getTotalNotice(bizEvent, null, null))
+                    .inserted_at(System.currentTimeMillis())
                     .build();
             cartReceiptsCosmosClient.saveCart(cartForReceipt);
 

@@ -19,4 +19,6 @@ public class CartForReceipt {
     private Integer totalNotice;
     private CartStatusType status;
     private ReasonError reasonError;
+    private long inserted_at;
+
 }
