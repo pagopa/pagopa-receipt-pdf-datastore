@@ -99,12 +99,27 @@ class CartEventToReceiptTest {
     }
 
     @Test
-    void cartEventToReceiptSkip() {
+    void cartEventToReceiptSkipNotInStatusInserted() {
+        CartForReceipt cartForReceipt = getCartForReceipt();
+        cartForReceipt.setStatus(CartStatusType.FAILED);
+        assertDoesNotThrow(() -> sut.run(cartForReceipt, receiptDocumentdb, cartForReceiptDocumentdb, contextMock));
+
+        verify(bizEventToReceiptServiceMock, never()).getCartBizEvents(anyString());
+        verify(bizEventToReceiptServiceMock, never()).handleSaveReceipt(any());
+        verify(bizEventToReceiptServiceMock, never()).handleSendMessageToQueue(anyList(), any());
+
+        verify(receiptDocumentdb, never()).setValue(receiptCaptor.capture());
+        verify(cartForReceiptDocumentdb, never()).setValue(cartCaptor.capture());
+    }
+
+    @Test
+    void cartEventToReceiptSkipNotAllBizEventsCollected() {
         Set<String> bizEventIds = new HashSet<>();
         bizEventIds.add("id");
         CartForReceipt cartForReceipt = CartForReceipt.builder()
                 .id("123")
                 .totalNotice(2)
+                .status(CartStatusType.INSERTED)
                 .cartPaymentId(bizEventIds)
                 .build();
 
@@ -226,6 +241,7 @@ class CartEventToReceiptTest {
         return CartForReceipt.builder()
                 .id("123")
                 .totalNotice(2)
+                .status(CartStatusType.INSERTED)
                 .cartPaymentId(bizEventIds)
                 .build();
     }

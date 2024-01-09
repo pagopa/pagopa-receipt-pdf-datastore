@@ -79,6 +79,12 @@ public class CartEventToReceipt {
     ) {
         logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
 
+        if (!cartForReceipt.getStatus().equals(CartStatusType.INSERTED)) {
+            logger.info("[{}] Cart with id {} not in status {}, this event will be skipped",
+                    context.getFunctionName(), cartForReceipt.getId(), CartStatusType.INSERTED);
+            return;
+        }
+
         if (cartForReceipt.getTotalNotice() != cartForReceipt.getCartPaymentId().size()) {
             logger.info("[{}] Not all items collected for cart with id {}, this event will be skipped",
                     context.getFunctionName(), cartForReceipt.getId());
