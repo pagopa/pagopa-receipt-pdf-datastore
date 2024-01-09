@@ -1,9 +1,9 @@
 const { CosmosClient } = require("@azure/cosmos");
 const { createCartEvent } = require("./common");
 
-const cosmos_db_conn_string     = process.env.RECEIPTS_COSMOS_CONN_STRING || "";
-const databaseId                = process.env.RECEIPT_COSMOS_DB_NAME;
-const receiptContainerId        = process.env.RECEIPT_COSMOS_DB_CONTAINER_NAME;
+const cosmos_db_conn_string = process.env.RECEIPTS_COSMOS_CONN_STRING || "";
+const databaseId = process.env.RECEIPT_COSMOS_DB_NAME;
+const receiptContainerId = process.env.RECEIPT_COSMOS_DB_CONTAINER_NAME;
 const cartContainerId = process.env.RECEIPTS_COSMOS_CART_CONTAINER_NAME;
 
 const client = new CosmosClient(cosmos_db_conn_string);
@@ -19,7 +19,16 @@ async function getDocumentByIdFromReceiptsDatastore(id) {
         .fetchNext();
 }
 
-async function deleteDocumentFromReceiptsDatastoreByEventId(eventId){
+async function getCartDocumentByIdFromReceiptsDatastore(id) {
+    return await cartContainer.items
+        .query({
+            query: "SELECT * from c WHERE c.id=@id",
+            parameters: [{ name: "@id", value: id }]
+        })
+        .fetchNext();
+}
+
+async function deleteDocumentFromReceiptsDatastoreByEventId(eventId) {
     let documents = await getDocumentByIdFromReceiptsDatastore(eventId);
 
     documents?.resources?.forEach(el => {
@@ -46,7 +55,7 @@ async function createDocumentInCartDatastore(id, listOfBizEventsIds) {
     }
 }
 
-async function deleteDocumentFromCartDatastore(id){
+async function deleteDocumentFromCartDatastore(id) {
     try {
         return await cartContainer.item(id, id).delete();
     } catch (error) {
@@ -57,5 +66,5 @@ async function deleteDocumentFromCartDatastore(id){
 }
 
 module.exports = {
-    getDocumentByIdFromReceiptsDatastore, deleteDocumentFromReceiptsDatastoreByEventId, deleteDocumentFromReceiptsDatastore, createDocumentInCartDatastore, deleteDocumentFromCartDatastore
+    getDocumentByIdFromReceiptsDatastore, deleteDocumentFromReceiptsDatastoreByEventId, deleteDocumentFromReceiptsDatastore, createDocumentInCartDatastore, deleteDocumentFromCartDatastore, getCartDocumentByIdFromReceiptsDatastore
 }

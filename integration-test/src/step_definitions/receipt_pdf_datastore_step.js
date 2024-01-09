@@ -2,7 +2,7 @@ const assert = require('assert');
 const { After, Given, When, Then, setDefaultTimeout } = require('@cucumber/cucumber');
 const { sleep, recoverFailedEvent } = require("./common");
 const { createDocumentInBizEventsDatastore, deleteDocumentFromBizEventsDatastore } = require("./biz_events_datastore_client");
-const { getDocumentByIdFromReceiptsDatastore, deleteDocumentFromReceiptsDatastoreByEventId, deleteDocumentFromReceiptsDatastore, deleteDocumentFromCartDatastore, createDocumentInCartDatastore } = require("./receipts_datastore_client");
+const { getDocumentByIdFromReceiptsDatastore, deleteDocumentFromReceiptsDatastoreByEventId, deleteDocumentFromReceiptsDatastore, deleteDocumentFromCartDatastore, createDocumentInCartDatastore, getCartDocumentByIdFromReceiptsDatastore } = require("./receipts_datastore_client");
 
 // set timeout for Hooks function, it allows to wait for long task
 setDefaultTimeout(360 * 1000);
@@ -63,7 +63,7 @@ Given('a list of {int} bizEvents starting with id {string} and transactionId {st
 
         let bizEventStoreResponse = await createDocumentInBizEventsDatastore(finalId, transactionId, `${numberOfEvents}`);
         assert.strictEqual(bizEventStoreResponse.statusCode, 201);
-        console.log(this.listOfBizEventsIds);
+
         this.listOfBizEventsIds.push(finalId);
       }
 });
@@ -77,16 +77,33 @@ Given('a cart event with id {string} containing the ids the bizEvents', async fu
     assert.strictEqual(cartResponse.statusCode, 201);
   });
 
-When('biz event has been properly stored into receipt datastore after {int} ms with eventId {string}', async function (time, eventId) {
+When('receipt has been properly stored into receipt datastore after {int} ms with eventId {string}', async function (time, id) {
     // boundary time spent by azure function to process event
     await sleep(time);
-    this.responseToCheck = await getDocumentByIdFromReceiptsDatastore(eventId);
+    this.responseToCheck = await getDocumentByIdFromReceiptsDatastore(id);
+});
+
+
+When('cart event has been properly stored into receipt datastore after {int} ms with id {string}', async function (time, id) {
+    // boundary time spent by azure function to process event
+    await sleep(time);
+    this.responseToCheck = await getCartDocumentByIdFromReceiptsDatastore(id);
 });
 
 Then('the receipts datastore returns the receipt', async function () {
     assert.notStrictEqual(this.responseToCheck.resources.length, 0);
     this.receiptId = this.responseToCheck.resources[0].id;
     assert.strictEqual(this.responseToCheck.resources.length, 1);
+});
+
+Then('the receipts datastore return the cart event', async function () {
+    assert.notStrictEqual(this.responseToCheck.resources.length, 0);
+    this.cartId = this.responseToCheck.resources[0].id;
+    assert.strictEqual(this.responseToCheck.resources.length, 1);
+});
+
+Then("the cart event has status {string}", function(status) {
+    assert.strictEqual(this.responseToCheck.resources[0].status, status);
 });
 
 Then('the receipt has eventId {string}', function (targetId) {
@@ -97,6 +114,14 @@ Then('the receipt has not the status {string}', function (targetStatus) {
     assert.notStrictEqual(this.responseToCheck.resources[0].status, targetStatus);
 });
 
+Then("the receipt has not a datastore reason error message", function(){
+    let receiptResponse = this.responseToCheck.resources[0];
+    if(receiptResponse?.reasonErr.message){
+        let booleanResponseErr = receiptResponse.reasonErr.message.includes("BizEventToReceiptService");
+
+        assert.strictEqual(booleanResponseErr, false);
+    }
+});
 
 
 
