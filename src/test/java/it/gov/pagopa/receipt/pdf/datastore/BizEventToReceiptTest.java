@@ -480,7 +480,7 @@ class BizEventToReceiptTest {
 
         verify(documentdb, never()).setValue(any());
         verify(cartReceiptsCosmosClient).getCartItem(any());
-        verify(cartReceiptsCosmosClient).saveCart(cartForReceiptArgumentCaptor.capture());
+        verify(cartReceiptsCosmosClient).updateCart(cartForReceiptArgumentCaptor.capture());
         CartForReceipt cartForReceipt = cartForReceiptArgumentCaptor.getValue();
         assertEquals(2, cartForReceipt.getCartPaymentId().size());
     }
