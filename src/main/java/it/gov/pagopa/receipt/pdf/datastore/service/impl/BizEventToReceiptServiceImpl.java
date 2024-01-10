@@ -230,7 +230,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
                     .status(CartStatusType.INSERTED)
                     .cartPaymentId(cartPaymentId)
                     .totalNotice(BizEventToReceiptUtils.getTotalNotice(bizEvent, null, null))
-                    .insertedAt(System.currentTimeMillis())
+                    .inserted_at(System.currentTimeMillis())
                     .build();
             cartReceiptsCosmosClient.saveCart(cartForReceipt);
 

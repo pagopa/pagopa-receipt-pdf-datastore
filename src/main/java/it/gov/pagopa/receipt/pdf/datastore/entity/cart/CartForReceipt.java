@@ -7,9 +7,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.Set;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
@@ -21,7 +18,6 @@ public class CartForReceipt {
     private Integer totalNotice;
     private CartStatusType status;
     private ReasonError reasonError;
-    @JsonProperty("inserted_at")
-    private long insertedAt;
+    private long inserted_at;
 
 }
