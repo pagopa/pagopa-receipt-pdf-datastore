@@ -89,7 +89,7 @@ then replace env variables with correct values
 | `TOKENIZER_APIM_HEADER_KEY`           | Tokenizer APIM header key                                                            |                       x-api-key                        |
 | `ECOMMERCE_FILTER_ENABLED`            | Enable/Disable e-commerce event processing                                           |                                                        |
 | `ENABLE_CART`                         | Enable/Disable cart biz event processing                                             |                                                        |
-| `VALID_CHANNEL_ORIGIN`                | Defines the authenticated payment channels and controls the payer receipt generation |                                                        |
+| `AUTHENTICATED_CHANNELS`              | Defines the authenticated payment channels and controls the payer receipt generation |                                                        |
 
 > to doc details about AZ fn config
 > see [here](https://stackoverflow.com/questions/62669672/azure-functions-what-is-the-purpose-of-having-host-json-and-local-settings-jso)

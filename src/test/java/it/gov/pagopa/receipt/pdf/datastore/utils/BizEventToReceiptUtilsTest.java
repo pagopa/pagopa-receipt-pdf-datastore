@@ -43,7 +43,7 @@ class BizEventToReceiptUtilsTest {
     public static final String TRANSFER_AMOUNT_HIGHEST = "10000.00";
     public static final String TRANSFER_AMOUNT_MEDIUM = "20.00";
     public static final String TRANSFER_AMOUNT_LOWEST = "10.00";
-    public static final String VALID_CHANNEL_ORIGIN = "IO,OTHER VALID ORIGIN,ANOTHER VALID";
+    public static final String AUTHENTICATED_CHANNELS = "IO,OTHER VALID ORIGIN,ANOTHER VALID";
     @Mock
     private PDVTokenizerServiceRetryWrapper pdvTokenizerServiceMock;
     @Mock
@@ -56,7 +56,7 @@ class BizEventToReceiptUtilsTest {
     private ReceiptQueueClientImpl queueClient;
     @SystemStub
     private EnvironmentVariables environmentVariables = new EnvironmentVariables(
-            "VALID_CHANNEL_ORIGIN", VALID_CHANNEL_ORIGIN);
+            "AUTHENTICATED_CHANNELS", AUTHENTICATED_CHANNELS);
 
     private final Logger logger = LoggerFactory.getLogger(BizEventToReceiptUtilsTest.class);
 
@@ -159,7 +159,7 @@ class BizEventToReceiptUtilsTest {
 
     @Test
     void payerNotGeneratedWithInvalidChannelOrigin() throws PDVTokenizerException, JsonProcessingException {
-        environmentVariables.set("VALID_CHANNEL_ORIGIN", "DIFFERENT ORIGIN");
+        environmentVariables.set("AUTHENTICATED_CHANNELS", "DIFFERENT ORIGIN");
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
 
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(

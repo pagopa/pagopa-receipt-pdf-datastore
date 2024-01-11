@@ -33,7 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
-import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.Set;
 
@@ -41,7 +40,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
 
     public static final String CF_UNKNOWN = "ANONIMO";
     private final Logger logger = LoggerFactory.getLogger(BizEventToReceiptServiceImpl.class);
-    private static final String[] VALID_CHANNEL_ORIGIN = System.getenv().getOrDefault("VALID_CHANNEL_ORIGIN", "").split(",");
+    private static final String[] AUTHENTICATED_CHANNELS = System.getenv().getOrDefault("AUTHENTICATED_CHANNELS", "").split(",");
 
     private final PDVTokenizerServiceRetryWrapper pdvTokenizerService;
     private final ReceiptCosmosClient receiptCosmosClient;
@@ -220,14 +219,14 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             if (
                     bizEvent.getTransactionDetails().getTransaction() != null &&
                             bizEvent.getTransactionDetails().getTransaction().getOrigin() != null &&
-                            Arrays.asList(VALID_CHANNEL_ORIGIN).contains(bizEvent.getTransactionDetails().getTransaction().getOrigin())
+                            Arrays.asList(AUTHENTICATED_CHANNELS).contains(bizEvent.getTransactionDetails().getTransaction().getOrigin())
             ) {
                 return true;
             }
             if (
                     bizEvent.getTransactionDetails().getInfo() != null &&
                             bizEvent.getTransactionDetails().getInfo().getClientId() != null &&
-                            Arrays.asList(VALID_CHANNEL_ORIGIN).contains(bizEvent.getTransactionDetails().getInfo().getClientId())
+                            Arrays.asList(AUTHENTICATED_CHANNELS).contains(bizEvent.getTransactionDetails().getInfo().getClientId())
             ) {
                 return true;
             }
