@@ -33,15 +33,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
 
+    public static final String CF_UNKNOWN = "ANONIMO";
     private final Logger logger = LoggerFactory.getLogger(BizEventToReceiptServiceImpl.class);
+    private static final String[] VALID_CHANNEL_ORIGIN = System.getenv().getOrDefault("VALID_CHANNEL_ORIGIN", "").split(",");
 
     private final PDVTokenizerServiceRetryWrapper pdvTokenizerService;
     private final ReceiptCosmosClient receiptCosmosClient;
@@ -184,23 +182,27 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
     @Override
     public void tokenizeFiscalCodes(BizEvent bizEvent, Receipt receipt, EventData eventData) throws JsonProcessingException, PDVTokenizerException {
         try {
+            //Tokenize Debtor
             if (bizEvent.getDebtor() != null && bizEvent.getDebtor().getEntityUniqueIdentifierValue() != null) {
-                eventData.setDebtorFiscalCode("ANONIMO".equals(bizEvent.getDebtor().getEntityUniqueIdentifierValue()) ?
+                eventData.setDebtorFiscalCode(CF_UNKNOWN.equals(bizEvent.getDebtor().getEntityUniqueIdentifierValue()) ?
                         bizEvent.getDebtor().getEntityUniqueIdentifierValue() :
                         pdvTokenizerService.generateTokenForFiscalCodeWithRetry(bizEvent.getDebtor().getEntityUniqueIdentifierValue())
                 );
             }
-            if (bizEvent.getPayer() != null && bizEvent.getPayer().getEntityUniqueIdentifierValue() != null) {
-                eventData.setPayerFiscalCode(
-                        pdvTokenizerService.generateTokenForFiscalCodeWithRetry(bizEvent.getPayer().getEntityUniqueIdentifierValue())
-                );
-            } else if (bizEvent.getTransactionDetails() != null &&
-                    bizEvent.getTransactionDetails().getUser() != null &&
-                    bizEvent.getTransactionDetails().getUser().getFiscalCode() != null
-            ) {
-                eventData.setPayerFiscalCode(
-                        pdvTokenizerService.generateTokenForFiscalCodeWithRetry(
-                                bizEvent.getTransactionDetails().getUser().getFiscalCode()));
+            //Tokenize Payer
+            if (isValidChannelOrigin(bizEvent)) {
+                if (bizEvent.getPayer() != null && bizEvent.getPayer().getEntityUniqueIdentifierValue() != null) {
+                    eventData.setPayerFiscalCode(
+                            pdvTokenizerService.generateTokenForFiscalCodeWithRetry(bizEvent.getPayer().getEntityUniqueIdentifierValue())
+                    );
+                } else if (
+                        bizEvent.getTransactionDetails().getUser() != null &&
+                                bizEvent.getTransactionDetails().getUser().getFiscalCode() != null
+                ) {
+                    eventData.setPayerFiscalCode(
+                            pdvTokenizerService.generateTokenForFiscalCodeWithRetry(
+                                    bizEvent.getTransactionDetails().getUser().getFiscalCode()));
+                }
             }
         } catch (PDVTokenizerException e) {
             handleTokenizerException(receipt, e.getMessage(), e.getStatusCode());
@@ -209,6 +211,27 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             handleTokenizerException(receipt, e.getMessage(), ReasonErrorCode.ERROR_PDV_MAPPING.getCode());
             throw e;
         }
+    }
+
+    private boolean isValidChannelOrigin(BizEvent bizEvent) {
+        if (bizEvent.getTransactionDetails() != null) {
+            if (
+                    bizEvent.getTransactionDetails().getTransaction() != null &&
+                            bizEvent.getTransactionDetails().getTransaction().getOrigin() != null &&
+                            Arrays.asList(VALID_CHANNEL_ORIGIN).contains(bizEvent.getTransactionDetails().getOrigin())
+            ) {
+                return true;
+            }
+            if (
+                    bizEvent.getTransactionDetails().getInfo() != null &&
+                            bizEvent.getTransactionDetails().getInfo().getClientId() != null &&
+                            Arrays.asList(VALID_CHANNEL_ORIGIN).contains(bizEvent.getTransactionDetails().getInfo().getClientId())
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     @Override
