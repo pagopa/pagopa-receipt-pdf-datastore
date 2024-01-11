@@ -7,7 +7,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.Set;
-
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
@@ -19,4 +18,6 @@ public class CartForReceipt {
     private Integer totalNotice;
     private CartStatusType status;
     private ReasonError reasonError;
+    private long inserted_at;
+
 }

@@ -33,7 +33,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.Set;
 
 public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
 
@@ -238,17 +240,30 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
     public void handleSaveCart(BizEvent bizEvent) {
         String transactionId = bizEvent.getTransactionDetails().getTransaction().getTransactionId();
         CartForReceipt cartForReceipt;
+        Set<String> cartPaymentId = new HashSet<>();
         try {
-            cartForReceipt = cartReceiptsCosmosClient.getCartItem(String.valueOf(transactionId));
+            cartForReceipt = cartReceiptsCosmosClient.getCartItem(transactionId);
             if (cartForReceipt == null) {
                 throw new CartNotFoundException("Missing Cart");
             }
         } catch (CartNotFoundException ignore) {
-            cartForReceipt = CartForReceipt.builder().id(transactionId).status(CartStatusType.INSERTED).cartPaymentId(new HashSet<>())
-                    .totalNotice(BizEventToReceiptUtils.getTotalNotice(bizEvent, null, null)).build();
+            cartPaymentId.add(bizEvent.getId());
+            cartForReceipt = CartForReceipt.builder()
+                    .id(transactionId)
+                    .status(CartStatusType.INSERTED)
+                    .cartPaymentId(cartPaymentId)
+                    .totalNotice(BizEventToReceiptUtils.getTotalNotice(bizEvent, null, null))
+                    .inserted_at(System.currentTimeMillis())
+                    .build();
+            cartReceiptsCosmosClient.saveCart(cartForReceipt);
+
+            return;
         }
-        cartForReceipt.getCartPaymentId().add(bizEvent.getId());
-        cartReceiptsCosmosClient.saveCart(cartForReceipt);
+
+        cartPaymentId = cartForReceipt.getCartPaymentId();
+        cartPaymentId.add(bizEvent.getId());
+        cartForReceipt.setCartPaymentId(cartPaymentId);
+        cartReceiptsCosmosClient.updateCart(cartForReceipt);
     }
 
     /**

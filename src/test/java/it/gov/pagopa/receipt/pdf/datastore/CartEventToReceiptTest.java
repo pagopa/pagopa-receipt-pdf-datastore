@@ -48,16 +48,16 @@ class CartEventToReceiptTest {
     private BizEventToReceiptService bizEventToReceiptServiceMock;
 
     @Captor
-    private ArgumentCaptor<Receipt> receiptCaptor;
+    private ArgumentCaptor<List<Receipt>> receiptCaptor;
 
     @Captor
-    private ArgumentCaptor<CartForReceipt> cartCaptor;
+    private ArgumentCaptor<List<CartForReceipt>> cartCaptor;
 
     @Spy
-    private OutputBinding<Receipt> receiptDocumentdb;
+    private OutputBinding<List<Receipt>> receiptDocumentdb;
 
     @Spy
-    private OutputBinding<CartForReceipt> cartForReceiptDocumentdb;
+    private OutputBinding<List<CartForReceipt>> cartForReceiptDocumentdb;
 
     @Mock
     private ExecutionContext contextMock;
@@ -79,7 +79,7 @@ class CartEventToReceiptTest {
 
     @Test
     void cartEventToReceiptSuccess() {
-        CartForReceipt cartForReceipt = getCartForReceipt();
+        List<CartForReceipt> cartForReceipt = Collections.singletonList(getCartForReceipt());
         List<BizEvent> bizEventList = new ArrayList<>();
         bizEventList.add(generateValidBizEventWithAmount());
         bizEventList.add(generateValidBizEventWithGrandTotal());
@@ -95,13 +95,13 @@ class CartEventToReceiptTest {
         verify(receiptDocumentdb, never()).setValue(receiptCaptor.capture());
         verify(cartForReceiptDocumentdb).setValue(cartCaptor.capture());
 
-        assertEquals(CartStatusType.SENT, cartCaptor.getValue().getStatus());
+        assertEquals(CartStatusType.SENT, cartCaptor.getValue().get(0).getStatus());
     }
 
     @Test
     void cartEventToReceiptSkipNotInStatusInserted() {
-        CartForReceipt cartForReceipt = getCartForReceipt();
-        cartForReceipt.setStatus(CartStatusType.FAILED);
+        List<CartForReceipt> cartForReceipt = Collections.singletonList(getCartForReceipt());
+        cartForReceipt.get(0).setStatus(CartStatusType.FAILED);
         assertDoesNotThrow(() -> sut.run(cartForReceipt, receiptDocumentdb, cartForReceiptDocumentdb, contextMock));
 
         verify(bizEventToReceiptServiceMock, never()).getCartBizEvents(anyString());
@@ -116,12 +116,12 @@ class CartEventToReceiptTest {
     void cartEventToReceiptSkipNotAllBizEventsCollected() {
         Set<String> bizEventIds = new HashSet<>();
         bizEventIds.add("id");
-        CartForReceipt cartForReceipt = CartForReceipt.builder()
+        List<CartForReceipt> cartForReceipt = Collections.singletonList( CartForReceipt.builder()
                 .id("123")
                 .totalNotice(2)
                 .status(CartStatusType.INSERTED)
                 .cartPaymentId(bizEventIds)
-                .build();
+                .build());
 
         assertDoesNotThrow(() -> sut.run(cartForReceipt, receiptDocumentdb, cartForReceiptDocumentdb, contextMock));
 
@@ -135,7 +135,7 @@ class CartEventToReceiptTest {
 
     @Test
     void cartEventToReceiptFailToCreateReceiptForGenericException() {
-        CartForReceipt cartForReceipt = getCartForReceipt();
+        List<CartForReceipt> cartForReceipt = Collections.singletonList(getCartForReceipt());
 
         Receipt receipt = new Receipt();
         receipt.setStatus(ReceiptStatusType.FAILED);
@@ -152,13 +152,13 @@ class CartEventToReceiptTest {
         verify(receiptDocumentdb, never()).setValue(receiptCaptor.capture());
         verify(cartForReceiptDocumentdb).setValue(cartCaptor.capture());
 
-        assertEquals(CartStatusType.FAILED, cartCaptor.getValue().getStatus());
-        assertEquals(500, cartCaptor.getValue().getReasonError().getCode());
+        assertEquals(CartStatusType.FAILED, cartCaptor.getValue().get(0).getStatus());
+        assertEquals(500, cartCaptor.getValue().get(0).getReasonError().getCode());
     }
 
     @Test
     void cartEventToReceiptFailToCreateReceiptTokenizerThrowsException() throws PDVTokenizerException, JsonProcessingException {
-        CartForReceipt cartForReceipt = getCartForReceipt();
+        List<CartForReceipt> cartForReceipt = Collections.singletonList(getCartForReceipt());
 
         Receipt receipt = new Receipt();
         receipt.setStatus(ReceiptStatusType.FAILED);
@@ -176,12 +176,12 @@ class CartEventToReceiptTest {
         verify(receiptDocumentdb, never()).setValue(receiptCaptor.capture());
         verify(cartForReceiptDocumentdb).setValue(cartCaptor.capture());
 
-        assertEquals(CartStatusType.FAILED, cartCaptor.getValue().getStatus());
+        assertEquals(CartStatusType.FAILED, cartCaptor.getValue().get(0).getStatus());
     }
 
     @Test
     void cartEventToReceiptFailToSaveReceipt() {
-        CartForReceipt cartForReceipt = getCartForReceipt();
+        List<CartForReceipt> cartForReceipt = Collections.singletonList(getCartForReceipt());
 
         when(bizEventToReceiptServiceMock.getCartBizEvents(anyString())).thenReturn(Collections.singletonList(generateValidBizEventWithAmount()));
 
@@ -202,13 +202,13 @@ class CartEventToReceiptTest {
         verify(receiptDocumentdb, never()).setValue(receiptCaptor.capture());
         verify(cartForReceiptDocumentdb).setValue(cartCaptor.capture());
 
-        assertEquals(CartStatusType.FAILED, cartCaptor.getValue().getStatus());
-        assertEquals(REASON_ERROR, cartCaptor.getValue().getReasonError());
+        assertEquals(CartStatusType.FAILED, cartCaptor.getValue().get(0).getStatus());
+        assertEquals(REASON_ERROR, cartCaptor.getValue().get(0).getReasonError());
     }
 
     @Test
     void cartEventToReceiptFailToSendBizEventsOnQueue() {
-        CartForReceipt cartForReceipt = getCartForReceipt();
+        List<CartForReceipt> cartForReceipt = Collections.singletonList(getCartForReceipt());
 
         when(bizEventToReceiptServiceMock.getCartBizEvents(anyString())).thenReturn(Collections.singletonList(generateValidBizEventWithAmount()));
 
@@ -227,11 +227,11 @@ class CartEventToReceiptTest {
         verify(bizEventToReceiptServiceMock).handleSendMessageToQueue(anyList(), any());
 
         verify(receiptDocumentdb).setValue(receiptCaptor.capture());
-        assertEquals(ReceiptStatusType.FAILED, receiptCaptor.getValue().getStatus());
-        assertEquals(REASON_ERROR, receiptCaptor.getValue().getReasonErr());
+        assertEquals(ReceiptStatusType.FAILED, receiptCaptor.getValue().get(0).getStatus());
+        assertEquals(REASON_ERROR, receiptCaptor.getValue().get(0).getReasonErr());
 
         verify(cartForReceiptDocumentdb).setValue(cartCaptor.capture());
-        assertEquals(CartStatusType.SENT, cartCaptor.getValue().getStatus());
+        assertEquals(CartStatusType.SENT, cartCaptor.getValue().get(0).getStatus());
     }
 
     private CartForReceipt getCartForReceipt() {

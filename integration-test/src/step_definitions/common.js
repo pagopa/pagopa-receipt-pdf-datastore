@@ -11,7 +11,7 @@ function sleep(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function createEvent(id) {
+function createEvent(id, transactionId, totalNotice) {
 	let json_event = {
 		"id": id,
 		"version": "2",
@@ -76,7 +76,7 @@ function createEvent(id) {
 			"paymentToken": "9851395f09544a04b288202299193ca6",
 			"amount": "10.0",
 			"fee": "2.0",
-			"totalNotice": "1",
+			"totalNotice": totalNotice ? totalNotice : "1",
 			"paymentMethod": "creditCard",
 			"touchpoint": "app",
 			"remittanceInformation": "TARI 2021",
@@ -110,7 +110,7 @@ function createEvent(id) {
 			},
 			"transaction": {
 				"idTransaction": "123456",
-				"transactionId": "123456",
+				"transactionId": transactionId ? transactionId : "123456",
 				"grandTotal": 0,
 				"amount": 0,
 				"fee": 0
@@ -145,6 +145,15 @@ function createReceipt(id, fiscalCode, pdfName) {
 	return receipt
 }
 
+function createCartEvent(id, listOfBizEventsIds) {
+	return {
+		"id":id,
+		"cartPaymentId": listOfBizEventsIds,
+		"totalNotice": listOfBizEventsIds.length,
+		"status": "INSERTED"
+	}
+}
+
 module.exports = {
-	createEvent, sleep
+	createEvent, sleep, createCartEvent
 }

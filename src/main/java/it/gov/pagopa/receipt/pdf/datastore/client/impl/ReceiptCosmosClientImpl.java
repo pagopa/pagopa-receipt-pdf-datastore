@@ -103,6 +103,4 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
         return cosmosContainer.createItem(receipt);
     }
 
-
-
 }
