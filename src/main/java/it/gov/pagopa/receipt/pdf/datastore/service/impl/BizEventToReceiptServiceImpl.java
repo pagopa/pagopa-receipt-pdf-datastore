@@ -218,7 +218,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             if (
                     bizEvent.getTransactionDetails().getTransaction() != null &&
                             bizEvent.getTransactionDetails().getTransaction().getOrigin() != null &&
-                            Arrays.asList(VALID_CHANNEL_ORIGIN).contains(bizEvent.getTransactionDetails().getOrigin())
+                            Arrays.asList(VALID_CHANNEL_ORIGIN).contains(bizEvent.getTransactionDetails().getTransaction().getOrigin())
             ) {
                 return true;
             }
