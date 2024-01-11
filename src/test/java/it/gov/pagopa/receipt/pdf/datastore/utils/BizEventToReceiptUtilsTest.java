@@ -3,7 +3,7 @@ package it.gov.pagopa.receipt.pdf.datastore.utils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.HttpStatus;
 import it.gov.pagopa.receipt.pdf.datastore.client.BizEventCosmosClient;
-import it.gov.pagopa.receipt.pdf.datastore.client.impl.CartReceiptsCosmosClientImpl;
+import it.gov.pagopa.receipt.pdf.datastore.client.CartReceiptsCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptQueueClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
@@ -53,7 +53,7 @@ class BizEventToReceiptUtilsTest {
     @Mock
     private ReceiptCosmosClientImpl receiptCosmosClient;
     @Mock
-    private CartReceiptsCosmosClientImpl cartReceiptsCosmosClient;
+    private CartReceiptsCosmosClient cartReceiptsCosmosClient;
     @Mock
     private BizEventCosmosClient bizEventCosmosClientMock;
     @Mock
