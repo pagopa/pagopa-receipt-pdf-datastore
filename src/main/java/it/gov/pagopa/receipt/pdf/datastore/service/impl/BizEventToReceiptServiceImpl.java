@@ -190,17 +190,17 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             );
             //Tokenize Payer
             if (isValidChannelOrigin(bizEvent)) {
-                if (bizEvent.getPayer() != null && BizEventToReceiptUtils.isValidFiscalCode(bizEvent.getPayer().getEntityUniqueIdentifierValue())) {
-                    eventData.setPayerFiscalCode(
-                            pdvTokenizerService.generateTokenForFiscalCodeWithRetry(bizEvent.getPayer().getEntityUniqueIdentifierValue())
-                    );
-                } else if (bizEvent.getTransactionDetails() != null &&
+                if (bizEvent.getTransactionDetails() != null &&
                         bizEvent.getTransactionDetails().getUser() != null &&
                         BizEventToReceiptUtils.isValidFiscalCode(bizEvent.getTransactionDetails().getUser().getFiscalCode())
                 ) {
                     eventData.setPayerFiscalCode(
                             pdvTokenizerService.generateTokenForFiscalCodeWithRetry(
                                     bizEvent.getTransactionDetails().getUser().getFiscalCode()));
+                } else if (bizEvent.getPayer() != null && BizEventToReceiptUtils.isValidFiscalCode(bizEvent.getPayer().getEntityUniqueIdentifierValue())) {
+                    eventData.setPayerFiscalCode(
+                            pdvTokenizerService.generateTokenForFiscalCodeWithRetry(bizEvent.getPayer().getEntityUniqueIdentifierValue())
+                    );
                 }
             }
         } catch (PDVTokenizerException e) {
