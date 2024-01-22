@@ -45,6 +45,7 @@ import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariable;
 @ExtendWith({MockitoExtension.class, SystemStubsExtension.class})
 class BizEventToReceiptTest {
     public static final String HTTP_MESSAGE_ERROR = "an error occured";
+    public static final String VALID_IO_CHANNEL = "IO";
     private final String PAYER_FISCAL_CODE = "AAAAAA00A00A000D";
     private final String DEBTOR_FISCAL_CODE = "AAAAAA00A00A000P";
     private final String TOKENIZED_DEBTOR_FISCAL_CODE = "tokenizedDebtorFiscalCode";
@@ -54,7 +55,8 @@ class BizEventToReceiptTest {
     @SystemStub
     private EnvironmentVariables environmentVariables = new EnvironmentVariables(
             "ECOMMERCE_FILTER_ENABLED", "true",
-            "ENABLE_CART", "true");
+            "ENABLE_CART", "true",
+            "AUTHENTICATED_CHANNELS", VALID_IO_CHANNEL);
 
     private BizEventToReceipt function;
     @Mock
@@ -134,7 +136,6 @@ class BizEventToReceiptTest {
 
         verify(documentdb, never()).setValue(any());
     }
-
 
     @Test
     void runOkTotalNoticeNull() throws PDVTokenizerException, JsonProcessingException {
@@ -518,6 +519,7 @@ class BizEventToReceiptTest {
         TransactionDetails transactionDetails = new TransactionDetails();
         Transaction transaction = new Transaction();
         transaction.setCreationDate(String.valueOf(LocalDateTime.now()));
+        transaction.setOrigin(VALID_IO_CHANNEL);
         transactionDetails.setTransaction(transaction);
 
         PaymentInfo paymentInfo = new PaymentInfo();
@@ -542,6 +544,7 @@ class BizEventToReceiptTest {
         TransactionDetails transactionDetails = new TransactionDetails();
         Transaction transaction = new Transaction();
         transaction.setCreationDate(String.valueOf(LocalDateTime.now()));
+        transaction.setOrigin(VALID_IO_CHANNEL);
         transactionDetails.setTransaction(transaction);
         transactionDetails.setUser(User.builder().fiscalCode(PAYER_FISCAL_CODE).build());
 
@@ -568,6 +571,7 @@ class BizEventToReceiptTest {
         TransactionDetails transactionDetails = new TransactionDetails();
         Transaction transaction = new Transaction();
         transaction.setCreationDate(String.valueOf(LocalDateTime.now()));
+        transaction.setOrigin(VALID_IO_CHANNEL);
         transactionDetails.setTransaction(transaction);
 
         PaymentInfo paymentInfo = new PaymentInfo();
