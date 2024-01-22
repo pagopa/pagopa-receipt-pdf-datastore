@@ -34,11 +34,10 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.Set;
 
 public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
 
-    public static final String CF_UNKNOWN = "ANONIMO";
+    public static final String FISCAL_CODE_ANONYMOUS = "ANONIMO";
     private final Logger logger = LoggerFactory.getLogger(BizEventToReceiptServiceImpl.class);
     private static final String[] AUTHENTICATED_CHANNELS = System.getenv().getOrDefault("AUTHENTICATED_CHANNELS", "").split(",");
 
@@ -184,21 +183,20 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
     public void tokenizeFiscalCodes(BizEvent bizEvent, Receipt receipt, EventData eventData) throws JsonProcessingException, PDVTokenizerException {
         try {
             //Tokenize Debtor
-            if (bizEvent.getDebtor() != null && bizEvent.getDebtor().getEntityUniqueIdentifierValue() != null) {
-                eventData.setDebtorFiscalCode(CF_UNKNOWN.equals(bizEvent.getDebtor().getEntityUniqueIdentifierValue()) ?
-                        bizEvent.getDebtor().getEntityUniqueIdentifierValue() :
-                        pdvTokenizerService.generateTokenForFiscalCodeWithRetry(bizEvent.getDebtor().getEntityUniqueIdentifierValue())
-                );
-            }
+            eventData.setDebtorFiscalCode(
+                    bizEvent.getDebtor() != null && BizEventToReceiptUtils.isValidFiscalCode(bizEvent.getDebtor().getEntityUniqueIdentifierValue()) ?
+                            pdvTokenizerService.generateTokenForFiscalCodeWithRetry(bizEvent.getDebtor().getEntityUniqueIdentifierValue()) :
+                            FISCAL_CODE_ANONYMOUS
+            );
             //Tokenize Payer
             if (isValidChannelOrigin(bizEvent)) {
-                if (bizEvent.getPayer() != null && bizEvent.getPayer().getEntityUniqueIdentifierValue() != null) {
+                if (bizEvent.getPayer() != null && BizEventToReceiptUtils.isValidFiscalCode(bizEvent.getPayer().getEntityUniqueIdentifierValue())) {
                     eventData.setPayerFiscalCode(
                             pdvTokenizerService.generateTokenForFiscalCodeWithRetry(bizEvent.getPayer().getEntityUniqueIdentifierValue())
                     );
-                } else if (
+                } else if (bizEvent.getTransactionDetails() != null &&
                         bizEvent.getTransactionDetails().getUser() != null &&
-                                bizEvent.getTransactionDetails().getUser().getFiscalCode() != null
+                        BizEventToReceiptUtils.isValidFiscalCode(bizEvent.getTransactionDetails().getUser().getFiscalCode())
                 ) {
                     eventData.setPayerFiscalCode(
                             pdvTokenizerService.generateTokenForFiscalCodeWithRetry(
