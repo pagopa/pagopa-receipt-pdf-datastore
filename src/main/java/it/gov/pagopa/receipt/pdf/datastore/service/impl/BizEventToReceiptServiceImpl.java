@@ -35,11 +35,12 @@ import org.slf4j.LoggerFactory;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.isValidChannelOrigin;
+
 public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
 
     public static final String FISCAL_CODE_ANONYMOUS = "ANONIMO";
     private final Logger logger = LoggerFactory.getLogger(BizEventToReceiptServiceImpl.class);
-    private static final String[] AUTHENTICATED_CHANNELS = System.getenv().getOrDefault("AUTHENTICATED_CHANNELS", "").split(",");
 
     private final PDVTokenizerServiceRetryWrapper pdvTokenizerService;
     private final ReceiptCosmosClient receiptCosmosClient;
@@ -212,26 +213,6 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         }
     }
 
-    private boolean isValidChannelOrigin(BizEvent bizEvent) {
-        if (bizEvent.getTransactionDetails() != null) {
-            if (
-                    bizEvent.getTransactionDetails().getTransaction() != null &&
-                            bizEvent.getTransactionDetails().getTransaction().getOrigin() != null &&
-                            Arrays.asList(AUTHENTICATED_CHANNELS).contains(bizEvent.getTransactionDetails().getTransaction().getOrigin())
-            ) {
-                return true;
-            }
-            if (
-                    bizEvent.getTransactionDetails().getInfo() != null &&
-                            bizEvent.getTransactionDetails().getInfo().getClientId() != null &&
-                            Arrays.asList(AUTHENTICATED_CHANNELS).contains(bizEvent.getTransactionDetails().getInfo().getClientId())
-            ) {
-                return true;
-            }
-        }
-
-        return false;
-    }
 
     @Override
     public void handleSaveCart(BizEvent bizEvent) {

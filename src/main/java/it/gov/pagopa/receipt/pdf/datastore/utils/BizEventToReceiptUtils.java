@@ -16,6 +16,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -28,6 +29,7 @@ public class BizEventToReceiptUtils {
 
     private static final String REMITTANCE_INFORMATION_REGEX = "/TXT/(.*)";
     private static final Boolean ECOMMERCE_FILTER_ENABLED = Boolean.parseBoolean(System.getenv().getOrDefault("ECOMMERCE_FILTER_ENABLED", "true"));
+    private static final String[] AUTHENTICATED_CHANNELS = System.getenv().getOrDefault("AUTHENTICATED_CHANNELS", "").split(",");
     private static final String ECOMMERCE = "CHECKOUT";
 
     /**
@@ -127,17 +129,18 @@ public class BizEventToReceiptUtils {
         if (bizEvent.getDebtor() != null && isValidFiscalCode(bizEvent.getDebtor().getEntityUniqueIdentifierValue())) {
             isValidDebtor = true;
         }
-        if (bizEvent.getTransactionDetails() != null && bizEvent.getTransactionDetails().getUser() != null && isValidFiscalCode(bizEvent.getTransactionDetails().getUser().getFiscalCode())) {
-            isValidPayer = true;
-        }
-        if (bizEvent.getPayer() != null && isValidFiscalCode(bizEvent.getPayer().getEntityUniqueIdentifierValue())) {
-            isValidPayer = true;
+        if (isValidChannelOrigin(bizEvent)) {
+            if (bizEvent.getTransactionDetails() != null && bizEvent.getTransactionDetails().getUser() != null && isValidFiscalCode(bizEvent.getTransactionDetails().getUser().getFiscalCode())) {
+                isValidPayer = true;
+            }
+            if (bizEvent.getPayer() != null && isValidFiscalCode(bizEvent.getPayer().getEntityUniqueIdentifierValue())) {
+                isValidPayer = true;
+            }
         }
         return isValidDebtor || isValidPayer;
     }
 
     public static Integer getTotalNotice(BizEvent bizEvent, ExecutionContext context, Logger logger) {
-
         if (bizEvent.getPaymentInfo() != null) {
             String totalNotice = bizEvent.getPaymentInfo().getTotalNotice();
 
@@ -146,7 +149,6 @@ public class BizEventToReceiptUtils {
 
                 try {
                     intTotalNotice = Integer.parseInt(totalNotice);
-
                 } catch (NumberFormatException e) {
                     logger.error("[{}] event with id {} discarded because has an invalid total notice value: {}",
                             context.getFunctionName(), bizEvent.getId(),
@@ -154,13 +156,10 @@ public class BizEventToReceiptUtils {
                             e);
                     throw e;
                 }
-
                 return intTotalNotice;
             }
         }
-
         return 1;
-
     }
 
     /**
@@ -291,6 +290,27 @@ public class BizEventToReceiptUtils {
             return patternCF.matcher(fiscalCode).find() || patternPIVA.matcher(fiscalCode).find();
         }
 
+        return false;
+    }
+
+
+    public static boolean isValidChannelOrigin(BizEvent bizEvent) {
+        if (bizEvent.getTransactionDetails() != null) {
+            if (
+                    bizEvent.getTransactionDetails().getTransaction() != null &&
+                            bizEvent.getTransactionDetails().getTransaction().getOrigin() != null &&
+                            Arrays.asList(AUTHENTICATED_CHANNELS).contains(bizEvent.getTransactionDetails().getTransaction().getOrigin())
+            ) {
+                return true;
+            }
+            if (
+                    bizEvent.getTransactionDetails().getInfo() != null &&
+                            bizEvent.getTransactionDetails().getInfo().getClientId() != null &&
+                            Arrays.asList(AUTHENTICATED_CHANNELS).contains(bizEvent.getTransactionDetails().getInfo().getClientId())
+            ) {
+                return true;
+            }
+        }
         return false;
     }
 
