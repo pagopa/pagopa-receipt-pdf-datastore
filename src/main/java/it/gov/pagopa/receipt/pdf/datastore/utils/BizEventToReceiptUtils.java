@@ -15,12 +15,7 @@ import org.slf4j.Logger;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.NumberFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -29,7 +24,8 @@ public class BizEventToReceiptUtils {
 
     private static final String REMITTANCE_INFORMATION_REGEX = "/TXT/(.*)";
     private static final Boolean ECOMMERCE_FILTER_ENABLED = Boolean.parseBoolean(System.getenv().getOrDefault("ECOMMERCE_FILTER_ENABLED", "true"));
-    private static final String[] AUTHENTICATED_CHANNELS = System.getenv().getOrDefault("AUTHENTICATED_CHANNELS", "").split(",");
+    private static final String[] AUTHENTICATED_CHANNELS = System.getenv().getOrDefault("AUTHENTICATED_CHANNELS", "IO").split(",");
+    private static final String[] UNWANTED_REMITTANCE_INFO = System.getenv().getOrDefault("UNWANTED_REMITTANCE_INFO", "pagamento multibeneficiario").split(",");
     private static final String ECOMMERCE = "CHECKOUT";
 
     /**
@@ -169,7 +165,11 @@ public class BizEventToReceiptUtils {
      * @return the remittance information
      */
     public static String getItemSubject(BizEvent bizEvent) {
-        if (bizEvent.getPaymentInfo() != null && bizEvent.getPaymentInfo().getRemittanceInformation() != null) {
+        if (
+                bizEvent.getPaymentInfo() != null &&
+                        bizEvent.getPaymentInfo().getRemittanceInformation() != null &&
+                        !Arrays.asList(UNWANTED_REMITTANCE_INFO).contains(bizEvent.getPaymentInfo().getRemittanceInformation())
+        ) {
             return bizEvent.getPaymentInfo().getRemittanceInformation();
         }
         List<Transfer> transferList = bizEvent.getTransferList();

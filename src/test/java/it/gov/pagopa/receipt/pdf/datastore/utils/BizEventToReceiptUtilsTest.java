@@ -32,6 +32,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith({MockitoExtension.class, SystemStubsExtension.class})
 class BizEventToReceiptUtilsTest {
     public static final String VALID_IO_CHANNEL = "IO";
+    public static final String INVALID_REMITTANCE_INFORMATION = "pagamento multibeneficiario";
     private final String EVENT_ID = "a valid id";
     private final String PAYER_FISCAL_CODE = "AAAAAA00A00A000D";
     private final String DEBTOR_FISCAL_CODE = "AAAAAA00A00A000P";
@@ -86,6 +87,24 @@ class BizEventToReceiptUtilsTest {
                 pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
 
         Receipt receipt = BizEventToReceiptUtils.createReceipt(generateValidBizEvent(false, true), receiptService, logger);
+
+        assertEquals(EVENT_ID, receipt.getEventId());
+        assertNotNull(receipt.getId());
+        assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, receipt.getEventData().getDebtorFiscalCode());
+        assertEquals(TOKENIZED_PAYER_FISCAL_CODE, receipt.getEventData().getPayerFiscalCode());
+        assertEquals(REMITTANCE_INFORMATION_TRANSFER_LIST_FORMATTED, receipt.getEventData().getCart().get(0).getSubject());
+    }
+
+    @Test
+    void createReceiptSuccessWithPaymentInfoRemittanceInvalidButWithTransferList() throws PDVTokenizerException, JsonProcessingException {
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
+
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
+        BizEvent bizEvent = generateValidBizEvent(false, true);
+        bizEvent.getPaymentInfo().setRemittanceInformation(INVALID_REMITTANCE_INFORMATION);
+        Receipt receipt = BizEventToReceiptUtils.createReceipt(bizEvent, receiptService, logger);
 
         assertEquals(EVENT_ID, receipt.getEventId());
         assertNotNull(receipt.getId());
