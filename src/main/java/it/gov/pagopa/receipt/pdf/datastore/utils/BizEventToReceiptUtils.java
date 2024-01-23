@@ -24,7 +24,7 @@ public class BizEventToReceiptUtils {
 
     private static final String REMITTANCE_INFORMATION_REGEX = "/TXT/(.*)";
     private static final Boolean ECOMMERCE_FILTER_ENABLED = Boolean.parseBoolean(System.getenv().getOrDefault("ECOMMERCE_FILTER_ENABLED", "true"));
-    private static final String[] AUTHENTICATED_CHANNELS = System.getenv().getOrDefault("AUTHENTICATED_CHANNELS", "").split(",");
+    private static final String[] AUTHENTICATED_CHANNELS = System.getenv().getOrDefault("AUTHENTICATED_CHANNELS", "IO").split(",");
     private static final String[] UNWANTED_REMITTANCE_INFO = System.getenv().getOrDefault("UNWANTED_REMITTANCE_INFO", "pagamento multibeneficiario").split(",");
     private static final String ECOMMERCE = "CHECKOUT";
 
