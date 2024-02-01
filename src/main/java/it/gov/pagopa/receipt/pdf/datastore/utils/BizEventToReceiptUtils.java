@@ -24,8 +24,8 @@ public class BizEventToReceiptUtils {
 
     private static final String REMITTANCE_INFORMATION_REGEX = "/TXT/(.*)";
     private static final Boolean ECOMMERCE_FILTER_ENABLED = Boolean.parseBoolean(System.getenv().getOrDefault("ECOMMERCE_FILTER_ENABLED", "true"));
-    private static final String[] AUTHENTICATED_CHANNELS = System.getenv().getOrDefault("AUTHENTICATED_CHANNELS", "IO").split(",");
-    private static final String[] UNWANTED_REMITTANCE_INFO = System.getenv().getOrDefault("UNWANTED_REMITTANCE_INFO", "pagamento multibeneficiario").split(",");
+    private static final List<String> AUTHENTICATED_CHANNELS = Arrays.asList(System.getenv().getOrDefault("AUTHENTICATED_CHANNELS", "IO").split(","));
+    private static final List<String> UNWANTED_REMITTANCE_INFO = Arrays.asList(System.getenv().getOrDefault("UNWANTED_REMITTANCE_INFO", "pagamento multibeneficiario").split(","));
     private static final String ECOMMERCE = "CHECKOUT";
 
     /**
@@ -168,7 +168,7 @@ public class BizEventToReceiptUtils {
         if (
                 bizEvent.getPaymentInfo() != null &&
                         bizEvent.getPaymentInfo().getRemittanceInformation() != null &&
-                        !Arrays.asList(UNWANTED_REMITTANCE_INFO).contains(bizEvent.getPaymentInfo().getRemittanceInformation())
+                        !UNWANTED_REMITTANCE_INFO.contains(bizEvent.getPaymentInfo().getRemittanceInformation().toLowerCase())
         ) {
             return bizEvent.getPaymentInfo().getRemittanceInformation();
         }
@@ -299,14 +299,14 @@ public class BizEventToReceiptUtils {
             if (
                     bizEvent.getTransactionDetails().getTransaction() != null &&
                             bizEvent.getTransactionDetails().getTransaction().getOrigin() != null &&
-                            Arrays.asList(AUTHENTICATED_CHANNELS).contains(bizEvent.getTransactionDetails().getTransaction().getOrigin())
+                            AUTHENTICATED_CHANNELS.contains(bizEvent.getTransactionDetails().getTransaction().getOrigin())
             ) {
                 return true;
             }
             if (
                     bizEvent.getTransactionDetails().getInfo() != null &&
                             bizEvent.getTransactionDetails().getInfo().getClientId() != null &&
-                            Arrays.asList(AUTHENTICATED_CHANNELS).contains(bizEvent.getTransactionDetails().getInfo().getClientId())
+                            AUTHENTICATED_CHANNELS.contains(bizEvent.getTransactionDetails().getInfo().getClientId())
             ) {
                 return true;
             }
