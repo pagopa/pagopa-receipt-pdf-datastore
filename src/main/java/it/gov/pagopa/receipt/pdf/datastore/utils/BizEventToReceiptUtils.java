@@ -87,9 +87,9 @@ public class BizEventToReceiptUtils {
             return true;
         }
 
-        logger.info("[{}] event with id {} discarded because in status {}", context.getFunctionName(), bizEvent.getId(), bizEvent.getEventStatus());
+        // logger.info("[{}] event with id {} discarded because in status {}", context.getFunctionName(), bizEvent.getId(), bizEvent.getEventStatus());
 
-        if (!bizEvent.getEventStatus().equals(BizEventStatusType.DONE)) {
+        if (!BizEventStatusType.DONE.equals(bizEvent.getEventStatus())) {
             logger.debug("[{}] event with id {} discarded because in status {}",
                     context.getFunctionName(), bizEvent.getId(), bizEvent.getEventStatus());
             return true;
