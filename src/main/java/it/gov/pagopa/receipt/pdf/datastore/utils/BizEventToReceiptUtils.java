@@ -306,12 +306,11 @@ public class BizEventToReceiptUtils {
     }
 
     public static boolean isCartOrHasValidAmount(BizEvent bizEvent) {
-        if (bizEvent.getPaymentInfo().getTotalNotice() == null) {
-            return bizEvent.getPaymentInfo() != null &&
-                    bizEvent.getTransactionDetails() != null &&
+        if (bizEvent.getPaymentInfo() != null && bizEvent.getPaymentInfo().getTotalNotice() == null) {
+            return bizEvent.getTransactionDetails() != null &&
                     new BigDecimal(bizEvent.getPaymentInfo().getAmount()).subtract(
                             formatEuroCentAmount(bizEvent.getTransactionDetails().getTransaction().getAmount()))
-                            .intValue()== 0;
+                            .intValue() == 0;
         }
         return true;
     }
