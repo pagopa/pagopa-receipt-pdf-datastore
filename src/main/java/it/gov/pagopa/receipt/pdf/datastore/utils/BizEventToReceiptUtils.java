@@ -111,6 +111,13 @@ public class BizEventToReceiptUtils {
             return true;
         }
 
+        if (!isCartOrHasValidAmount(bizEvent)) {
+            logger.debug("[{}] event with id {} contain either an invalid amount value," +
+                            " or it is a legacy cart element",
+                    context.getFunctionName(), bizEvent.getId());
+            return true;
+        }
+
         try {
             Receipt receipt = service.getReceipt(bizEvent.getId());
             logger.debug("[{}] event with id {} discarded because already processed, receipt already exist with id {}",
@@ -296,6 +303,17 @@ public class BizEventToReceiptUtils {
         }
 
         return false;
+    }
+
+    public static boolean isCartOrHasValidAmount(BizEvent bizEvent) {
+        if (bizEvent.getPaymentInfo().getTotalNotice() == null) {
+            return bizEvent.getPaymentInfo() != null &&
+                    bizEvent.getTransactionDetails() != null &&
+                    new BigDecimal(bizEvent.getPaymentInfo().getAmount()).subtract(
+                            formatEuroCentAmount(bizEvent.getTransactionDetails().getTransaction().getAmount()))
+                            .intValue()== 0;
+        }
+        return true;
     }
 
 
