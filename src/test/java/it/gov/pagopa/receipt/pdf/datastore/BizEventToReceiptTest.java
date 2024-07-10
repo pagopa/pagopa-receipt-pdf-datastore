@@ -512,7 +512,8 @@ class BizEventToReceiptTest {
     void runDiscardedWithInvalidCartAmounts() {
         List<BizEvent> bizEventItems = new ArrayList<>();
         BizEvent bizEvent = generateValidBizEvent(null);
-        bizEvent.getTransactionDetails().getTransaction().setAmount(100);
+        bizEvent.getTransactionDetails().getTransaction().setAmount(268152);
+        bizEvent.getPaymentInfo().setAmount("2681.00");
         bizEventItems.add(bizEvent);
 
         @SuppressWarnings("unchecked")
