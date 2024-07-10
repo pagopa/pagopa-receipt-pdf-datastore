@@ -316,7 +316,7 @@ public class BizEventToReceiptUtils {
             return bizEvent.getTransactionDetails() != null &&
                     new BigDecimal(bizEvent.getPaymentInfo().getAmount()).subtract(
                             formatEuroCentAmount(bizEvent.getTransactionDetails().getTransaction().getAmount()))
-                            .intValue() == 0;
+                            .floatValue() == 0;
         }
         return true;
     }
