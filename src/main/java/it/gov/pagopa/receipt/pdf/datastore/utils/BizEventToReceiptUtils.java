@@ -305,6 +305,12 @@ public class BizEventToReceiptUtils {
         return false;
     }
 
+    /**
+     * Method to check if the content comes from a legacy cart model (see https://pagopa.atlassian.net/browse/VAS-1167)
+     * @param bizEvent bizEvent to validate
+     * @return flag to determine if it is a manageable cart, or otherwise, will return false if
+     * it is considered a legacy cart content (not having a totalNotice field and having amount values != 0)
+     */
     public static boolean isCartMod1(BizEvent bizEvent) {
         if (bizEvent.getPaymentInfo() != null && bizEvent.getPaymentInfo().getTotalNotice() == null) {
             return bizEvent.getTransactionDetails() != null &&
