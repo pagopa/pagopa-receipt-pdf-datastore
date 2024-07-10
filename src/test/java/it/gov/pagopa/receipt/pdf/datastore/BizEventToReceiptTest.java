@@ -508,6 +508,24 @@ class BizEventToReceiptTest {
         verify(cartReceiptsCosmosClient, never()).saveCart(any());
     }
 
+    @Test
+    void runDiscardedWithInvalidCartAmounts() {
+        List<BizEvent> bizEventItems = new ArrayList<>();
+        BizEvent bizEvent = generateValidBizEvent(null);
+        bizEvent.getTransactionDetails().getTransaction().setAmount(100);
+        bizEventItems.add(bizEvent);
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
+        function = new BizEventToReceipt(receiptService);
+        // test execution
+        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
+
+        verify(documentdb, never()).setValue(any());
+    }
+
     private BizEvent generateValidBizEvent(String totalNotice){
         BizEvent item = new BizEvent();
 
@@ -520,10 +538,12 @@ class BizEventToReceiptTest {
         Transaction transaction = new Transaction();
         transaction.setCreationDate(String.valueOf(LocalDateTime.now()));
         transaction.setOrigin(VALID_IO_CHANNEL);
+        transaction.setAmount(10000);
         transactionDetails.setTransaction(transaction);
 
         PaymentInfo paymentInfo = new PaymentInfo();
         paymentInfo.setTotalNotice(totalNotice);
+        paymentInfo.setAmount("100.0");
 
         item.setEventStatus(BizEventStatusType.DONE);
         item.setId(EVENT_ID);
@@ -545,8 +565,10 @@ class BizEventToReceiptTest {
         Transaction transaction = new Transaction();
         transaction.setCreationDate(String.valueOf(LocalDateTime.now()));
         transaction.setOrigin(VALID_IO_CHANNEL);
+        transaction.setAmount(10000);
         transactionDetails.setTransaction(transaction);
         transactionDetails.setUser(User.builder().fiscalCode(PAYER_FISCAL_CODE).build());
+
 
         PaymentInfo paymentInfo = new PaymentInfo();
         paymentInfo.setTotalNotice(totalNotice);
@@ -572,10 +594,12 @@ class BizEventToReceiptTest {
         Transaction transaction = new Transaction();
         transaction.setCreationDate(String.valueOf(LocalDateTime.now()));
         transaction.setOrigin(VALID_IO_CHANNEL);
+        transaction.setAmount(10000);
         transactionDetails.setTransaction(transaction);
 
         PaymentInfo paymentInfo = new PaymentInfo();
         paymentInfo.setTotalNotice(totalNotice);
+        paymentInfo.setAmount("100");
 
         item.setEventStatus(BizEventStatusType.DONE);
         item.setId(EVENT_ID);

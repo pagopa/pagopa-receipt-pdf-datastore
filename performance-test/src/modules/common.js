@@ -108,7 +108,7 @@ export function createEvent(id, customCF) {
 				"idTransaction": "123456",
 				"transactionId": "123456",
 				"grandTotal": 0,
-				"amount": 0,
+				"amount": 1000,
 				"fee": 0
 			}
 		},
