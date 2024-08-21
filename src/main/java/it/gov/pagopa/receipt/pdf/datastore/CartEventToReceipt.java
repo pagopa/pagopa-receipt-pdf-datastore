@@ -58,22 +58,22 @@ public class CartEventToReceipt {
             @CosmosDBTrigger(
                     name = "CartReceiptDatastore",
                     databaseName = "db",
-                    collectionName = "cart-for-receipts",
-                    leaseCollectionName = "cart-for-receipts-leases",
-                    connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING",
-                    createLeaseCollectionIfNotExists = true)
+                    containerName = "cart-for-receipts",
+                    leaseContainerName = "cart-for-receipts-leases",
+                    connection = "COSMOS_RECEIPTS_CONN_STRING",
+                    createLeaseContainerIfNotExists = true)
             List<CartForReceipt> listCartForReceipt,
             @CosmosDBOutput(
                     name = "ReceiptDatastore",
                     databaseName = "db",
-                    collectionName = "receipts",
-                    connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING")
+                    containerName = "receipts",
+                    connection = "COSMOS_RECEIPTS_CONN_STRING")
             OutputBinding<List<Receipt>> receiptDocumentdb,
             @CosmosDBOutput(
                     name = "CartReceiptDatastoreOutput",
                     databaseName = "db",
-                    collectionName = "cart-for-receipts",
-                    connectionStringSetting = "COSMOS_RECEIPTS_CONN_STRING")
+                    containerName = "cart-for-receipts",
+                    connection = "COSMOS_RECEIPTS_CONN_STRING")
             OutputBinding<List<CartForReceipt>> cartForReceiptDocumentdb,
             final ExecutionContext context
     ) {
