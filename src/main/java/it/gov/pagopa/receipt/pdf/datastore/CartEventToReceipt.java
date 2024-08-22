@@ -109,7 +109,7 @@ public class CartEventToReceipt {
                             listOfFailedReceipt.add(receipt);
                         }
                         cartForReceipt.setStatus(CartStatusType.SENT);
-                        logger.info("[{}] Cart with id {} processes successfully. Cart with status: {} and receipt with status: {}",
+                        logger.debug("[{}] Cart with id {} processes successfully. Cart with status: {} and receipt with status: {}",
                                 context.getFunctionName(), cartForReceipt.getId(), cartForReceipt.getStatus(), receipt.getStatus());
                     } else {
                         logger.error("[{}] Failed to process cart with id {}: fail to save receipt",

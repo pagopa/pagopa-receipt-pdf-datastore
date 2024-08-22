@@ -97,7 +97,7 @@ public class BizEventToReceipt {
 
                 Receipt receipt = BizEventToReceiptUtils.createReceipt(bizEvent, bizEventToReceiptService, logger);
 
-                logger.info("[{}] function called at {} for event with id {} and status {}",
+                logger.debug("[{}] function called at {} for event with id {} and status {}",
                         context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
 
                 if (isReceiptStatusValid(receipt)) {
