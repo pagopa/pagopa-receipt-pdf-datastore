@@ -63,7 +63,7 @@ data "azurerm_storage_account" "receipts_sa" {
 }
 
 data "azurerm_user_assigned_identity" "workload_identity_clientid" {
-  name                = "printit-workload-identity"
+  name                = "receipts-workload-identity"
   resource_group_name = "pagopa-${var.env_short}-itn-${var.env}-aks-rg"
 }
 
