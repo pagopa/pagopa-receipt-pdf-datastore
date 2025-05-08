@@ -4,12 +4,14 @@ import com.microsoft.azure.functions.ExecutionContext;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.Transfer;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.enumeration.BizEventStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.entity.event.enumeration.UserType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.CartItem;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
+
 import org.slf4j.Logger;
 
 import java.math.BigDecimal;
@@ -26,7 +28,7 @@ public class BizEventToReceiptUtils {
     private static final Boolean ECOMMERCE_FILTER_ENABLED = Boolean.parseBoolean(System.getenv().getOrDefault(
             "ECOMMERCE_FILTER_ENABLED", "true"));
     private static final List<String> AUTHENTICATED_CHANNELS = Arrays.asList(System.getenv().getOrDefault(
-            "AUTHENTICATED_CHANNELS", "IO").split(","));
+            "AUTHENTICATED_CHANNELS", "IO,CHECKOUT").split(","));
     private static final List<String> UNWANTED_REMITTANCE_INFO = Arrays.asList(System.getenv().getOrDefault(
             "UNWANTED_REMITTANCE_INFO", "pagamento multibeneficiario,pagamento bpay").split(","));
     private static final String ECOMMERCE = "CHECKOUT";
@@ -318,26 +320,34 @@ public class BizEventToReceiptUtils {
         }
         return true;
     }
-
-
+    
+    
     public static boolean isValidChannelOrigin(BizEvent bizEvent) {
-        if (bizEvent.getTransactionDetails() != null) {
-            if (
-                    bizEvent.getTransactionDetails().getTransaction() != null &&
-                            bizEvent.getTransactionDetails().getTransaction().getOrigin() != null &&
-                            AUTHENTICATED_CHANNELS.contains(bizEvent.getTransactionDetails().getTransaction().getOrigin())
-            ) {
-                return true;
-            }
-            if (
-                    bizEvent.getTransactionDetails().getInfo() != null &&
-                            bizEvent.getTransactionDetails().getInfo().getClientId() != null &&
-                            AUTHENTICATED_CHANNELS.contains(bizEvent.getTransactionDetails().getInfo().getClientId())
-            ) {
-                return true;
-            }
+        if (bizEvent.getTransactionDetails() == null) {
+            return false;
         }
-        return false;
+
+        var transactionDetails = bizEvent.getTransactionDetails();
+        var transaction = transactionDetails.getTransaction();
+        var info = transactionDetails.getInfo();
+        var user = transactionDetails.getUser();
+
+        String origin = (transaction != null) ? transaction.getOrigin() : null;
+        String clientId = (info != null) ? info.getClientId() : null;
+        UserType userType = (user != null) ? user.getType() : null;
+
+        boolean originMatches = origin != null && AUTHENTICATED_CHANNELS.contains(origin);
+        boolean clientIdMatches = clientId != null && AUTHENTICATED_CHANNELS.contains(clientId);
+
+        boolean isCheckoutOrigin = ECOMMERCE.equalsIgnoreCase(origin);
+        boolean isCheckoutClientId = ECOMMERCE.equalsIgnoreCase(clientId);
+        boolean isRegisteredUser = UserType.REGISTERED.equals(userType);
+
+        if ((isCheckoutOrigin || isCheckoutClientId) && !isRegisteredUser) {
+            return false;
+        }
+
+        return originMatches || clientIdMatches;
     }
 
     private BizEventToReceiptUtils() {
