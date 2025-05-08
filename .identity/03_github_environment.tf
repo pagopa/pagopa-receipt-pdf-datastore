@@ -21,7 +21,7 @@ resource "github_repository_environment" "github_repository_environment" {
 
 locals {
   env_secrets = {
-    "CLIENT_ID" : module.github_runner_app.application_id,
+    "CLIENT_ID" : data.azurerm_user_assigned_identity.identity_cd_01.client_id,
     "TENANT_ID" : data.azurerm_client_config.current.tenant_id,
     "SUBSCRIPTION_ID" : data.azurerm_subscription.current.subscription_id,
     "RECEIPTS_COSMOS_CONN_STRING" : "AccountEndpoint=https://pagopa-${var.env_short}-${local.location_short}-${local.domain}-ds-cosmos-account.documents.azure.com:443/;AccountKey=${data.azurerm_cosmosdb_account.receipts_cosmos.primary_key};",
@@ -34,6 +34,7 @@ locals {
     "CLUSTER_RESOURCE_GROUP" : local.aks_cluster.resource_group_name,
     "DOMAIN" : local.domain,
     "NAMESPACE" : local.domain,
+    "WORKLOAD_IDENTITY_ID": data.azurerm_user_assigned_identity.workload_identity_clientid.client_id
   }
 }
 
