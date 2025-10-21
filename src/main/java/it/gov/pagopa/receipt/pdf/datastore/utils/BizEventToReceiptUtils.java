@@ -4,7 +4,7 @@ import com.microsoft.azure.functions.ExecutionContext;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.Transfer;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.enumeration.BizEventStatusType;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.CartItem;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartItem;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
