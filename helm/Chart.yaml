@@ -2,8 +2,8 @@ apiVersion: v2
 name: pagopareceiptpdfdatastore
 description: Microservice description
 type: application
-version: 0.124.0
-appVersion: 1.13.6-1-PIDM-962-fix-authenticated-channels
+version: 0.125.0
+appVersion: 1.13.7
 dependencies:
   - name: microservice-chart
     version: 7.5.0
