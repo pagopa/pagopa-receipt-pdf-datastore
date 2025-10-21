@@ -33,17 +33,15 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      - uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f # v2.3.4
       - name: Code Review
-        uses: ./.github/maven_code_review
+        uses: pagopa/github-actions-template/maven-code-review@525266fb788f4da438e5919fcf660fe8637271ed # v2.2.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           sonar_token: ${{ secrets.SONAR_TOKEN }}
           project_key: ${{env.PROJECT_KEY}}
-          jdk_version: 17
-          maven_version: 3.9.3
           coverage_exclusions: "**/config/*,**/*Mock*,**/model/**,**/entity/**,**/producer/**,**/enumeration/**,**/exception/**"
           cpd_exclusions: "**/model/**,**/entity/*"
+          java_version: "17"
 
   smoke-test:
     name: Smoke Test
@@ -75,10 +73,14 @@ jobs:
       - name: Run Integration Tests
         shell: bash
         id: run_integration_test
+        env:
+          CUCUMBER_PUBLISH_TOKEN_ENV: ${{ secrets.CUCUMBER_PUBLISH_TOKEN }}
+          RECEIPTS_COSMOS_CONN_STRING_ENV: ${{ secrets.RECEIPTS_COSMOS_CONN_STRING }}
+          BIZEVENTS_COSMOS_CONN_STRING_ENV: ${{ secrets.BIZEVENTS_COSMOS_CONN_STRING }}
         run: |
-          export CUCUMBER_PUBLISH_TOKEN=${{ secrets.CUCUMBER_PUBLISH_TOKEN }}
-          export RECEIPTS_COSMOS_CONN_STRING='${{ secrets.RECEIPTS_COSMOS_CONN_STRING }}'
-          export BIZEVENTS_COSMOS_CONN_STRING='${{ secrets.BIZEVENTS_COSMOS_CONN_STRING }}'
+          export CUCUMBER_PUBLISH_TOKEN="$CUCUMBER_PUBLISH_TOKEN_ENV"
+          export RECEIPTS_COSMOS_CONN_STRING="$RECEIPTS_COSMOS_CONN_STRING_ENV"
+          export BIZEVENTS_COSMOS_CONN_STRING="$BIZEVENTS_COSMOS_CONN_STRING_ENV"
           cd ./integration-test
           chmod +x ./run_integration_test.sh
           ./run_integration_test.sh local

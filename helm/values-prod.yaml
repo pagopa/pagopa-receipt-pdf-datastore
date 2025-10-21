@@ -4,7 +4,7 @@ microservice-chart:
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-receipt-pdf-datastore
-    tag: "1.13.6"
+    tag: "1.13.6-1-PIDM-962-fix-authenticated-channels"
     pullPolicy: Always
   # https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script.WebHost/Controllers/HostController.cs
   livenessProbe:
@@ -107,7 +107,7 @@ microservice-chart:
     AZURE_FUNCTIONS_MESH_JAVA_OPTS: "-javaagent:/home/site/wwwroot/jmx_prometheus_javaagent-0.19.0.jar=12345:/home/site/wwwroot/config.yaml -Xmx768m -XX:+UseG1GC"
     ECOMMERCE_FILTER_ENABLED: "false"
     ENABLE_CART: "false"
-    AUTHENTICATED_CHANNELS: "IO,CHECKOUT"
+    AUTHENTICATED_CHANNELS: "IO,CHECKOUT,WISP,CHECKOUT_CART"
     UNWANTED_REMITTANCE_INFO: "pagamento multibeneficiario,pagamento bpay"
   envFieldRef:
     APP_NAME: "metadata.labels['app.kubernetes.io/instance']"

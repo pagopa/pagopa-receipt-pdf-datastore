@@ -28,7 +28,7 @@ public class BizEventToReceiptUtils {
     private static final Boolean ECOMMERCE_FILTER_ENABLED = Boolean.parseBoolean(System.getenv().getOrDefault(
             "ECOMMERCE_FILTER_ENABLED", "true"));
     private static final List<String> AUTHENTICATED_CHANNELS = Arrays.asList(System.getenv().getOrDefault(
-            "AUTHENTICATED_CHANNELS", "IO,CHECKOUT").split(","));
+            "AUTHENTICATED_CHANNELS", "IO,CHECKOUT,WISP,CHECKOUT_CART").split(","));
     private static final List<String> UNWANTED_REMITTANCE_INFO = Arrays.asList(System.getenv().getOrDefault(
             "UNWANTED_REMITTANCE_INFO", "pagamento multibeneficiario,pagamento bpay").split(","));
     private static final String ECOMMERCE = "CHECKOUT";
