@@ -6,8 +6,14 @@ import com.microsoft.azure.functions.annotation.CosmosDBOutput;
 import com.microsoft.azure.functions.annotation.CosmosDBTrigger;
 import com.microsoft.azure.functions.annotation.ExponentialBackoffRetry;
 import com.microsoft.azure.functions.annotation.FunctionName;
+import it.gov.pagopa.receipt.pdf.datastore.client.CartReceiptsCosmosClient;
+import it.gov.pagopa.receipt.pdf.datastore.client.impl.CartReceiptsCosmosClientImpl;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartPayment;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
+import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.BizEventToReceiptServiceImpl;
 import it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils;
@@ -71,10 +77,17 @@ public class BizEventToReceipt {
                     containerName = "receipts",
                     connection = "COSMOS_RECEIPTS_CONN_STRING")
             OutputBinding<List<Receipt>> documentdb,
+            @CosmosDBOutput(
+                    name = "ReceiptDatastore",
+                    databaseName = "db",
+                    containerName = "cart-for-receipts",
+                    connection = "COSMOS_RECEIPTS_CONN_STRING")
+            OutputBinding<List<CartForReceipt>> cartDocumentdb,
             final ExecutionContext context) {
 
         int itemsDone = 0;
         List<Receipt> receiptFailed = new ArrayList<>();
+        List<CartForReceipt> cartFailed = new ArrayList<>();
 
         logger.info("[{}] stat {} function - num events triggered {}",
                 context.getFunctionName(),
@@ -114,8 +127,21 @@ public class BizEventToReceipt {
                     receiptFailed.add(receipt);
                 }
 
-            } else if (Boolean.TRUE.equals(isCartEnabled) && totalNotice > 1) {
-                bizEventToReceiptService.handleSaveCart(bizEvent);
+            } else if (isCartEnabled && totalNotice > 1) {
+                CartForReceipt cartForReceipt = bizEventToReceiptService.buildCartForReceipt(bizEvent);
+                if (isCartStatusValid(cartForReceipt)) {
+                    // saved on CosmosDB
+                    bizEventToReceiptService.saveCartForReceipt(cartForReceipt);
+                }
+
+                if (isCartStatusValid(cartForReceipt)) {
+                    // Send biz event as message to queue (to be processed from the other function)
+                    bizEventToReceiptService.handleSendCartMessageToQueue(Collections.singletonList(bizEvent), cartForReceipt);
+                }
+
+                if (!isCartStatusValid(cartForReceipt)) {
+                    cartFailed.add(cartForReceipt);
+                }
             }
 
             itemsDone++;
@@ -138,6 +164,17 @@ public class BizEventToReceipt {
                     context.getFunctionName(),
                     context.getInvocationId(), receiptFailed.size());
             documentdb.setValue(receiptFailed);
+        }        // Save failed receipts to CosmosDB
+        if (!cartFailed.isEmpty()) {
+            // Call to datastore info
+            logger.debug("[{}] stat {} function - number of carts failed inserted on the datastore {}",
+                    context.getFunctionName(),
+                    context.getInvocationId(), receiptFailed.size());
+            cartDocumentdb.setValue(cartFailed);
         }
+    }
+
+    private boolean isCartStatusValid(CartForReceipt cartForReceipt) {
+        return cartForReceipt.getStatus() != CartStatusType.FAILED && cartForReceipt.getStatus() != CartStatusType.NOT_QUEUE_SENT;
     }
 }

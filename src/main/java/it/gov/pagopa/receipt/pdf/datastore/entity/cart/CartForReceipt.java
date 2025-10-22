@@ -18,16 +18,10 @@ public class CartForReceipt {
     private String id;
     private String version;
     private Payload payload;
-    //    private IOMessageData ioMessageData;
-    private ReceiptStatusType status;
-    //    private ReceiptMetadata mdAttach; moved to EventData
-//    private ReceiptMetadata mdAttachPayer; moved to EventData
+    private CartStatusType status;
     private int numRetry;
     private ReasonError reasonErr;
-    private ReasonError reasonErrPayer;
     private long inserted_at;
     private long generated_at;
     private long notified_at;
-//    private Boolean isCart; is it useful?
-
 }

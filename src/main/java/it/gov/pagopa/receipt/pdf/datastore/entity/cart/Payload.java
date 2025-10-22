@@ -1,5 +1,6 @@
 package it.gov.pagopa.receipt.pdf.datastore.entity.cart;
 
+import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReasonError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReceiptMetadata;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,9 +15,10 @@ import java.util.List;
 @Builder
 public class Payload {
     private String payerFiscalCode;
-//    private String debtorFiscalCode; moved to CartItem
     private String transactionCreationDate;
     private String totalAmount; // renamed
     private ReceiptMetadata mdAttachPayer;
-    private List<CartItem> cart;
+    private List<CartPayment> cart;
+    private ReasonError reasonErrPayer;
+
 }
