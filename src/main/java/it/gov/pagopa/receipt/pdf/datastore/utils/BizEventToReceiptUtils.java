@@ -64,6 +64,8 @@ public class BizEventToReceiptUtils {
         CartItem item = new CartItem();
         item.setPayeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null);
         item.setSubject(getItemSubject(bizEvent));
+        List<CartItem> cartItems = Collections.singletonList(item);
+        eventData.setCart(cartItems);
 
         receipt.setEventData(eventData);
         return receipt;

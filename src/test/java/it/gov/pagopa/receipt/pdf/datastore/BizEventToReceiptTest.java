@@ -399,6 +399,7 @@ class BizEventToReceiptTest {
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+        @SuppressWarnings("unchecked")
         OutputBinding<List<CartForReceipt>> cartDocumentdb = (OutputBinding<List<CartForReceipt>>) spy(OutputBinding.class);
 
         // test execution
