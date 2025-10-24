@@ -1,6 +1,7 @@
 package it.gov.pagopa.receipt.pdf.datastore.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
@@ -19,6 +20,8 @@ public interface BizEventToReceiptService {
      * @param receipt      Receipt to update
      */
     void handleSendMessageToQueue(List<BizEvent> bizEventList, Receipt receipt);
+
+    void handleSendCartMessageToQueue(List<BizEvent> bizEventList, CartForReceipt cartForReceipt);
 
     /**
      * Recovers a receipt from the CosmosDB by the property eventId
@@ -59,8 +62,9 @@ public interface BizEventToReceiptService {
      * otherwise it saves a new cart
      *
      * @param bizEvent the biz-event
+     * @return
      */
-    void handleSaveCart(BizEvent bizEvent);
+    CartForReceipt buildCartForReceipt(BizEvent bizEvent);
 
     /**
      * Retrieve all events that are associated to the cart with the specified id
@@ -70,4 +74,5 @@ public interface BizEventToReceiptService {
      */
     List<BizEvent> getCartBizEvents(String cartId);
 
+    void saveCartForReceipt(CartForReceipt cartForReceipt);
 }

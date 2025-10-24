@@ -1,6 +1,7 @@
 package it.gov.pagopa.receipt.pdf.datastore.entity.cart;
 
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReasonError;
+import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,11 +14,14 @@ import java.util.Set;
 @Data
 public class CartForReceipt {
 
+    private String eventId;
     private String id;
-    private Set<String> cartPaymentId;
-    private Integer totalNotice;
+    private String version;
+    private Payload payload;
     private CartStatusType status;
-    private ReasonError reasonError;
+    private int numRetry;
+    private ReasonError reasonErr;
     private long inserted_at;
-
+    private long generated_at;
+    private long notified_at;
 }

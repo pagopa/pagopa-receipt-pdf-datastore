@@ -204,58 +204,7 @@ public class BizEventToReceiptUtils {
         }
         return null;
     }
-
-    /**
-     * Creates the receipt for a cart, using the tokenizer service to mask the PII, based on
-     * the provided list of BizEvent
-     *
-     * @param bizEventList a list og BizEvent
-     * @return a receipt
-     */
-    public static Receipt createCartReceipt(List<BizEvent> bizEventList, BizEventToReceiptService service, Logger logger) {
-        Receipt receipt = new Receipt();
-        BizEvent firstBizEvent = bizEventList.get(0);
-        String carId = firstBizEvent.getTransactionDetails().getTransaction().getTransactionId();
-
-        // Insert biz-event data into receipt
-        receipt.setId(String.format("%s-%s", carId, UUID.randomUUID()));
-        receipt.setEventId(carId);
-        receipt.setIsCart(true);
-
-        EventData eventData = new EventData();
-        try {
-            service.tokenizeFiscalCodes(firstBizEvent, receipt, eventData);
-        } catch (Exception e) {
-            logger.error("Error tokenizing receipt for cart with id {}", carId, e);
-            receipt.setStatus(ReceiptStatusType.FAILED);
-            return receipt;
-        }
-
-        eventData.setTransactionCreationDate(service.getTransactionCreationDate(firstBizEvent));
-
-        AtomicReference<BigDecimal> amount = new AtomicReference<>(BigDecimal.ZERO);
-        List<CartItem> cartItems = new ArrayList<>();
-        bizEventList.forEach(bizEvent -> {
-            BigDecimal amountExtracted = getAmount(bizEvent);
-            amount.updateAndGet(v -> v.add(amountExtracted));
-            cartItems.add(
-                    CartItem.builder()
-                            .payeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null)
-                            .subject(getItemSubject(bizEvent))
-                            .build());
-        });
-
-        if (!amount.get().equals(BigDecimal.ZERO)) {
-            eventData.setAmount(formatAmount(amount.get().toString()));
-        }
-
-        eventData.setCart(cartItems);
-
-        receipt.setEventData(eventData);
-        return receipt;
-    }
-
-    private static BigDecimal getAmount(BizEvent bizEvent) {
+    public static BigDecimal getAmount(BizEvent bizEvent) {
         if (bizEvent.getTransactionDetails() != null && bizEvent.getTransactionDetails().getTransaction() != null) {
             return formatEuroCentAmount(bizEvent.getTransactionDetails().getTransaction().getGrandTotal());
         }
@@ -271,7 +220,7 @@ public class BizEventToReceiptUtils {
         return amount.divide(divider, 2, RoundingMode.UNNECESSARY);
     }
 
-    private static String formatAmount(String value) {
+    public static String formatAmount(String value) {
         BigDecimal valueToFormat = new BigDecimal(value);
         NumberFormat numberFormat = NumberFormat.getInstance(Locale.ITALY);
         numberFormat.setMaximumFractionDigits(2);
