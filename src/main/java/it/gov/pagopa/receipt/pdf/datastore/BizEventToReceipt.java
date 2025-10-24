@@ -6,14 +6,10 @@ import com.microsoft.azure.functions.annotation.CosmosDBOutput;
 import com.microsoft.azure.functions.annotation.CosmosDBTrigger;
 import com.microsoft.azure.functions.annotation.ExponentialBackoffRetry;
 import com.microsoft.azure.functions.annotation.FunctionName;
-import it.gov.pagopa.receipt.pdf.datastore.client.CartReceiptsCosmosClient;
-import it.gov.pagopa.receipt.pdf.datastore.client.impl.CartReceiptsCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
-import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartPayment;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.BizEventToReceiptServiceImpl;
 import it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils;
@@ -38,9 +34,13 @@ public class BizEventToReceipt {
 
     private final BizEventToReceiptService bizEventToReceiptService;
 
-    public BizEventToReceipt(){ this.bizEventToReceiptService = new BizEventToReceiptServiceImpl();}
+    public BizEventToReceipt() {
+        this.bizEventToReceiptService = new BizEventToReceiptServiceImpl();
+    }
 
-    BizEventToReceipt(BizEventToReceiptService bizEventToReceiptService){ this.bizEventToReceiptService = bizEventToReceiptService;}
+    BizEventToReceipt(BizEventToReceiptService bizEventToReceiptService) {
+        this.bizEventToReceiptService = bizEventToReceiptService;
+    }
 
     /**
      * This function will be invoked when an CosmosDB trigger occurs

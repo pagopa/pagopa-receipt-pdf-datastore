@@ -17,12 +17,12 @@ public class CartQueueClientImpl implements CartQueueClient {
 
     private static CartQueueClientImpl instance;
 
-    private final int cartQueueDelay = Integer.parseInt(System.getenv().getOrDefault("CART_QUEUE_DELAY", "1"));
+    private final int cartQueueDelay = Integer.parseInt(System.getenv().getOrDefault("RECEIPT_QUEUE_DELAY", "1"));
 
     private final QueueClient cartQueueClient;
 
     private CartQueueClientImpl() {
-        String cartQueueConnString = System.getenv("CART_QUEUE_CONN_STRING");
+        String cartQueueConnString = System.getenv("RECEIPT_QUEUE_CONN_STRING");
         String cartQueueTopic = System.getenv("CART_QUEUE_TOPIC");
 
         this.cartQueueClient = new QueueClientBuilder()
