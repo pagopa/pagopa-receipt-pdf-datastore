@@ -4,6 +4,7 @@ import com.azure.cosmos.models.FeedResponse;
 import com.microsoft.azure.functions.ExecutionContext;
 import it.gov.pagopa.receipt.pdf.datastore.client.BizEventCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.client.CartReceiptsCosmosClient;
+import it.gov.pagopa.receipt.pdf.datastore.client.impl.CartQueueClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptQueueClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
@@ -41,6 +42,8 @@ class BizEventToReceiptServiceImplTest {
     private BizEventCosmosClient bizEventCosmosClientMock;
     @Mock
     private ReceiptQueueClientImpl queueClient;
+    @Mock
+    private CartQueueClientImpl cartQueueClient;
 
 
     @BeforeEach
@@ -50,7 +53,8 @@ class BizEventToReceiptServiceImplTest {
                 receiptCosmosClient,
                 cartReceiptsCosmosClient,
                 bizEventCosmosClientMock,
-                queueClient
+                queueClient,
+                cartQueueClient
         );
     }
 

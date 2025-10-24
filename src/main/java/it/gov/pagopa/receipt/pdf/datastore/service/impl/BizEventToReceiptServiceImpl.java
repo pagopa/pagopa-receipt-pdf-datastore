@@ -6,14 +6,8 @@ import com.azure.cosmos.models.FeedResponse;
 import com.azure.storage.queue.models.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.HttpStatus;
-import it.gov.pagopa.receipt.pdf.datastore.client.BizEventCosmosClient;
-import it.gov.pagopa.receipt.pdf.datastore.client.CartReceiptsCosmosClient;
-import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptCosmosClient;
-import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptQueueClient;
-import it.gov.pagopa.receipt.pdf.datastore.client.impl.BizEventCosmosClientImpl;
-import it.gov.pagopa.receipt.pdf.datastore.client.impl.CartReceiptsCosmosClientImpl;
-import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
-import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptQueueClientImpl;
+import it.gov.pagopa.receipt.pdf.datastore.client.*;
+import it.gov.pagopa.receipt.pdf.datastore.client.impl.*;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartPayment;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
@@ -52,6 +46,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
     private final BizEventCosmosClient bizEventCosmosClient;
 
     private final ReceiptQueueClient queueClient;
+    private final CartQueueClient cartQueueClient;
 
     public BizEventToReceiptServiceImpl() {
         this.pdvTokenizerService = new PDVTokenizerServiceRetryWrapperImpl();
@@ -59,18 +54,21 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         this.cartReceiptsCosmosClient = CartReceiptsCosmosClientImpl.getInstance();
         this.bizEventCosmosClient = BizEventCosmosClientImpl.getInstance();
         this.queueClient = ReceiptQueueClientImpl.getInstance();
+        this.cartQueueClient = CartQueueClientImpl.getInstance();
     }
 
     public BizEventToReceiptServiceImpl(PDVTokenizerServiceRetryWrapper pdvTokenizerService,
                                         ReceiptCosmosClient receiptCosmosClient,
                                         CartReceiptsCosmosClient cartReceiptsCosmosClient,
                                         BizEventCosmosClient bizEventCosmosClient,
-                                        ReceiptQueueClient queueClient) {
+                                        ReceiptQueueClient queueClient,
+                                        CartQueueClientImpl cartQueueClient) {
         this.pdvTokenizerService = pdvTokenizerService;
         this.receiptCosmosClient = receiptCosmosClient;
         this.cartReceiptsCosmosClient = cartReceiptsCosmosClient;
         this.bizEventCosmosClient = bizEventCosmosClient;
         this.queueClient = queueClient;
+        this.cartQueueClient = cartQueueClient;
     }
 
     /**
@@ -115,7 +113,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         //Add message to the queue
         int statusCode;
         try {
-            Response<SendMessageResult> sendMessageResult = queueClient.sendMessageToQueue(messageText); // TODO change to cart queue client
+            Response<SendMessageResult> sendMessageResult = cartQueueClient.sendMessageToQueue(messageText);
             statusCode = sendMessageResult.getStatusCode();
         } catch (Exception e) {
             statusCode = ReasonErrorCode.ERROR_QUEUE.getCode();
