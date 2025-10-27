@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class CartPayment {
-    private String bizeventId;
+    private String bizEventId;
     private String subject;
     private String payeeName;
     private String debtorFiscalCode;

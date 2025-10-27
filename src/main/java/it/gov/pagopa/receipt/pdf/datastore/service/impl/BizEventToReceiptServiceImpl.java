@@ -288,6 +288,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
                 .version("1") // this is the first version of this document
                 .payload(Payload.builder()
                         .payerFiscalCode(tokenizerPayerFiscalCode(bizEvent))
+                        .totalNotices(bizEvent.getPaymentInfo().getTotalNotice())
                         .totalAmount(!amount.equals(BigDecimal.ZERO) ? formatAmount(amount.toString()) : null)
                         .transactionCreationDate(getTransactionCreationDate(bizEvent))
                         .cart(cartItems)
@@ -300,7 +301,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
     private CartPayment buildCartPayment(BizEvent bizEvent) throws PDVTokenizerException, JsonProcessingException {
         String debtorFiscalCode = tokenizerDebtorFiscalCode(bizEvent);
         return CartPayment.builder()
-                .bizeventId(bizEvent.getId())
+                .bizEventId(bizEvent.getId())
                 .amount(bizEvent.getPaymentInfo().getAmount())
                 .debtorFiscalCode(debtorFiscalCode)
                 .payeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null)
