@@ -48,4 +48,30 @@ class BizEventCosmosClientImplTest {
 
 //        Assertions.assertDoesNotThrow(() -> client.getAllBizEventDocument("",null, 100));
     }
+
+    @Test
+    void getBizEventDocumentSuccess() {
+        CosmosClient mockClient = mock(CosmosClient.class);
+
+        CosmosDatabase mockDatabase = mock(CosmosDatabase.class);
+        CosmosContainer mockContainer = mock(CosmosContainer.class);
+
+        CosmosPagedIterable mockIterable = mock(CosmosPagedIterable.class);
+
+        Iterator<BizEvent> mockIterator = mock(Iterator.class);
+        BizEvent bizEvent = new BizEvent();
+
+        when(mockIterator.hasNext()).thenReturn(true);
+        when(mockIterator.next()).thenReturn(bizEvent);
+
+        when(mockIterable.iterator()).thenReturn(mockIterator);
+
+        when(mockContainer.queryItems(anyString(), any(), eq(BizEvent.class))).thenReturn(mockIterable);
+        when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
+        when(mockClient.getDatabase(any())).thenReturn(mockDatabase);
+
+        BizEventCosmosClientImpl client = new BizEventCosmosClientImpl(mockClient);
+
+        Assertions.assertDoesNotThrow(() -> client.getBizEventDocument("1"));
+    }
 }

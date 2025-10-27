@@ -13,8 +13,11 @@ import it.gov.pagopa.receipt.pdf.datastore.client.impl.CartReceiptsCosmosClientI
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptQueueClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartPayment;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.Payload;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.*;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.enumeration.BizEventStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.CartItem;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReasonErrorCode;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
@@ -611,6 +614,58 @@ class BizEventToReceiptTest {
 
         List<BizEvent> bizEventItems = new ArrayList<>();
         bizEventItems.add(generateValidBizEvent("2"));
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<CartForReceipt>> cartDocumentdb = (OutputBinding<List<CartForReceipt>>) spy(OutputBinding.class);
+
+        // test execution
+        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
+
+        verify(documentdb, never()).setValue(any());
+    }
+
+    @Test
+    void runOk_cart_sendMessage_error() throws PDVTokenizerException, JsonProcessingException, CartNotFoundException {
+//        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
+//        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
+
+        CartForReceipt cartForReceipt = new CartForReceipt();
+        CartPayment cartPayment = CartPayment.builder()
+                .bizEventId("12")
+                .amount("1")
+                .build();
+        ArrayList<CartPayment> cart = new ArrayList<>();
+        cart.add(cartPayment);
+        cartForReceipt.setPayload(Payload.builder()
+                        .totalNotices("2")
+                        .cart(cart)
+                .build());
+        when(cartReceiptsCosmosClient.getCartItem(anyString())).thenReturn(cartForReceipt);
+
+//        Response<SendMessageResult> response = mock(Response.class);
+//        when(response.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
+//        when(cartQueueClient.sendMessageToQueue(anyString())).thenReturn(response);
+
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient, cartQueueClient);
+        function = new BizEventToReceipt(receiptService);
+
+        List<BizEvent> bizEventItems = new ArrayList<>();
+        BizEvent e = generateValidBizEvent("2");
+        e.setId("12");
+        PaymentInfo paymentInfo = new PaymentInfo();
+        paymentInfo.setAmount("1");
+        paymentInfo.setRemittanceInformation("subject");
+        paymentInfo.setTotalNotice("2");
+        e.setPaymentInfo(paymentInfo);
+        e.getTransactionDetails().getTransaction().setTransactionId("1");
+        Creditor creditor = new Creditor();
+        creditor.setCompanyName("name");
+        e.setCreditor(creditor);
+
+        bizEventItems.add(e);
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
