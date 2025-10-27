@@ -2,7 +2,6 @@ package it.gov.pagopa.receipt.pdf.datastore.service.impl;
 
 import com.azure.core.http.rest.Response;
 import com.azure.cosmos.models.CosmosItemResponse;
-import com.azure.cosmos.models.FeedResponse;
 import com.azure.storage.queue.models.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.HttpStatus;
@@ -18,6 +17,7 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReasonError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReasonErrorCode;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
@@ -349,22 +349,18 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         return null;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<BizEvent> getCartBizEvents(String cartId) {
-        List<BizEvent> bizEventList = new ArrayList<>();
-        String continuationToken = null;
-        do {
-            Iterable<FeedResponse<BizEvent>> feedResponseIterator =
-                    this.bizEventCosmosClient.getAllBizEventDocument(cartId, continuationToken, 100);
 
-            for (FeedResponse<BizEvent> page : feedResponseIterator) {
-                bizEventList.addAll(page.getResults());
-                continuationToken = page.getContinuationToken();
+    @Override
+    public List<BizEvent> getCartBizEvents(CartForReceipt cart) {
+        List<BizEvent> bizEventList = new ArrayList<>();
+        try {
+            for (CartPayment item : cart.getPayload().getCart()) {
+                BizEvent bizEvent = this.bizEventCosmosClient.getBizEventDocument(item.getBizEventId());
+                bizEventList.add(bizEvent);
             }
-        } while (continuationToken != null);
+        } catch (BizEventNotFoundException e) {
+            cart.setStatus(CartStatusType.FAILED);
+        }
         return bizEventList;
     }
 

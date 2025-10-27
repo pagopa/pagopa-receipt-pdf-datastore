@@ -2,9 +2,11 @@ package it.gov.pagopa.receipt.pdf.datastore.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartPayment;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
+import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
@@ -72,7 +74,7 @@ public interface BizEventToReceiptService {
      * @param cartId the id of the cart
      * @return a list of biz-events
      */
-    List<BizEvent> getCartBizEvents(String cartId);
+    List<BizEvent> getCartBizEvents(CartForReceipt cartId);
 
     void saveCartForReceipt(CartForReceipt cartForReceipt);
 }

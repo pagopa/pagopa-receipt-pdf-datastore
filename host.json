@@ -18,16 +18,10 @@
     }
   },
   "logging": {
-    "fileLoggingMode": "debugOnly",
+    "fileLoggingMode": "always",
     "logLevel": {
-      "default": "None",
-      "Host.Results": "Error",
       "Function.BizEventToReceiptProcessor": "Information",
-      "Function.CartEventToReceiptProcessor": "Information",
-      "Microsoft": "Information",
-      "Worker": "Information",
-      "Host.Aggregator": "Error",
-      "Host": "Error"
+      "Function.CartEventToReceiptProcessor": "Information"
     },
     "applicationInsights": {
       "samplingSettings": {
