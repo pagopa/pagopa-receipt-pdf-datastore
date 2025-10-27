@@ -601,9 +601,9 @@ class BizEventToReceiptTest {
 //        when(cosmosResponse.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
 //        when(cartReceiptsCosmosClient.updateCart(any(CartForReceipt.class))).thenReturn(cosmosResponse);
 
-        Response<SendMessageResult> response = mock(Response.class);
-        when(response.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
-        when(cartQueueClient.sendMessageToQueue(anyString())).thenReturn(response);
+//        Response<SendMessageResult> response = mock(Response.class);
+//        when(response.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
+//        when(cartQueueClient.sendMessageToQueue(anyString())).thenReturn(response);
 
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
                 pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient, cartQueueClient);

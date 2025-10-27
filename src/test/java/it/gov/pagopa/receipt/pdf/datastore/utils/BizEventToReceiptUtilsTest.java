@@ -155,7 +155,7 @@ class BizEventToReceiptUtilsTest {
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
 
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
-                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient, cartQueueClient);
 
         Receipt receipt = BizEventToReceiptUtils.createReceipt(generateValidBizEventWithChannelOriginInTransactionInfo("CHECKOUT", UserType.REGISTERED), receiptService, logger);
 
@@ -202,7 +202,7 @@ class BizEventToReceiptUtilsTest {
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
 
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
-                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient, cartQueueClient);
 
         Receipt receipt = BizEventToReceiptUtils.createReceipt(generateValidBizEventWithChannelOriginInTransactionInfo("CHECKOUT", UserType.GUEST), receiptService, logger);
 
