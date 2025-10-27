@@ -628,9 +628,7 @@ class BizEventToReceiptTest {
     }
 
     @Test
-    void runOk_cart_sendMessage_error() throws PDVTokenizerException, JsonProcessingException, CartNotFoundException {
-//        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
-//        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
+    void cart_sendMessage_error() throws PDVTokenizerException, JsonProcessingException, CartNotFoundException {
 
         CartForReceipt cartForReceipt = new CartForReceipt();
         CartPayment cartPayment = CartPayment.builder()
@@ -645,9 +643,6 @@ class BizEventToReceiptTest {
                 .build());
         when(cartReceiptsCosmosClient.getCartItem(anyString())).thenReturn(cartForReceipt);
 
-//        Response<SendMessageResult> response = mock(Response.class);
-//        when(response.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
-//        when(cartQueueClient.sendMessageToQueue(anyString())).thenReturn(response);
 
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
                 pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient, cartQueueClient);
@@ -680,11 +675,46 @@ class BizEventToReceiptTest {
     }
 
     @Test
-    public void buildCartForReceipt_pvderror() throws CartNotFoundException {
+    public void buildCartForReceipt_error() throws CartNotFoundException {
         when(cartReceiptsCosmosClient.getCartItem(anyString())).thenThrow(new RuntimeException());
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
                 pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient, cartQueueClient);
         var result = receiptService.buildCartForReceipt(BizEvent.builder()
+                .transactionDetails(TransactionDetails.builder()
+                        .transaction(Transaction.builder()
+                                .transactionId("1")
+                                .build())
+                        .build())
+                .build());
+        assertEquals(CartStatusType.FAILED, result.getStatus());
+    }
+
+
+    @Test
+    public void buildCartForReceipt_pvderror() throws CartNotFoundException, JsonProcessingException, PDVTokenizerException {
+
+        CartForReceipt cartForReceipt = new CartForReceipt();
+        CartPayment cartPayment = CartPayment.builder()
+                .bizEventId("12")
+                .amount("1")
+                .build();
+        ArrayList<CartPayment> cart = new ArrayList<>();
+        cart.add(cartPayment);
+        cartForReceipt.setPayload(Payload.builder()
+                .totalNotices("2")
+                .cart(cart)
+                .build());
+//        when(cartReceiptsCosmosClient.getCartItem(anyString())).thenReturn(cartForReceipt);
+
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(anyString())).thenThrow(new PDVTokenizerException("error",500));
+
+
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient, cartQueueClient);
+        var result = receiptService.buildCartForReceipt(BizEvent.builder()
+                        .debtor(Debtor.builder()
+                                .entityUniqueIdentifierValue("MRNRSS90A01H501U")
+                                .build())
                 .transactionDetails(TransactionDetails.builder()
                         .transaction(Transaction.builder()
                                 .transactionId("1")
