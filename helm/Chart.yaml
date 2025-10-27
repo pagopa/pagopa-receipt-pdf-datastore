@@ -2,8 +2,8 @@ apiVersion: v2
 name: pagopareceiptpdfdatastore
 description: Microservice description
 type: application
-version: 0.125.0
-appVersion: 1.13.7
+version: 0.126.0
+appVersion: 1.13.7-1-PAGOPA-3345-datastore-per-cart-rivedere-logica
 dependencies:
   - name: microservice-chart
     version: 7.5.0
