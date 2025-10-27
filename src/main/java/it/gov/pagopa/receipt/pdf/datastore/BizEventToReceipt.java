@@ -134,7 +134,7 @@ public class BizEventToReceipt {
                     bizEventToReceiptService.saveCartForReceipt(cartForReceipt);
                 }
 
-                if (isCartStatusValid(cartForReceipt)) {
+                if (cartForReceipt.getStatus().equals(CartStatusType.INSERTED)) {
                     // Send biz event as message to queue (to be processed from the other function)
                     bizEventToReceiptService.handleSendCartMessageToQueue(Collections.singletonList(bizEvent), cartForReceipt);
                 }
