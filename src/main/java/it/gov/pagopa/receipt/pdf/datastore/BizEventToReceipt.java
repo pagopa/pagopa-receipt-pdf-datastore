@@ -78,7 +78,7 @@ public class BizEventToReceipt {
                     connection = "COSMOS_RECEIPTS_CONN_STRING")
             OutputBinding<List<Receipt>> documentdb,
             @CosmosDBOutput(
-                    name = "ReceiptDatastore",
+                    name = "CartDatastore",
                     databaseName = "db",
                     containerName = "cart-for-receipts",
                     connection = "COSMOS_RECEIPTS_CONN_STRING")
