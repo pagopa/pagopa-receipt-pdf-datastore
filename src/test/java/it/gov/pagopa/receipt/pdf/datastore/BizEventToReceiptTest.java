@@ -56,8 +56,7 @@ class BizEventToReceiptTest {
     @SystemStub
     private EnvironmentVariables environmentVariables = new EnvironmentVariables(
             "ECOMMERCE_FILTER_ENABLED", "true",
-            "ENABLE_CART", "true",
-            "AUTHENTICATED_CHANNELS", VALID_IO_CHANNEL);
+            "ENABLE_CART", "true");
 
     private BizEventToReceipt function;
     @Mock

@@ -111,7 +111,10 @@ jobs:
     uses: ./.github/workflows/deploy_with_github_runner.yml
     with:
       environment: ${{ needs.setup.outputs.environment }}
-    secrets: inherit
+    secrets:
+      CLIENT_ID: ${{ secrets.CLIENT_ID }}
+      SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
+      TENANT_ID: ${{ secrets.TENANT_ID }}
 
   notify:
     needs: [ deploy_aks ]
@@ -121,7 +124,7 @@ jobs:
     steps:
       - name: Report Status
         if: always()
-        uses: ravsamhq/notify-slack-action@v2
+        uses: ravsamhq/notify-slack-action@be814b201e233b2dc673608aa46e5447c8ab13f2 # v2
         with:
           status: ${{ needs.deploy_aks.result }}
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -130,4 +133,4 @@ jobs:
           message_format: '{emoji} <{workflow_url}|{workflow}> {status_message} in <{repo_url}|{repo}>'
           footer: 'Linked to Repo <{repo_url}|{repo}>'
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL_DEPLOY }}
