@@ -14,6 +14,7 @@ import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptQueueClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartPayment;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.Payload;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.*;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.enumeration.BizEventStatusType;
@@ -676,5 +677,36 @@ class BizEventToReceiptTest {
         assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(documentdb, never()).setValue(any());
+    }
+
+    @Test
+    public void buildCartForReceipt_pvderror(){
+        when(cartReceiptsCosmosClient).thenThrow(new PDVTokenizerException("error", 1));
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient, cartQueueClient);
+        var result = receiptService.buildCartForReceipt(BizEvent.builder()
+                .transactionDetails(TransactionDetails.builder()
+                        .transaction(Transaction.builder()
+                                .transactionId("1")
+                                .build())
+                        .build())
+                .build());
+        assertEquals(CartStatusType.FAILED, result.getStatus());
+    }
+
+
+    @Test
+    public void buildCartForReceipt_exception(){
+        when(cartReceiptsCosmosClient).thenThrow(new Exception());
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient, cartQueueClient);
+        var result = receiptService.buildCartForReceipt(BizEvent.builder()
+                .transactionDetails(TransactionDetails.builder()
+                        .transaction(Transaction.builder()
+                                .transactionId("1")
+                                .build())
+                        .build())
+                .build());
+        assertEquals(CartStatusType.FAILED, result.getStatus());
     }
 }
