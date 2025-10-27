@@ -84,6 +84,7 @@ microservice-chart:
     ASPNETCORE_URLS: "http://*:8080"
     FUNCTIONS_WORKER_RUNTIME: "java"
     RECEIPT_QUEUE_TOPIC: "pagopa-u-weu-receipts-queue-receipt-waiting-4-gen"
+    CART_QUEUE_TOPIC: "pagopa-u-weu-receipts-queue-cart-receipt-waiting-4-gen"
     COSMOS_RECEIPT_SERVICE_ENDPOINT: "https://pagopa-u-weu-receipts-ds-cosmos-account.documents.azure.com:443/"
     COSMOS_BIZ_EVENT_SERVICE_ENDPOINT: "https://pagopa-u-weu-bizevents-ds-cosmos-account.documents.azure.com:443/"
     COSMOS_RECEIPT_DB_NAME: "db"
