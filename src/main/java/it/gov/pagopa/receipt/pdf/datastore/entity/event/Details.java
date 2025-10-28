@@ -10,7 +10,7 @@ import lombok.*;
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Details {
-	private String blurredNumber;
-	private String holder;
-	private String circuit; 
+    private String blurredNumber;
+    private String holder;
+    private String circuit;
 }

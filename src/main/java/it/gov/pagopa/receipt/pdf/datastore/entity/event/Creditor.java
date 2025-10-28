@@ -10,9 +10,9 @@ import lombok.*;
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Creditor {
-	private String idPA;
-	private String idBrokerPA;
-	private String idStation;
-	private String companyName;
-	private String officeName;
+    private String idPA;
+    private String idBrokerPA;
+    private String idStation;
+    private String companyName;
+    private String officeName;
 }

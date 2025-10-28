@@ -1,10 +1,6 @@
 package it.gov.pagopa.receipt.pdf.datastore;
 
-import com.microsoft.azure.functions.ExecutionContext;
-import com.microsoft.azure.functions.HttpMethod;
-import com.microsoft.azure.functions.HttpRequestMessage;
-import com.microsoft.azure.functions.HttpResponseMessage;
-import com.microsoft.azure.functions.HttpStatus;
+import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
@@ -30,7 +26,7 @@ public class Info {
      * @return response with HttpStatus.OK
      */
     @FunctionName("Info")
-    public HttpResponseMessage run (
+    public HttpResponseMessage run(
             @HttpTrigger(name = "InfoTrigger",
                     methods = {HttpMethod.GET},
                     route = "info",
@@ -41,6 +37,7 @@ public class Info {
                 .body(getInfo())
                 .build();
     }
+
     public synchronized AppInfo getInfo() {
         String version = null;
         String name = null;

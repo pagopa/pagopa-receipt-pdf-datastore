@@ -4,8 +4,6 @@ import com.azure.core.http.rest.Response;
 import com.azure.storage.queue.QueueClient;
 import com.azure.storage.queue.models.SendMessageResult;
 import com.microsoft.azure.functions.HttpStatus;
-import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
-import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptQueueClientImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -22,7 +20,7 @@ class ReceiptQueueClientImplTest {
         @SuppressWarnings("secrets:S6338")
         String mockKey = "mockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeyMK==";
         withEnvironmentVariables(
-                "RECEIPT_QUEUE_CONN_STRING", "DefaultEndpointsProtocol=https;AccountName=samplequeue;AccountKey="+mockKey+";EndpointSuffix=core.windows.net",
+                "RECEIPT_QUEUE_CONN_STRING", "DefaultEndpointsProtocol=https;AccountName=samplequeue;AccountKey=" + mockKey + ";EndpointSuffix=core.windows.net",
                 "RECEIPT_QUEUE_TOPIC", "validTopic"
         ).execute(() -> Assertions.assertDoesNotThrow(ReceiptQueueClientImpl::getInstance)
         );

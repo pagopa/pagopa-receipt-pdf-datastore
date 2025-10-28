@@ -4,7 +4,9 @@ import com.azure.cosmos.CosmosClient;
 import com.azure.cosmos.CosmosClientBuilder;
 import com.azure.cosmos.CosmosContainer;
 import com.azure.cosmos.CosmosDatabase;
-import com.azure.cosmos.models.*;
+import com.azure.cosmos.models.CosmosItemResponse;
+import com.azure.cosmos.models.CosmosQueryRequestOptions;
+import com.azure.cosmos.models.FeedResponse;
 import com.azure.cosmos.util.CosmosPagedIterable;
 import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
@@ -73,7 +75,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      * @return receipt documents
      */
     @Override
-    public Iterable<FeedResponse<Receipt>> getFailedReceiptDocuments(String continuationToken, Integer pageSize)  {
+    public Iterable<FeedResponse<Receipt>> getFailedReceiptDocuments(String continuationToken, Integer pageSize) {
         CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
 
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
@@ -84,7 +86,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
         //Query the container
         return cosmosContainer
                 .queryItems(query, new CosmosQueryRequestOptions(), Receipt.class)
-                .iterableByPage(continuationToken,pageSize);
+                .iterableByPage(continuationToken, pageSize);
 
     }
 
@@ -95,7 +97,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      * @return receipt documents
      */
     @Override
-    public CosmosItemResponse<Receipt> saveReceipts(Receipt receipt)  {
+    public CosmosItemResponse<Receipt> saveReceipts(Receipt receipt) {
         CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
 
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);

@@ -24,7 +24,7 @@ public interface BizEventToReceiptService {
     /**
      * This method handles sending biz-events as messages to the cart queue.
      *
-     * @param bizEventList the list of biz-events to send to the cart queue
+     * @param bizEventList   the list of biz-events to send to the cart queue
      * @param cartForReceipt the cart associated with the biz-events.
      *                       The status of this object may be updated if there are errors during the process.
      */

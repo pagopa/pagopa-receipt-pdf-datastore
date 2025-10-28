@@ -15,7 +15,7 @@ public interface PDVTokenizerService {
      * @param fiscalCode the fiscal code
      * @return the token associated to the fiscal code
      * @throws JsonProcessingException if an error occur when parsing input or output
-     * @throws PDVTokenizerException if an error occur when invoking the PDV Tokenizer
+     * @throws PDVTokenizerException   if an error occur when invoking the PDV Tokenizer
      */
     String getToken(String fiscalCode) throws JsonProcessingException, PDVTokenizerException;
 
@@ -25,7 +25,7 @@ public interface PDVTokenizerService {
      * @param token the token
      * @return the fiscal code associated to the provided token
      * @throws JsonProcessingException if an error occur when parsing input or output
-     * @throws PDVTokenizerException if an error occur when invoking the PDV Tokenizer
+     * @throws PDVTokenizerException   if an error occur when invoking the PDV Tokenizer
      */
     String getFiscalCode(String token) throws PDVTokenizerException, JsonProcessingException;
 
@@ -35,7 +35,7 @@ public interface PDVTokenizerService {
      * @param fiscalCode the fiscal code
      * @return the generated token
      * @throws JsonProcessingException if an error occur when parsing input or output
-     * @throws PDVTokenizerException if an error occur when invoking the PDV Tokenizer
+     * @throws PDVTokenizerException   if an error occur when invoking the PDV Tokenizer
      */
     String generateTokenForFiscalCode(String fiscalCode) throws PDVTokenizerException, JsonProcessingException;
 }

@@ -5,7 +5,6 @@ import com.azure.storage.queue.QueueClient;
 import com.azure.storage.queue.QueueClientBuilder;
 import com.azure.storage.queue.models.SendMessageResult;
 import it.gov.pagopa.receipt.pdf.datastore.client.CartQueueClient;
-import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptQueueClient;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;

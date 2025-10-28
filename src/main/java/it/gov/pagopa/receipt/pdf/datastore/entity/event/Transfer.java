@@ -12,16 +12,16 @@ import java.util.List;
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Transfer {
-	private String idTransfer;
-	private String fiscalCodePA;
-	private String companyName;
-	private String amount;
-	private String transferCategory;
-	private String remittanceInformation;
-//	@JsonProperty(value="IBAN") -
-	private String IBAN;
-//	@JsonProperty(value="MBD") -
+    private String idTransfer;
+    private String fiscalCodePA;
+    private String companyName;
+    private String amount;
+    private String transferCategory;
+    private String remittanceInformation;
+    //	@JsonProperty(value="IBAN") -
+    private String IBAN;
+    //	@JsonProperty(value="MBD") -
 //	private MBD mbd; -
-	private String MBDAttachment;
-	private List<MapEntry> metadata;
+    private String MBDAttachment;
+    private List<MapEntry> metadata;
 }

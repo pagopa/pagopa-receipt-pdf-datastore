@@ -10,18 +10,18 @@ import lombok.*;
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Transaction {
-	private String idTransaction;
-	private String transactionId;
-	private long grandTotal;
-	private long amount;
-	private long fee;
-	private String transactionStatus;
-	private String accountingStatus;
-	private String rrn;
-	private String authorizationCode;
-	private String creationDate;
-	private String numAut;
-	private String accountCode;
-	private TransactionPsp psp;
-	private String origin;
+    private String idTransaction;
+    private String transactionId;
+    private long grandTotal;
+    private long amount;
+    private long fee;
+    private String transactionStatus;
+    private String accountingStatus;
+    private String rrn;
+    private String authorizationCode;
+    private String creationDate;
+    private String numAut;
+    private String accountCode;
+    private TransactionPsp psp;
+    private String origin;
 }

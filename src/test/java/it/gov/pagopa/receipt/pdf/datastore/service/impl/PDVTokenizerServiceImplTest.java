@@ -4,11 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.gov.pagopa.receipt.pdf.datastore.client.PDVTokenizerClient;
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
-import it.gov.pagopa.receipt.pdf.datastore.model.tokenizer.ErrorMessage;
-import it.gov.pagopa.receipt.pdf.datastore.model.tokenizer.ErrorResponse;
-import it.gov.pagopa.receipt.pdf.datastore.model.tokenizer.InvalidParam;
-import it.gov.pagopa.receipt.pdf.datastore.model.tokenizer.PiiResource;
-import it.gov.pagopa.receipt.pdf.datastore.model.tokenizer.TokenResource;
+import it.gov.pagopa.receipt.pdf.datastore.model.tokenizer.*;
 import it.gov.pagopa.receipt.pdf.datastore.service.PDVTokenizerService;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,11 +15,7 @@ import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 class PDVTokenizerServiceImplTest {
 

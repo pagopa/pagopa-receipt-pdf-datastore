@@ -18,7 +18,6 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.Payload;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.*;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.enumeration.BizEventStatusType;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.CartItem;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReasonErrorCode;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
@@ -39,8 +38,6 @@ import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -638,8 +635,8 @@ class BizEventToReceiptTest {
         ArrayList<CartPayment> cart = new ArrayList<>();
         cart.add(cartPayment);
         cartForReceipt.setPayload(Payload.builder()
-                        .totalNotice("2")
-                        .cart(cart)
+                .totalNotice("2")
+                .cart(cart)
                 .build());
         when(cartReceiptsCosmosClient.getCartItem(anyString())).thenReturn(cartForReceipt);
 
@@ -706,15 +703,15 @@ class BizEventToReceiptTest {
                 .build());
 //        when(cartReceiptsCosmosClient.getCartItem(anyString())).thenReturn(cartForReceipt);
 
-        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(anyString())).thenThrow(new PDVTokenizerException("error",500));
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(anyString())).thenThrow(new PDVTokenizerException("error", 500));
 
 
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
                 pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient, cartQueueClient);
         var result = receiptService.buildCartForReceipt(BizEvent.builder()
-                        .debtor(Debtor.builder()
-                                .entityUniqueIdentifierValue("MRNRSS90A01H501U")
-                                .build())
+                .debtor(Debtor.builder()
+                        .entityUniqueIdentifierValue("MRNRSS90A01H501U")
+                        .build())
                 .transactionDetails(TransactionDetails.builder()
                         .transaction(Transaction.builder()
                                 .transactionId("1")

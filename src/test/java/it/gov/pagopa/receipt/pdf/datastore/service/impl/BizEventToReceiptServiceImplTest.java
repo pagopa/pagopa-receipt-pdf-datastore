@@ -1,6 +1,5 @@
 package it.gov.pagopa.receipt.pdf.datastore.service.impl;
 
-import com.azure.cosmos.models.FeedResponse;
 import com.microsoft.azure.functions.ExecutionContext;
 import it.gov.pagopa.receipt.pdf.datastore.client.BizEventCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.client.CartReceiptsCosmosClient;
@@ -23,12 +22,10 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
-import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 
 @ExtendWith({MockitoExtension.class, SystemStubsExtension.class})
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -67,11 +64,11 @@ class BizEventToReceiptServiceImplTest {
     void run_OK_getCartBizEvents() throws BizEventNotFoundException {
         when(bizEventCosmosClientMock.getBizEventDocument(Mockito.eq("1"))).thenReturn(new BizEvent());
         assertDoesNotThrow(() -> bizEventToReceiptService.getCartBizEvents(CartForReceipt.builder()
-                        .payload(Payload.builder()
-                                .cart(List.of(CartPayment.builder()
-                                                .bizEventId("1")
-                                        .build()))
-                                .build())
+                .payload(Payload.builder()
+                        .cart(List.of(CartPayment.builder()
+                                .bizEventId("1")
+                                .build()))
+                        .build())
                 .build()));
     }
 

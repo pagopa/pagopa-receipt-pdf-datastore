@@ -75,7 +75,7 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
      * @return cart-to-receipts documents
      */
     @Override
-    public CosmosItemResponse<CartForReceipt> saveCart(CartForReceipt receipt)  {
+    public CosmosItemResponse<CartForReceipt> saveCart(CartForReceipt receipt) {
         CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(cartForReceiptContainerName);
         return cosmosContainer.createItem(receipt);
@@ -88,7 +88,7 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
      * @return cart-to-receipts documents
      */
     @Override
-    public CosmosItemResponse<CartForReceipt> updateCart(CartForReceipt receipt)  {
+    public CosmosItemResponse<CartForReceipt> updateCart(CartForReceipt receipt) {
         CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(cartForReceiptContainerName);
         return cosmosContainer.upsertItem(receipt);

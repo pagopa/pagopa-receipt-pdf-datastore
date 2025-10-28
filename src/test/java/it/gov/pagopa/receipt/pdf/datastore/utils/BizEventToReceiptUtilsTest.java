@@ -35,11 +35,6 @@ import static org.mockito.Mockito.when;
 class BizEventToReceiptUtilsTest {
     public static final String VALID_IO_CHANNEL = "IO";
     public static final String INVALID_REMITTANCE_INFORMATION = "pagamento multibeneficiario";
-    private final String EVENT_ID = "a valid id";
-    private final String PAYER_FISCAL_CODE = "AAAAAA00A00A000D";
-    private final String DEBTOR_FISCAL_CODE = "AAAAAA00A00A000P";
-    private final String TOKENIZED_DEBTOR_FISCAL_CODE = "tokenizedDebtorFiscalCode";
-    private final String TOKENIZED_PAYER_FISCAL_CODE = "tokenizedPayerFiscalCode";
     public static final String REMITTANCE_INFORMATION_PAYMENT_INFO = "TARI 2021";
     public static final String REMITTANCE_INFORMATION_TRANSFER_LIST = "EXAMPLE/TXT/TARI 2021/EXAMPLE";
     public static final String REMITTANCE_INFORMATION_TRANSFER_LIST_FORMATTED = "TARI 2021/EXAMPLE";
@@ -47,6 +42,12 @@ class BizEventToReceiptUtilsTest {
     public static final String TRANSFER_AMOUNT_MEDIUM = "20.00";
     public static final String TRANSFER_AMOUNT_LOWEST = "10.00";
     public static final String AUTHENTICATED_CHANNELS = "IO,OTHER VALID ORIGIN,ANOTHER VALID,CHECKOUT";
+    private final String EVENT_ID = "a valid id";
+    private final String PAYER_FISCAL_CODE = "AAAAAA00A00A000D";
+    private final String DEBTOR_FISCAL_CODE = "AAAAAA00A00A000P";
+    private final String TOKENIZED_DEBTOR_FISCAL_CODE = "tokenizedDebtorFiscalCode";
+    private final String TOKENIZED_PAYER_FISCAL_CODE = "tokenizedPayerFiscalCode";
+    private final Logger logger = LoggerFactory.getLogger(BizEventToReceiptUtilsTest.class);
     @Mock
     private PDVTokenizerServiceRetryWrapper pdvTokenizerServiceMock;
     @Mock
@@ -62,8 +63,6 @@ class BizEventToReceiptUtilsTest {
     @SystemStub
     private EnvironmentVariables environmentVariables = new EnvironmentVariables(
             "AUTHENTICATED_CHANNELS", AUTHENTICATED_CHANNELS, "ECOMMERCE_FILTER_ENABLED", "true");
-
-    private final Logger logger = LoggerFactory.getLogger(BizEventToReceiptUtilsTest.class);
 
     @Test
     void createReceiptSuccessWithPaymentInfo() throws PDVTokenizerException, JsonProcessingException {
@@ -148,7 +147,7 @@ class BizEventToReceiptUtilsTest {
         assertNull(receipt.getEventData());
         assertEquals(ReceiptStatusType.FAILED, receipt.getStatus());
     }
-    
+
     @Test
     void createReceiptSuccessWithCheckoutChannelOriginInTransactionInfo() throws PDVTokenizerException, JsonProcessingException {
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
@@ -166,7 +165,7 @@ class BizEventToReceiptUtilsTest {
     }
 
 
-	@Test
+    @Test
     void createReceiptSuccessWithChannelOriginInTransactionInfo() throws PDVTokenizerException, JsonProcessingException {
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
@@ -196,7 +195,7 @@ class BizEventToReceiptUtilsTest {
         assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, receipt.getEventData().getDebtorFiscalCode());
         assertNull(receipt.getEventData().getPayerFiscalCode());
     }
-    
+
     @Test
     void payerReceiptNotGeneratedWithUserNotRegistered() throws PDVTokenizerException, JsonProcessingException {
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
@@ -286,11 +285,11 @@ class BizEventToReceiptUtilsTest {
 
         TransactionDetails transactionDetails = new TransactionDetails();
         if (userType != null) {
-			User user = new User();
-			user.setFiscalCode(PAYER_FISCAL_CODE);
-			user.setType(userType);
-			transactionDetails.setUser(user);
-		}
+            User user = new User();
+            user.setFiscalCode(PAYER_FISCAL_CODE);
+            user.setType(userType);
+            transactionDetails.setUser(user);
+        }
         Transaction transaction = new Transaction();
         transaction.setCreationDate(String.valueOf(LocalDateTime.now()));
         transactionDetails.setTransaction(transaction);
