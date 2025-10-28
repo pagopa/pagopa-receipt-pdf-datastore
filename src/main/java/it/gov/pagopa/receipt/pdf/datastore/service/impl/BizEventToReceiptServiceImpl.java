@@ -25,7 +25,6 @@ import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.datastore.service.PDVTokenizerServiceRetryWrapper;
 import it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils;
 import it.gov.pagopa.receipt.pdf.datastore.utils.ObjectMapperUtils;
-import lombok.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -226,8 +225,8 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
     @Override
     public CartForReceipt buildCartForReceipt(BizEvent bizEvent) {
         CartForReceipt cartForReceipt = new CartForReceipt();
+        String transactionId = bizEvent.getTransactionDetails().getTransaction().getTransactionId();
         try {
-            String transactionId = bizEvent.getTransactionDetails().getTransaction().getTransactionId();
             cartForReceipt = findCart(transactionId);
             if (cartForReceipt == null) {
                 // if cart not found create a new one
@@ -246,27 +245,29 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             }
             return cartForReceipt;
         } catch (PDVTokenizerException e) {
-            return buildCartWithFailedStatus(cartForReceipt, e.getStatusCode(), e.getMessage());
+            return buildCartWithFailedStatus(transactionId, cartForReceipt, e.getStatusCode(), e.getMessage(), e);
         } catch (JsonProcessingException e) {
-            return buildCartWithFailedStatus(cartForReceipt, ReasonErrorCode.ERROR_PDV_MAPPING.getCode(), e.getMessage());
+            return buildCartWithFailedStatus(transactionId, cartForReceipt, ReasonErrorCode.ERROR_PDV_MAPPING.getCode(), e.getMessage(), e);
         } catch (Exception e) {
-            return buildCartWithFailedStatus(cartForReceipt, ReasonErrorCode.GENERIC_ERROR.getCode(), e.getMessage());
+            return buildCartWithFailedStatus(transactionId, cartForReceipt, ReasonErrorCode.GENERIC_ERROR.getCode(), e.getMessage(), e);
         }
 
     }
 
     /**
      * @param cartForReceipt the cart to update with failed status
-     * @param code the error code
-     * @param message the error message
+     * @param code           the error code
+     * @param message        the error message
      * @return the cart with failed status
      */
-    private static CartForReceipt buildCartWithFailedStatus(CartForReceipt cartForReceipt, int code, String message) {
+    private CartForReceipt buildCartWithFailedStatus(String transactionId, CartForReceipt cartForReceipt, int code, String message, Exception e) {
         if (cartForReceipt == null) {
             cartForReceipt = new CartForReceipt();
         }
+        logger.error("an error occurred during buildCartForReceipt method", e);
         return cartForReceipt.toBuilder()
                 .status(CartStatusType.FAILED)
+                .eventId(transactionId)
                 .reasonErr(ReasonError.builder()
                         .code(code)
                         .message(message)
