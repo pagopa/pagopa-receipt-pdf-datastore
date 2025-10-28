@@ -270,7 +270,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             return CartForReceipt.builder()
                     .status(CartStatusType.FAILED)
                     .reasonErr(ReasonError.builder()
-                            .code(0) // TODO define a proper error code for generic exceptions
+                            .code(ReasonErrorCode.GENERIC_ERROR.getCode())
                             .message(e.getMessage())
                             .build())
                     .build();
@@ -288,7 +288,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
                 .version("1") // this is the first version of this document
                 .payload(Payload.builder()
                         .payerFiscalCode(tokenizerPayerFiscalCode(bizEvent))
-                        .totalNotices(bizEvent.getPaymentInfo().getTotalNotice())
+                        .totalNotice(bizEvent.getPaymentInfo().getTotalNotice())
                         .totalAmount(!amount.equals(BigDecimal.ZERO) ? formatAmount(amount.toString()) : null)
                         .transactionCreationDate(getTransactionCreationDate(bizEvent))
                         .cart(cartItems)

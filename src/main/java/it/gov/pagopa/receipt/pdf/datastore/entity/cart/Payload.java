@@ -17,8 +17,8 @@ import java.util.List;
 public class Payload {
     private String payerFiscalCode;
     private String transactionCreationDate;
-    private String totalNotices; // renamed
-    private String totalAmount; // renamed
+    private String totalNotice;
+    private String totalAmount;
     private ReceiptMetadata mdAttachPayer;
     private IOMessageData idMessagePayer;
     private List<CartPayment> cart;

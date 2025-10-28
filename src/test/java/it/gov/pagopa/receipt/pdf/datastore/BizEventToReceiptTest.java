@@ -638,7 +638,7 @@ class BizEventToReceiptTest {
         ArrayList<CartPayment> cart = new ArrayList<>();
         cart.add(cartPayment);
         cartForReceipt.setPayload(Payload.builder()
-                        .totalNotices("2")
+                        .totalNotice("2")
                         .cart(cart)
                 .build());
         when(cartReceiptsCosmosClient.getCartItem(anyString())).thenReturn(cartForReceipt);
@@ -701,7 +701,7 @@ class BizEventToReceiptTest {
         ArrayList<CartPayment> cart = new ArrayList<>();
         cart.add(cartPayment);
         cartForReceipt.setPayload(Payload.builder()
-                .totalNotices("2")
+                .totalNotice("2")
                 .cart(cart)
                 .build());
 //        when(cartReceiptsCosmosClient.getCartItem(anyString())).thenReturn(cartForReceipt);

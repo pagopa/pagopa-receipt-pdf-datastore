@@ -1,5 +1,6 @@
 package it.gov.pagopa.receipt.pdf.datastore.entity.cart;
 
+import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.IOMessageData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReasonError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReceiptMetadata;
 import lombok.AllArgsConstructor;
@@ -18,6 +19,7 @@ public class CartPayment {
     private String debtorFiscalCode;
     private String amount;
     private ReceiptMetadata mdAttach;
+    private IOMessageData idMessageDebtor;
     private ReasonError reasonErrDebtor;
 
 }

@@ -20,7 +20,6 @@ public class CartForReceipt {
     private String version;
     private Payload payload;
     private CartStatusType status;
-    private IOMessageData idMessageDebtor;
     private int numRetry;
     private int notificationNumRetry;
     private ReasonError reasonErr;

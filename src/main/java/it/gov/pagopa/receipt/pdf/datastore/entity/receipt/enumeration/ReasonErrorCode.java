@@ -1,6 +1,7 @@
 package it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration;
 
 public enum ReasonErrorCode {
+    GENERIC_ERROR(500),
     ERROR_QUEUE(902),
     ERROR_COSMOS(904),
     ERROR_PDV_IO(800),

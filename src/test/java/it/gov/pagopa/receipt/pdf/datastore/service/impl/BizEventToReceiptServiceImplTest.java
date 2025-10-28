@@ -7,7 +7,11 @@ import it.gov.pagopa.receipt.pdf.datastore.client.CartReceiptsCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.CartQueueClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptQueueClientImpl;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartPayment;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.Payload;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
+import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.service.PDVTokenizerServiceRetryWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,6 +24,7 @@ import org.mockito.quality.Strictness;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import java.util.Collections;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
@@ -59,12 +64,15 @@ class BizEventToReceiptServiceImplTest {
     }
 
     @Test
-    void run_OK_getCartBizEvents() {
-        FeedResponse feedResponseMock = mock(FeedResponse.class);
-        when(feedResponseMock.getResults()).thenReturn(Collections.singletonList(new BizEvent()));
-//        doReturn(Collections.singletonList(feedResponseMock)).when(bizEventCosmosClientMock)
-//                .getAllBizEventDocument(Mockito.eq("1"), any(), any());
-//        assertDoesNotThrow(() -> bizEventToReceiptService.getCartBizEvents("1"));
+    void run_OK_getCartBizEvents() throws BizEventNotFoundException {
+        when(bizEventCosmosClientMock.getBizEventDocument(Mockito.eq("1"))).thenReturn(new BizEvent());
+        assertDoesNotThrow(() -> bizEventToReceiptService.getCartBizEvents(CartForReceipt.builder()
+                        .payload(Payload.builder()
+                                .cart(List.of(CartPayment.builder()
+                                                .bizEventId("1")
+                                        .build()))
+                                .build())
+                .build()));
     }
 
 }

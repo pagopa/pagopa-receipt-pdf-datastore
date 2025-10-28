@@ -1,14 +1,12 @@
 package it.gov.pagopa.receipt.pdf.datastore.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
-import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartPayment;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
-import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
-import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 
 import java.util.List;
@@ -23,10 +21,18 @@ public interface BizEventToReceiptService {
      */
     void handleSendMessageToQueue(List<BizEvent> bizEventList, Receipt receipt);
 
+    /**
+     * This method handles sending biz-events as messages to the cart queue.
+     *
+     * @param bizEventList the list of biz-events to send to the cart queue
+     * @param cartForReceipt the cart associated with the biz-events.
+     *                       The status of this object may be updated if there are errors during the process.
+     */
     void handleSendCartMessageToQueue(List<BizEvent> bizEventList, CartForReceipt cartForReceipt);
 
     /**
      * Recovers a receipt from the CosmosDB by the property eventId
+     *
      * @param bizEventId BizEvent id relative to the receipt
      * @return the receipt found
      * @throws ReceiptNotFoundException when no receipt has been found
@@ -76,5 +82,10 @@ public interface BizEventToReceiptService {
      */
     List<BizEvent> getCartBizEvents(CartForReceipt cartId);
 
+    /**
+     * This method saves the provided CartForReceipt object to the datastore.
+     *
+     * @param cartForReceipt the cart to save
+     */
     void saveCartForReceipt(CartForReceipt cartForReceipt);
 }
