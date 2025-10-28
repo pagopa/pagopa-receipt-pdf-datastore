@@ -25,6 +25,7 @@ import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.datastore.service.PDVTokenizerServiceRetryWrapper;
 import it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils;
 import it.gov.pagopa.receipt.pdf.datastore.utils.ObjectMapperUtils;
+import lombok.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,11 +88,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             statusCode = sendMessageResult.getStatusCode();
         } catch (Exception e) {
             statusCode = ReasonErrorCode.ERROR_QUEUE.getCode();
-            if (bizEventList.size() == 1) {
-                logger.error("Sending BizEvent with id {} to queue failed", receipt.getEventId(), e);
-            } else {
-                logger.error("Failed to enqueue cart with id {}", receipt.getEventId(), e);
-            }
+            logger.error("Sending BizEvent with id {} to queue failed", receipt.getEventId(), e);
         }
 
         if (statusCode != HttpStatus.CREATED.value()) {
@@ -117,11 +114,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             statusCode = sendMessageResult.getStatusCode();
         } catch (Exception e) {
             statusCode = ReasonErrorCode.ERROR_QUEUE.getCode();
-            if (bizEventList.size() == 1) {
-                logger.error("Sending BizEvent with id {} to queue failed", cartForReceipt.getEventId(), e);
-            } else {
-                logger.error("Failed to enqueue cart with id {}", cartForReceipt.getEventId(), e);
-            }
+            logger.error("Failed to enqueue cart with id {}", cartForReceipt.getEventId(), e);
         }
 
         if (statusCode != HttpStatus.CREATED.value()) {
@@ -232,9 +225,10 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
 
     @Override
     public CartForReceipt buildCartForReceipt(BizEvent bizEvent) {
+        CartForReceipt cartForReceipt = new CartForReceipt();
         try {
             String transactionId = bizEvent.getTransactionDetails().getTransaction().getTransactionId();
-            CartForReceipt cartForReceipt = findCart(transactionId);
+            cartForReceipt = findCart(transactionId);
             if (cartForReceipt == null) {
                 // if cart not found create a new one
                 List<CartPayment> cartItems = new ArrayList<>();
@@ -247,35 +241,37 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
                 if (cartItems.size() == Integer.parseInt(bizEvent.getPaymentInfo().getTotalNotice())) {
                     // if all items have been added to the cart set status to INSERTED
                     cartForReceipt.setStatus(CartStatusType.INSERTED);
+                    cartForReceipt.setInserted_at(System.currentTimeMillis());
                 }
             }
             return cartForReceipt;
         } catch (PDVTokenizerException e) {
-            return CartForReceipt.builder()
-                    .status(CartStatusType.FAILED)
-                    .reasonErr(ReasonError.builder()
-                            .code(e.getStatusCode())
-                            .message(e.getMessage())
-                            .build())
-                    .build();
+            return buildCartWithFailedStatus(cartForReceipt, e.getStatusCode(), e.getMessage());
         } catch (JsonProcessingException e) {
-            return CartForReceipt.builder()
-                    .status(CartStatusType.FAILED)
-                    .reasonErr(ReasonError.builder()
-                            .code(ReasonErrorCode.ERROR_PDV_MAPPING.getCode())
-                            .message(e.getMessage())
-                            .build())
-                    .build();
+            return buildCartWithFailedStatus(cartForReceipt, ReasonErrorCode.ERROR_PDV_MAPPING.getCode(), e.getMessage());
         } catch (Exception e) {
-            return CartForReceipt.builder()
-                    .status(CartStatusType.FAILED)
-                    .reasonErr(ReasonError.builder()
-                            .code(ReasonErrorCode.GENERIC_ERROR.getCode())
-                            .message(e.getMessage())
-                            .build())
-                    .build();
+            return buildCartWithFailedStatus(cartForReceipt, ReasonErrorCode.GENERIC_ERROR.getCode(), e.getMessage());
         }
 
+    }
+
+    /**
+     * @param cartForReceipt the cart to update with failed status
+     * @param code the error code
+     * @param message the error message
+     * @return the cart with failed status
+     */
+    private static CartForReceipt buildCartWithFailedStatus(CartForReceipt cartForReceipt, int code, String message) {
+        if (cartForReceipt == null) {
+            cartForReceipt = new CartForReceipt();
+        }
+        return cartForReceipt.toBuilder()
+                .status(CartStatusType.FAILED)
+                .reasonErr(ReasonError.builder()
+                        .code(code)
+                        .message(message)
+                        .build())
+                .build();
     }
 
     private CartForReceipt buildCart(BizEvent bizEvent, String transactionId, List<CartPayment> cartItems) throws PDVTokenizerException, JsonProcessingException {
@@ -293,8 +289,6 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
                         .transactionCreationDate(getTransactionCreationDate(bizEvent))
                         .cart(cartItems)
                         .build())
-                .numRetry(0)
-                .inserted_at(System.currentTimeMillis())
                 .build();
     }
 

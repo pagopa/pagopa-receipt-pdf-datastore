@@ -1,17 +1,14 @@
 package it.gov.pagopa.receipt.pdf.datastore.entity.cart;
 
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.IOMessageData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReasonError;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 @Data
 public class CartForReceipt {
 
