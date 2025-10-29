@@ -131,7 +131,7 @@ public class BizEventToReceipt {
 
                 if (isCartStatusValid(cartForReceipt)) {
                     // saved on CosmosDB
-                    bizEventToReceiptService.saveCartForReceipt(cartForReceipt);
+                    bizEventToReceiptService.saveCartForReceipt(cartForReceipt, bizEvent);
                 }
 
                 if (cartForReceipt.getStatus().equals(CartStatusType.INSERTED)) {

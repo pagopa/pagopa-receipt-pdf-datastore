@@ -18,6 +18,7 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReasonErrorCode;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventNotFoundException;
+import it.gov.pagopa.receipt.pdf.datastore.exception.CartConcurrentUpdateException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
@@ -240,7 +241,6 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
                 if (cartItems.size() == Integer.parseInt(bizEvent.getPaymentInfo().getTotalNotice())) {
                     // if all items have been added to the cart set status to INSERTED
                     cartForReceipt.setStatus(CartStatusType.INSERTED);
-                    cartForReceipt.setInserted_at(System.currentTimeMillis());
                 }
             }
             return cartForReceipt;
@@ -359,9 +359,48 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         return bizEventList;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public void saveCartForReceipt(CartForReceipt cartForReceipt) {
-        cartReceiptsCosmosClient.updateCart(cartForReceipt);
+    public void saveCartForReceipt(CartForReceipt cartForReceipt, BizEvent bizEvent) {
+        int statusCode;
+
+        statusCode = trySaveCart(cartForReceipt);
+
+        if (statusCode == ReasonErrorCode.ERROR_COSMOS_ETAG_MISMATCH.getCode()) {
+            logger.debug("Fetch again cart with eventId {} and then retry save on cosmos", cartForReceipt.getEventId());
+            cartForReceipt = buildCartForReceipt(bizEvent);
+
+            statusCode = trySaveCart(cartForReceipt);
+        }
+
+        if (statusCode != HttpStatus.CREATED.value()) {
+            String errorString = String.format(
+                    "[BizEventToReceiptService] Error saving cart to cosmos for receipt with eventId %s, cosmos client responded with status %s",
+                    cartForReceipt.getEventId(), statusCode);
+            ReasonError reasonError = new ReasonError(statusCode, errorString);
+            cartForReceipt.setReasonErr(reasonError);
+            //Error info
+            logger.error(errorString);
+        }
+    }
+
+    private int trySaveCart(CartForReceipt cartForReceipt) {
+        int statusCode;
+        try {
+            cartForReceipt.setInserted_at(System.currentTimeMillis());
+            CosmosItemResponse<CartForReceipt> response = this.cartReceiptsCosmosClient.updateCart(cartForReceipt);
+
+            statusCode = response.getStatusCode();
+        } catch (CartConcurrentUpdateException e) {
+            logger.error("Save cart with eventId {} on cosmos failed for concurrent update", cartForReceipt.getEventId(), e);
+            statusCode = ReasonErrorCode.ERROR_COSMOS_ETAG_MISMATCH.getCode();
+        } catch (Exception e) {
+            statusCode = ReasonErrorCode.ERROR_COSMOS.getCode();
+            logger.error("Save cart with eventId {} on cosmos failed", cartForReceipt.getEventId(), e);
+        }
+        return statusCode;
     }
 
     /**

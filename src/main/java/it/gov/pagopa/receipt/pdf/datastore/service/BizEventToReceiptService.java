@@ -3,8 +3,10 @@ package it.gov.pagopa.receipt.pdf.datastore.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
+import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReasonError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
@@ -85,7 +87,15 @@ public interface BizEventToReceiptService {
     /**
      * This method saves the provided CartForReceipt object to the datastore.
      *
+     * <p>
+     *     If the operation fail for concurrent update, it tries to rebuild a cart object
+     *     by invoking {@link #buildCartForReceipt(BizEvent)} with the provided biz event
+     *     and then saves it on Cosmos.
+     *     If the operation fail again or with another error it change the {@link CartForReceipt#status}
+     *     to {@link CartStatusType#FAILED} and add a {@link ReasonError}
+     * </p>
      * @param cartForReceipt the cart to save
+     * @param bizEvent the biz event use to recreate the cart
      */
-    void saveCartForReceipt(CartForReceipt cartForReceipt);
+    void saveCartForReceipt(CartForReceipt cartForReceipt, BizEvent bizEvent);
 }
