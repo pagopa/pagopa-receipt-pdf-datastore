@@ -44,11 +44,7 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
     }
 
     /**
-     * Retrieve receipt document from CosmosDB database
-     *
-     * @param eventId Biz-event id
-     * @return receipt document
-     * @throws ReceiptNotFoundException in case no receipt has been found with the given idEvent
+     * {@inheritDoc}
      */
     @Override
     public CartForReceipt getCartItem(String eventId) throws CartNotFoundException {
@@ -72,10 +68,7 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
     }
 
     /**
-     * Save Cart For Receipt on CosmosDB database
-     *
-     * @param receipt Cart Data to save
-     * @return cart-to-receipts documents
+     * {@inheritDoc}
      */
     @Override
     public CosmosItemResponse<CartForReceipt> saveCart(CartForReceipt receipt) {
@@ -85,10 +78,7 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
     }
 
     /**
-     * Update Cart For Receipt on CosmosDB database
-     *
-     * @param receipt Cart Data to save
-     * @return cart-to-receipts documents
+     * {@inheritDoc}
      */
     @Override
     public CosmosItemResponse<CartForReceipt> updateCart(CartForReceipt receipt) throws CartConcurrentUpdateException {

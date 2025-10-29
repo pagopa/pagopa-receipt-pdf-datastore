@@ -99,7 +99,7 @@ public class BizEventToReceipt {
         for (BizEvent bizEvent : items) {
 
             // Discard null biz events or not in status DONE
-            if (BizEventToReceiptUtils.isBizEventInvalid(bizEvent, context, bizEventToReceiptService, logger)) {
+            if (BizEventToReceiptUtils.isBizEventInvalid(bizEvent, context, this.bizEventToReceiptService, logger)) {
                 discarder++;
                 continue;
             }
@@ -107,38 +107,38 @@ public class BizEventToReceipt {
             Integer totalNotice = BizEventToReceiptUtils.getTotalNotice(bizEvent, context, logger);
             if (totalNotice == 1) {
 
-                Receipt receipt = BizEventToReceiptUtils.createReceipt(bizEvent, bizEventToReceiptService, logger);
+                Receipt receipt = BizEventToReceiptUtils.createReceipt(bizEvent, this.bizEventToReceiptService, logger);
 
                 logger.debug("[{}] function called at {} for event with id {} and status {}",
                         context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
 
                 if (isReceiptStatusValid(receipt)) {
                     // Add receipt to items to be saved on CosmosDB
-                    bizEventToReceiptService.handleSaveReceipt(receipt);
+                    this.bizEventToReceiptService.handleSaveReceipt(receipt);
                 }
 
                 if (isReceiptStatusValid(receipt)) {
                     // Send biz event as message to queue (to be processed from the other function)
-                    bizEventToReceiptService.handleSendMessageToQueue(Collections.singletonList(bizEvent), receipt);
+                    this.bizEventToReceiptService.handleSendMessageToQueue(Collections.singletonList(bizEvent), receipt);
                 }
 
                 if (!isReceiptStatusValid(receipt)) {
                     receiptFailed.add(receipt);
                 }
 
-            } else if (isCartEnabled && totalNotice > 1) {
-                CartForReceipt cartForReceipt = bizEventToReceiptService.buildCartForReceipt(bizEvent);
+            } else if (Boolean.TRUE.equals(isCartEnabled) && totalNotice > 1) {
+                CartForReceipt cartForReceipt = this.bizEventToReceiptService.buildCartForReceipt(bizEvent);
 
                 if (isCartStatusValid(cartForReceipt)) {
                     // saved on CosmosDB
-                    bizEventToReceiptService.saveCartForReceipt(cartForReceipt, bizEvent);
+                    this.bizEventToReceiptService.saveCartForReceipt(cartForReceipt, bizEvent);
                 }
 
                 if (cartForReceipt.getStatus().equals(CartStatusType.INSERTED)) {
                     // Send biz event as message to queue (to be processed from the other function)
-                    List<BizEvent> bizEvents = bizEventToReceiptService.getCartBizEvents(cartForReceipt);
+                    List<BizEvent> bizEvents = this.bizEventToReceiptService.getCartBizEvents(cartForReceipt);
                     if (isCartStatusValid(cartForReceipt)) {
-                        bizEventToReceiptService.handleSendCartMessageToQueue(bizEvents, cartForReceipt);
+                        this.bizEventToReceiptService.handleSendCartMessageToQueue(bizEvents, cartForReceipt);
                     }
                 }
 

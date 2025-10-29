@@ -178,17 +178,6 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
     }
 
     /**
-     * Handles errors for queue and cosmos and updates receipt's status accordingly
-     *
-     * @param receipt Receipt to update
-     */
-    private void handleError(Receipt receipt, ReceiptStatusType statusType, String errorMessage, int errorCode) {
-        receipt.setStatus(statusType);
-        ReasonError reasonError = new ReasonError(errorCode, errorMessage);
-        receipt.setReasonErr(reasonError);
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
@@ -223,6 +212,9 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
     }
 
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public CartForReceipt buildCartForReceipt(BizEvent bizEvent) {
         CartForReceipt cartForReceipt = new CartForReceipt();
@@ -252,6 +244,78 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             return buildCartWithFailedStatus(transactionId, cartForReceipt, ReasonErrorCode.GENERIC_ERROR.getCode(), e.getMessage(), e);
         }
 
+    }
+
+
+    @Override
+    public List<BizEvent> getCartBizEvents(CartForReceipt cart) {
+        List<BizEvent> bizEventList = new ArrayList<>();
+        try {
+            for (CartPayment item : cart.getPayload().getCart()) {
+                BizEvent bizEvent = this.bizEventCosmosClient.getBizEventDocument(item.getBizEventId());
+                bizEventList.add(bizEvent);
+            }
+        } catch (BizEventNotFoundException e) {
+            cart.setStatus(CartStatusType.FAILED);
+        }
+        return bizEventList;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void saveCartForReceipt(CartForReceipt cartForReceipt, BizEvent bizEvent) {
+        int statusCode;
+
+        statusCode = trySaveCart(cartForReceipt);
+
+        if (statusCode == ReasonErrorCode.ERROR_COSMOS_ETAG_MISMATCH.getCode()) {
+            logger.debug("Fetch again cart with eventId {} and then retry save on cosmos", cartForReceipt.getEventId());
+            cartForReceipt = buildCartForReceipt(bizEvent);
+
+            statusCode = trySaveCart(cartForReceipt);
+        }
+
+        if (statusCode != HttpStatus.CREATED.value()) {
+            String errorString = String.format(
+                    "[BizEventToReceiptService] Error saving cart to cosmos for receipt with eventId %s, cosmos client responded with status %s",
+                    cartForReceipt.getEventId(), statusCode);
+            ReasonError reasonError = new ReasonError(statusCode, errorString);
+            cartForReceipt.setReasonErr(reasonError);
+            //Error info
+            logger.error(errorString);
+        }
+    }
+
+    private int trySaveCart(CartForReceipt cartForReceipt) {
+        int statusCode;
+        try {
+            cartForReceipt.setInserted_at(System.currentTimeMillis());
+            CosmosItemResponse<CartForReceipt> response = this.cartReceiptsCosmosClient.updateCart(cartForReceipt);
+
+            statusCode = response.getStatusCode();
+        } catch (CartConcurrentUpdateException e) {
+            logger.error("Save cart with eventId {} on cosmos failed for concurrent update", cartForReceipt.getEventId(), e);
+            statusCode = ReasonErrorCode.ERROR_COSMOS_ETAG_MISMATCH.getCode();
+        } catch (Exception e) {
+            statusCode = ReasonErrorCode.ERROR_COSMOS.getCode();
+            logger.error("Save cart with eventId {} on cosmos failed", cartForReceipt.getEventId(), e);
+        }
+        return statusCode;
+    }
+
+    /**
+     * Handles errors for PDV tokenizer and updates receipt's status accordingly
+     *
+     * @param receipt      Receipt to update
+     * @param errorMessage Message to save
+     * @param statusCode   StatusCode to save
+     */
+    private void handleTokenizerException(Receipt receipt, String errorMessage, int statusCode) {
+        receipt.setStatus(ReceiptStatusType.FAILED);
+        ReasonError reasonError = new ReasonError(statusCode, errorMessage);
+        receipt.setReasonErr(reasonError);
     }
 
     /**
@@ -344,75 +408,14 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         return null;
     }
 
-
-    @Override
-    public List<BizEvent> getCartBizEvents(CartForReceipt cart) {
-        List<BizEvent> bizEventList = new ArrayList<>();
-        try {
-            for (CartPayment item : cart.getPayload().getCart()) {
-                BizEvent bizEvent = this.bizEventCosmosClient.getBizEventDocument(item.getBizEventId());
-                bizEventList.add(bizEvent);
-            }
-        } catch (BizEventNotFoundException e) {
-            cart.setStatus(CartStatusType.FAILED);
-        }
-        return bizEventList;
-    }
-
     /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void saveCartForReceipt(CartForReceipt cartForReceipt, BizEvent bizEvent) {
-        int statusCode;
-
-        statusCode = trySaveCart(cartForReceipt);
-
-        if (statusCode == ReasonErrorCode.ERROR_COSMOS_ETAG_MISMATCH.getCode()) {
-            logger.debug("Fetch again cart with eventId {} and then retry save on cosmos", cartForReceipt.getEventId());
-            cartForReceipt = buildCartForReceipt(bizEvent);
-
-            statusCode = trySaveCart(cartForReceipt);
-        }
-
-        if (statusCode != HttpStatus.CREATED.value()) {
-            String errorString = String.format(
-                    "[BizEventToReceiptService] Error saving cart to cosmos for receipt with eventId %s, cosmos client responded with status %s",
-                    cartForReceipt.getEventId(), statusCode);
-            ReasonError reasonError = new ReasonError(statusCode, errorString);
-            cartForReceipt.setReasonErr(reasonError);
-            //Error info
-            logger.error(errorString);
-        }
-    }
-
-    private int trySaveCart(CartForReceipt cartForReceipt) {
-        int statusCode;
-        try {
-            cartForReceipt.setInserted_at(System.currentTimeMillis());
-            CosmosItemResponse<CartForReceipt> response = this.cartReceiptsCosmosClient.updateCart(cartForReceipt);
-
-            statusCode = response.getStatusCode();
-        } catch (CartConcurrentUpdateException e) {
-            logger.error("Save cart with eventId {} on cosmos failed for concurrent update", cartForReceipt.getEventId(), e);
-            statusCode = ReasonErrorCode.ERROR_COSMOS_ETAG_MISMATCH.getCode();
-        } catch (Exception e) {
-            statusCode = ReasonErrorCode.ERROR_COSMOS.getCode();
-            logger.error("Save cart with eventId {} on cosmos failed", cartForReceipt.getEventId(), e);
-        }
-        return statusCode;
-    }
-
-    /**
-     * Handles errors for PDV tokenizer and updates receipt's status accordingly
+     * Handles errors for queue and cosmos and updates receipt's status accordingly
      *
-     * @param receipt      Receipt to update
-     * @param errorMessage Message to save
-     * @param statusCode   StatusCode to save
+     * @param receipt Receipt to update
      */
-    private void handleTokenizerException(Receipt receipt, String errorMessage, int statusCode) {
-        receipt.setStatus(ReceiptStatusType.FAILED);
-        ReasonError reasonError = new ReasonError(statusCode, errorMessage);
+    private void handleError(Receipt receipt, ReceiptStatusType statusType, String errorMessage, int errorCode) {
+        receipt.setStatus(statusType);
+        ReasonError reasonError = new ReasonError(errorCode, errorMessage);
         receipt.setReasonErr(reasonError);
     }
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.Payload;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReasonError;
@@ -68,11 +69,12 @@ public interface BizEventToReceiptService {
     void tokenizeFiscalCodes(BizEvent bizEvent, Receipt receipt, EventData eventData) throws JsonProcessingException, PDVTokenizerException;
 
     /**
-     * Search for a cart associated with the provided biz-event, if present it updates the cart with the biz-event id
-     * otherwise it saves a new cart
+     * Search for a cart associated with the provided transaction id, if present
+     * it updates the cart section {@link Payload#getCart()} with the biz-event info
+     * otherwise it creates a new {@link CartForReceipt} with the biz-event info
      *
      * @param bizEvent the biz-event
-     * @return
+     * @return the cart with the biz-event info
      */
     CartForReceipt buildCartForReceipt(BizEvent bizEvent);
 
@@ -91,7 +93,7 @@ public interface BizEventToReceiptService {
      *     If the operation fail for concurrent update, it tries to rebuild a cart object
      *     by invoking {@link #buildCartForReceipt(BizEvent)} with the provided biz event
      *     and then saves it on Cosmos.
-     *     If the operation fail again or with another error it change the {@link CartForReceipt#status}
+     *     If the operation fail again or with another error it change the {@link CartForReceipt#getStatus()}
      *     to {@link CartStatusType#FAILED} and add a {@link ReasonError}
      * </p>
      * @param cartForReceipt the cart to save
