@@ -8,10 +8,14 @@ import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.HttpStatus;
 import com.microsoft.azure.functions.OutputBinding;
 import it.gov.pagopa.receipt.pdf.datastore.client.BizEventCosmosClient;
+import it.gov.pagopa.receipt.pdf.datastore.client.impl.CartQueueClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.CartReceiptsCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptQueueClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartPayment;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.Payload;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.*;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.enumeration.BizEventStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
@@ -34,8 +38,6 @@ import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -70,6 +72,8 @@ class BizEventToReceiptTest {
     private BizEventCosmosClient bizEventCosmosClientMock;
     @Mock
     private ReceiptQueueClientImpl queueClient;
+    @Mock
+    private CartQueueClientImpl cartQueueClient;
 
     @Captor
     private ArgumentCaptor<List<Receipt>> receiptCaptor;
@@ -92,7 +96,7 @@ class BizEventToReceiptTest {
         when(queueClient.sendMessageToQueue(anyString())).thenReturn(response);
 
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
-                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient, cartQueueClient);
         function = new BizEventToReceipt(receiptService);
 
         List<BizEvent> bizEventItems = new ArrayList<>();
@@ -100,9 +104,11 @@ class BizEventToReceiptTest {
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<CartForReceipt>> cartDocumentdb = (OutputBinding<List<CartForReceipt>>) spy(OutputBinding.class);
 
         // test execution
-        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
+        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(documentdb, never()).setValue(any());
     }
@@ -121,7 +127,7 @@ class BizEventToReceiptTest {
         when(queueClient.sendMessageToQueue(anyString())).thenReturn(response);
 
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
-                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient, cartQueueClient);
         function = new BizEventToReceipt(receiptService);
 
         List<BizEvent> bizEventItems = new ArrayList<>();
@@ -129,9 +135,10 @@ class BizEventToReceiptTest {
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+        OutputBinding<List<CartForReceipt>> cartDocumentdb = (OutputBinding<List<CartForReceipt>>) spy(OutputBinding.class);
 
         // test execution
-        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
+        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(documentdb, never()).setValue(any());
     }
@@ -150,7 +157,7 @@ class BizEventToReceiptTest {
         when(receiptCosmosClient.saveReceipts(any(Receipt.class))).thenReturn(cosmosResponse);
 
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
-                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient, cartQueueClient);
         function = new BizEventToReceipt(receiptService);
 
         List<BizEvent> bizEventItems = new ArrayList<>();
@@ -158,9 +165,10 @@ class BizEventToReceiptTest {
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+        OutputBinding<List<CartForReceipt>> cartDocumentdb = (OutputBinding<List<CartForReceipt>>) spy(OutputBinding.class);
 
         // test execution
-        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
+        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(documentdb, never()).setValue(any());
     }
@@ -172,12 +180,13 @@ class BizEventToReceiptTest {
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+        OutputBinding<List<CartForReceipt>> cartDocumentdb = (OutputBinding<List<CartForReceipt>>) spy(OutputBinding.class);
 
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
-                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient, cartQueueClient);
         function = new BizEventToReceipt(receiptService);
         // test execution
-        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
+        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(documentdb, never()).setValue(any());
     }
@@ -190,11 +199,12 @@ class BizEventToReceiptTest {
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+        OutputBinding<List<CartForReceipt>> cartDocumentdb = (OutputBinding<List<CartForReceipt>>) spy(OutputBinding.class);
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
-                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient, cartQueueClient);
         function = new BizEventToReceipt(receiptService);
         // test execution
-        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
+        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(documentdb, never()).setValue(any());
     }
@@ -211,11 +221,12 @@ class BizEventToReceiptTest {
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+        OutputBinding<List<CartForReceipt>> cartDocumentdb = (OutputBinding<List<CartForReceipt>>) spy(OutputBinding.class);
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
-                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient, cartQueueClient);
         function = new BizEventToReceipt(receiptService);
         // test execution
-        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
+        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(documentdb, never()).setValue(any());
     }
@@ -229,11 +240,12 @@ class BizEventToReceiptTest {
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+        OutputBinding<List<CartForReceipt>> cartDocumentdb = (OutputBinding<List<CartForReceipt>>) spy(OutputBinding.class);
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
-                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient, cartQueueClient);
         function = new BizEventToReceipt(receiptService);
         // test execution
-        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
+        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(documentdb, never()).setValue(any());
     }
@@ -245,11 +257,12 @@ class BizEventToReceiptTest {
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+        OutputBinding<List<CartForReceipt>> cartDocumentdb = (OutputBinding<List<CartForReceipt>>) spy(OutputBinding.class);
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
-                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient, cartQueueClient);
         function = new BizEventToReceipt(receiptService);
         // test execution
-        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
+        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(documentdb, never()).setValue(any());
     }
@@ -261,11 +274,12 @@ class BizEventToReceiptTest {
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+        OutputBinding<List<CartForReceipt>> cartDocumentdb = (OutputBinding<List<CartForReceipt>>) spy(OutputBinding.class);
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
-                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient, cartQueueClient);
         function = new BizEventToReceipt(receiptService);
         // test execution
-        assertThrows(NumberFormatException.class, () -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
+        assertThrows(NumberFormatException.class, () -> function.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(documentdb, never()).setValue(any());
     }
@@ -276,7 +290,7 @@ class BizEventToReceiptTest {
                 .thenThrow(new PDVTokenizerException(HTTP_MESSAGE_ERROR, org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR));
 
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
-                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient, cartQueueClient);
         function = new BizEventToReceipt(receiptService);
 
         List<BizEvent> bizEventItems = new ArrayList<>();
@@ -284,9 +298,10 @@ class BizEventToReceiptTest {
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+        OutputBinding<List<CartForReceipt>> cartDocumentdb = (OutputBinding<List<CartForReceipt>>) spy(OutputBinding.class);
 
         // test execution
-        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
+        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(documentdb).setValue(receiptCaptor.capture());
         Receipt captured = receiptCaptor.getValue().get(0);
@@ -311,7 +326,7 @@ class BizEventToReceiptTest {
         when(queueClient.sendMessageToQueue(anyString())).thenReturn(response);
 
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
-                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient, cartQueueClient);
         function = new BizEventToReceipt(receiptService);
 
         List<BizEvent> bizEventItems = new ArrayList<>();
@@ -319,9 +334,10 @@ class BizEventToReceiptTest {
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+        OutputBinding<List<CartForReceipt>> cartDocumentdb = (OutputBinding<List<CartForReceipt>>) spy(OutputBinding.class);
 
         // test execution
-        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
+        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(documentdb).setValue(receiptCaptor.capture());
         Receipt captured = receiptCaptor.getValue().get(0);
@@ -344,7 +360,7 @@ class BizEventToReceiptTest {
         when(receiptCosmosClient.saveReceipts(any(Receipt.class))).thenReturn(cosmosResponse);
 
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
-                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient, cartQueueClient);
         function = new BizEventToReceipt(receiptService);
 
         List<BizEvent> bizEventItems = new ArrayList<>();
@@ -352,9 +368,10 @@ class BizEventToReceiptTest {
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+        OutputBinding<List<CartForReceipt>> cartDocumentdb = (OutputBinding<List<CartForReceipt>>) spy(OutputBinding.class);
 
         // test execution
-        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
+        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(documentdb).setValue(receiptCaptor.capture());
         Receipt captured = receiptCaptor.getValue().get(0);
@@ -378,7 +395,7 @@ class BizEventToReceiptTest {
         when(receiptCosmosClient.saveReceipts(any(Receipt.class))).thenReturn(cosmosResponse);
 
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
-                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient, cartQueueClient);
         function = new BizEventToReceipt(receiptService);
 
         List<BizEvent> bizEventItems = new ArrayList<>();
@@ -386,11 +403,13 @@ class BizEventToReceiptTest {
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<CartForReceipt>> cartDocumentdb = (OutputBinding<List<CartForReceipt>>) spy(OutputBinding.class);
 
         // test execution
         withEnvironmentVariable("RECEIPT_QUEUE_TOPIC", "wrong-queue-topic").execute(() ->
                 assertDoesNotThrow(() ->
-                        function.processBizEventToReceipt(bizEventItems, documentdb, context))
+                        function.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context))
         );
 
         verify(documentdb).setValue(receiptCaptor.capture());
@@ -410,7 +429,7 @@ class BizEventToReceiptTest {
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
 
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
-                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient, cartQueueClient);
         function = new BizEventToReceipt(receiptService);
 
         List<BizEvent> bizEventItems = new ArrayList<>();
@@ -418,11 +437,12 @@ class BizEventToReceiptTest {
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+        OutputBinding<List<CartForReceipt>> cartDocumentdb = (OutputBinding<List<CartForReceipt>>) spy(OutputBinding.class);
 
         // test execution
         withEnvironmentVariable("COSMOS_RECEIPT_SERVICE_ENDPOINT", "wrong-endpoint").execute(() ->
                 assertDoesNotThrow(() ->
-                        function.processBizEventToReceipt(bizEventItems, documentdb, context))
+                        function.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context))
         );
 
         verify(documentdb).setValue(receiptCaptor.capture());
@@ -436,61 +456,12 @@ class BizEventToReceiptTest {
         assertEquals(1, captured.getEventData().getCart().size());
     }
 
-    @Test
-    void runOk_CartToCreate() throws CartNotFoundException {
-
-        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
-                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
-        function = new BizEventToReceipt(receiptService);
-
-        List<BizEvent> bizEventItems = new ArrayList<>();
-        bizEventItems.add(generateValidBizEvent("2"));
-
-        @SuppressWarnings("unchecked")
-        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
-
-        // test execution
-        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
-
-        verify(documentdb, never()).setValue(any());
-        verify(cartReceiptsCosmosClient).getCartItem(any());
-        verify(cartReceiptsCosmosClient).saveCart(cartForReceiptArgumentCaptor.capture());
-        CartForReceipt cartForReceipt = cartForReceiptArgumentCaptor.getValue();
-        assertEquals(1, cartForReceipt.getCartPaymentId().size());
-    }
-
-    @Test
-    void runOk_CartToCreate_ExistingCart() throws CartNotFoundException {
-
-        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
-                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
-        function = new BizEventToReceipt(receiptService);
-
-        when(cartReceiptsCosmosClient.getCartItem(any())).thenReturn(CartForReceipt.builder().id("2332").totalNotice(2)
-                .cartPaymentId(new HashSet<>(Collections.singletonList("1"))).build());
-
-        List<BizEvent> bizEventItems = new ArrayList<>();
-        bizEventItems.add(generateValidBizEvent("2"));
-
-        @SuppressWarnings("unchecked")
-        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
-
-        // test execution
-        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
-
-        verify(documentdb, never()).setValue(any());
-        verify(cartReceiptsCosmosClient).getCartItem(any());
-        verify(cartReceiptsCosmosClient).updateCart(cartForReceiptArgumentCaptor.capture());
-        CartForReceipt cartForReceipt = cartForReceiptArgumentCaptor.getValue();
-        assertEquals(2, cartForReceipt.getCartPaymentId().size());
-    }
-
 
     @Test
     void bizEventNotProcessedCartNotEnabled() throws CartNotFoundException {
         environmentVariables.set("ENABLE_CART", "false");
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
-                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient, cartQueueClient);
         function = new BizEventToReceipt(receiptService);
 
         List<BizEvent> bizEventItems = new ArrayList<>();
@@ -498,9 +469,10 @@ class BizEventToReceiptTest {
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+        OutputBinding<List<CartForReceipt>> cartDocumentdb = (OutputBinding<List<CartForReceipt>>) spy(OutputBinding.class);
 
         // test execution
-        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
+        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(documentdb, never()).setValue(any());
         verify(cartReceiptsCosmosClient, never()).getCartItem(any());
@@ -517,16 +489,17 @@ class BizEventToReceiptTest {
 
         @SuppressWarnings("unchecked")
         OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+        OutputBinding<List<CartForReceipt>> cartDocumentdb = (OutputBinding<List<CartForReceipt>>) spy(OutputBinding.class);
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
-                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient);
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient, cartQueueClient);
         function = new BizEventToReceipt(receiptService);
         // test execution
-        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, context));
+        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(documentdb, never()).setValue(any());
     }
 
-    private BizEvent generateValidBizEvent(String totalNotice){
+    private BizEvent generateValidBizEvent(String totalNotice) {
         BizEvent item = new BizEvent();
 
         Payer payer = new Payer();
@@ -555,7 +528,7 @@ class BizEventToReceiptTest {
         return item;
     }
 
-    private BizEvent generateValidBizEventWithTDetails(String totalNotice){
+    private BizEvent generateValidBizEventWithTDetails(String totalNotice) {
         BizEvent item = new BizEvent();
 
         Debtor debtor = new Debtor();
@@ -582,7 +555,7 @@ class BizEventToReceiptTest {
         return item;
     }
 
-    private BizEvent generateAnonymDebtorBizEvent(String totalNotice){
+    private BizEvent generateAnonymDebtorBizEvent(String totalNotice) {
         BizEvent item = new BizEvent();
 
         Payer payer = new Payer();
@@ -611,11 +584,141 @@ class BizEventToReceiptTest {
         return item;
     }
 
-    private BizEvent generateNotDoneBizEvent(){
+    private BizEvent generateNotDoneBizEvent() {
         BizEvent item = new BizEvent();
 
         item.setEventStatus(BizEventStatusType.NA);
 
         return item;
     }
+
+
+    @Test
+    void runOk_cart() throws PDVTokenizerException, JsonProcessingException {
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE)).thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE)).thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
+
+//        CosmosItemResponse<CartForReceipt> cosmosResponse = mock(CosmosItemResponse.class);
+//        when(cosmosResponse.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
+//        when(cartReceiptsCosmosClient.updateCart(any(CartForReceipt.class))).thenReturn(cosmosResponse);
+
+//        Response<SendMessageResult> response = mock(Response.class);
+//        when(response.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
+//        when(cartQueueClient.sendMessageToQueue(anyString())).thenReturn(response);
+
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient, cartQueueClient);
+        function = new BizEventToReceipt(receiptService);
+
+        List<BizEvent> bizEventItems = new ArrayList<>();
+        bizEventItems.add(generateValidBizEvent("2"));
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<CartForReceipt>> cartDocumentdb = (OutputBinding<List<CartForReceipt>>) spy(OutputBinding.class);
+
+        // test execution
+        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
+
+        verify(documentdb, never()).setValue(any());
+    }
+
+    @Test
+    void cart_sendMessage_error() throws PDVTokenizerException, JsonProcessingException, CartNotFoundException {
+
+        CartForReceipt cartForReceipt = new CartForReceipt();
+        CartPayment cartPayment = CartPayment.builder()
+                .bizEventId("12")
+                .amount("1")
+                .build();
+        ArrayList<CartPayment> cart = new ArrayList<>();
+        cart.add(cartPayment);
+        cartForReceipt.setPayload(Payload.builder()
+                .totalNotice("2")
+                .cart(cart)
+                .build());
+        when(cartReceiptsCosmosClient.getCartItem(anyString())).thenReturn(cartForReceipt);
+
+
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient, cartQueueClient);
+        function = new BizEventToReceipt(receiptService);
+
+        List<BizEvent> bizEventItems = new ArrayList<>();
+        BizEvent e = generateValidBizEvent("2");
+        e.setId("12");
+        PaymentInfo paymentInfo = new PaymentInfo();
+        paymentInfo.setAmount("1");
+        paymentInfo.setRemittanceInformation("subject");
+        paymentInfo.setTotalNotice("2");
+        e.setPaymentInfo(paymentInfo);
+        e.getTransactionDetails().getTransaction().setTransactionId("1");
+        Creditor creditor = new Creditor();
+        creditor.setCompanyName("name");
+        e.setCreditor(creditor);
+
+        bizEventItems.add(e);
+
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<Receipt>> documentdb = (OutputBinding<List<Receipt>>) spy(OutputBinding.class);
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<CartForReceipt>> cartDocumentdb = (OutputBinding<List<CartForReceipt>>) spy(OutputBinding.class);
+
+        // test execution
+        assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
+
+        verify(documentdb, never()).setValue(any());
+    }
+
+    @Test
+    public void buildCartForReceipt_error() throws CartNotFoundException {
+        when(cartReceiptsCosmosClient.getCartItem(anyString())).thenThrow(new RuntimeException());
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient, cartQueueClient);
+        var result = receiptService.buildCartForReceipt(BizEvent.builder()
+                .transactionDetails(TransactionDetails.builder()
+                        .transaction(Transaction.builder()
+                                .transactionId("1")
+                                .build())
+                        .build())
+                .build());
+        assertEquals(CartStatusType.FAILED, result.getStatus());
+    }
+
+
+    @Test
+    public void buildCartForReceipt_pvderror() throws CartNotFoundException, JsonProcessingException, PDVTokenizerException {
+
+        CartForReceipt cartForReceipt = new CartForReceipt();
+        CartPayment cartPayment = CartPayment.builder()
+                .bizEventId("12")
+                .amount("1")
+                .build();
+        ArrayList<CartPayment> cart = new ArrayList<>();
+        cart.add(cartPayment);
+        cartForReceipt.setPayload(Payload.builder()
+                .totalNotice("2")
+                .cart(cart)
+                .build());
+//        when(cartReceiptsCosmosClient.getCartItem(anyString())).thenReturn(cartForReceipt);
+
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(anyString())).thenThrow(new PDVTokenizerException("error", 500));
+
+
+        BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
+                pdvTokenizerServiceMock, receiptCosmosClient, cartReceiptsCosmosClient, bizEventCosmosClientMock, queueClient, cartQueueClient);
+        var result = receiptService.buildCartForReceipt(BizEvent.builder()
+                .debtor(Debtor.builder()
+                        .entityUniqueIdentifierValue("MRNRSS90A01H501U")
+                        .build())
+                .transactionDetails(TransactionDetails.builder()
+                        .transaction(Transaction.builder()
+                                .transactionId("1")
+                                .build())
+                        .build())
+                .build());
+        assertEquals(CartStatusType.FAILED, result.getStatus());
+    }
+
 }

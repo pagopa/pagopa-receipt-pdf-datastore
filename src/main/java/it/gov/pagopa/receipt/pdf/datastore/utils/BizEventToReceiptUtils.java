@@ -11,14 +11,12 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
-
 import org.slf4j.Logger;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.NumberFormat;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,6 +30,9 @@ public class BizEventToReceiptUtils {
     private static final List<String> UNWANTED_REMITTANCE_INFO = Arrays.asList(System.getenv().getOrDefault(
             "UNWANTED_REMITTANCE_INFO", "pagamento multibeneficiario,pagamento bpay").split(","));
     private static final String ECOMMERCE = "CHECKOUT";
+
+    private BizEventToReceiptUtils() {
+    }
 
     /**
      * Creates a new instance of Receipt, using the tokenizer service to mask the PII, based on
@@ -205,57 +206,7 @@ public class BizEventToReceiptUtils {
         return null;
     }
 
-    /**
-     * Creates the receipt for a cart, using the tokenizer service to mask the PII, based on
-     * the provided list of BizEvent
-     *
-     * @param bizEventList a list og BizEvent
-     * @return a receipt
-     */
-    public static Receipt createCartReceipt(List<BizEvent> bizEventList, BizEventToReceiptService service, Logger logger) {
-        Receipt receipt = new Receipt();
-        BizEvent firstBizEvent = bizEventList.get(0);
-        String carId = firstBizEvent.getTransactionDetails().getTransaction().getTransactionId();
-
-        // Insert biz-event data into receipt
-        receipt.setId(String.format("%s-%s", carId, UUID.randomUUID()));
-        receipt.setEventId(carId);
-        receipt.setIsCart(true);
-
-        EventData eventData = new EventData();
-        try {
-            service.tokenizeFiscalCodes(firstBizEvent, receipt, eventData);
-        } catch (Exception e) {
-            logger.error("Error tokenizing receipt for cart with id {}", carId, e);
-            receipt.setStatus(ReceiptStatusType.FAILED);
-            return receipt;
-        }
-
-        eventData.setTransactionCreationDate(service.getTransactionCreationDate(firstBizEvent));
-
-        AtomicReference<BigDecimal> amount = new AtomicReference<>(BigDecimal.ZERO);
-        List<CartItem> cartItems = new ArrayList<>();
-        bizEventList.forEach(bizEvent -> {
-            BigDecimal amountExtracted = getAmount(bizEvent);
-            amount.updateAndGet(v -> v.add(amountExtracted));
-            cartItems.add(
-                    CartItem.builder()
-                            .payeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null)
-                            .subject(getItemSubject(bizEvent))
-                            .build());
-        });
-
-        if (!amount.get().equals(BigDecimal.ZERO)) {
-            eventData.setAmount(formatAmount(amount.get().toString()));
-        }
-
-        eventData.setCart(cartItems);
-
-        receipt.setEventData(eventData);
-        return receipt;
-    }
-
-    private static BigDecimal getAmount(BizEvent bizEvent) {
+    public static BigDecimal getAmount(BizEvent bizEvent) {
         if (bizEvent.getTransactionDetails() != null && bizEvent.getTransactionDetails().getTransaction() != null) {
             return formatEuroCentAmount(bizEvent.getTransactionDetails().getTransaction().getGrandTotal());
         }
@@ -271,7 +222,7 @@ public class BizEventToReceiptUtils {
         return amount.divide(divider, 2, RoundingMode.UNNECESSARY);
     }
 
-    private static String formatAmount(String value) {
+    public static String formatAmount(String value) {
         BigDecimal valueToFormat = new BigDecimal(value);
         NumberFormat numberFormat = NumberFormat.getInstance(Locale.ITALY);
         numberFormat.setMaximumFractionDigits(2);
@@ -307,6 +258,7 @@ public class BizEventToReceiptUtils {
 
     /**
      * Method to check if the content comes from a legacy cart model (see https://pagopa.atlassian.net/browse/VAS-1167)
+     *
      * @param bizEvent bizEvent to validate
      * @return flag to determine if it is a manageable cart, or otherwise, will return false if
      * it is considered a legacy cart content (not having a totalNotice field and having amount values != 0)
@@ -315,13 +267,12 @@ public class BizEventToReceiptUtils {
         if (bizEvent.getPaymentInfo() != null && bizEvent.getPaymentInfo().getTotalNotice() == null) {
             return bizEvent.getTransactionDetails() != null &&
                     new BigDecimal(bizEvent.getPaymentInfo().getAmount()).subtract(
-                            formatEuroCentAmount(bizEvent.getTransactionDetails().getTransaction().getAmount()))
+                                    formatEuroCentAmount(bizEvent.getTransactionDetails().getTransaction().getAmount()))
                             .floatValue() == 0;
         }
         return true;
     }
-    
-    
+
     public static boolean isValidChannelOrigin(BizEvent bizEvent) {
         if (bizEvent.getTransactionDetails() == null) {
             return false;
@@ -348,8 +299,5 @@ public class BizEventToReceiptUtils {
         }
 
         return originMatches || clientIdMatches;
-    }
-
-    private BizEventToReceiptUtils() {
     }
 }

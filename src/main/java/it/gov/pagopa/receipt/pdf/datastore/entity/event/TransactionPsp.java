@@ -10,7 +10,7 @@ import lombok.*;
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TransactionPsp {
-	private String idChannel;
-	private String businessName;
-	private String serviceName;
+    private String idChannel;
+    private String businessName;
+    private String serviceName;
 }

@@ -13,7 +13,7 @@ public class PDVTokenizerException extends Exception {
     /**
      * Constructs new exception with provided message
      *
-     * @param message Detail message
+     * @param message    Detail message
      * @param statusCode status code
      */
     public PDVTokenizerException(String message, int statusCode) {
@@ -24,9 +24,9 @@ public class PDVTokenizerException extends Exception {
     /**
      * Constructs new exception with provided message
      *
-     * @param message Detail message
+     * @param message    Detail message
      * @param statusCode status code
-     * @param cause Exception causing the constructed one
+     * @param cause      Exception causing the constructed one
      */
     public PDVTokenizerException(String message, int statusCode, Throwable cause) {
         super(message, cause);

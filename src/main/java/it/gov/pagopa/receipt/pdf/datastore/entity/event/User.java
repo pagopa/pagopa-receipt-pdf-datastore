@@ -11,13 +11,13 @@ import lombok.*;
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class User {
-	private String fullName;
-	private String name;
-	private String surname;
-	private UserType type;
-	private String fiscalCode;
-	private String notificationEmail;
-	private String userId;
-	private String userStatus;
-	private String userStatusDescription;
+    private String fullName;
+    private String name;
+    private String surname;
+    private UserType type;
+    private String fiscalCode;
+    private String notificationEmail;
+    private String userId;
+    private String userStatus;
+    private String userStatusDescription;
 }

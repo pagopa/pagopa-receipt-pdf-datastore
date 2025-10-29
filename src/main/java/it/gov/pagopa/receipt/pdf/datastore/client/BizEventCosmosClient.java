@@ -1,18 +1,17 @@
 package it.gov.pagopa.receipt.pdf.datastore.client;
 
 
-import com.azure.cosmos.models.FeedResponse;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
+import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventNotFoundException;
 
 public interface BizEventCosmosClient {
 
     /**
-     * Retrieve all biz-event documents related to a specific cart from CosmosDB database
-     *
-     * @param transactionId     id that identifies the cart
-     * @param continuationToken Paged query continuation token
-     * @param pageSize          the page size
-     * @return a list of biz-event document
+     * @param bizEventId the id of the bizEvent to retrieve
+     * @return the BizEvent document from Cosmos DB
+     * @throws BizEventNotFoundException if the BizEvent with the given id is not found
+     *                                   <p>
+     *                                   This method retrieves a BizEvent document from Cosmos DB using the provided bizEventId.
      */
-    Iterable<FeedResponse<BizEvent>> getAllBizEventDocument(String transactionId, String continuationToken, Integer pageSize);
+    BizEvent getBizEventDocument(String bizEventId) throws BizEventNotFoundException;
 }

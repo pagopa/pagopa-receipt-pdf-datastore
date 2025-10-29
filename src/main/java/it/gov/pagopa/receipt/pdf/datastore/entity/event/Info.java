@@ -10,13 +10,13 @@ import lombok.*;
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Info {
-	private String type;
-	private String blurredNumber;
-	private String holder;
-	private String expireMonth;
-	private String expireYear;
-	private String brand;
-	private String issuerAbi;
-	private String issuerName;
-	private String label;
+    private String type;
+    private String blurredNumber;
+    private String holder;
+    private String expireMonth;
+    private String expireYear;
+    private String brand;
+    private String issuerAbi;
+    private String issuerName;
+    private String label;
 }

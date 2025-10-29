@@ -1,10 +1,6 @@
 package it.gov.pagopa.receipt.pdf.datastore;
 
-import com.microsoft.azure.functions.ExecutionContext;
-import com.microsoft.azure.functions.HttpMethod;
-import com.microsoft.azure.functions.HttpRequestMessage;
-import com.microsoft.azure.functions.HttpResponseMessage;
-import com.microsoft.azure.functions.HttpStatus;
+import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
@@ -23,7 +19,7 @@ public class Health {
      * @return response with HttpStatus.OK
      */
     @FunctionName("Health")
-    public HttpResponseMessage run (
+    public HttpResponseMessage run(
             @HttpTrigger(name = "HealthTrigger",
                     methods = {HttpMethod.GET},
                     route = "health",

@@ -2,26 +2,22 @@ package it.gov.pagopa.receipt.pdf.datastore.service.impl;
 
 import com.azure.core.http.rest.Response;
 import com.azure.cosmos.models.CosmosItemResponse;
-import com.azure.cosmos.models.FeedResponse;
 import com.azure.storage.queue.models.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.HttpStatus;
-import it.gov.pagopa.receipt.pdf.datastore.client.BizEventCosmosClient;
-import it.gov.pagopa.receipt.pdf.datastore.client.CartReceiptsCosmosClient;
-import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptCosmosClient;
-import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptQueueClient;
-import it.gov.pagopa.receipt.pdf.datastore.client.impl.BizEventCosmosClientImpl;
-import it.gov.pagopa.receipt.pdf.datastore.client.impl.CartReceiptsCosmosClientImpl;
-import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
-import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptQueueClientImpl;
+import it.gov.pagopa.receipt.pdf.datastore.client.*;
+import it.gov.pagopa.receipt.pdf.datastore.client.impl.*;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartPayment;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.Payload;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReasonError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReasonErrorCode;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
@@ -32,10 +28,11 @@ import it.gov.pagopa.receipt.pdf.datastore.utils.ObjectMapperUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.isValidChannelOrigin;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.*;
 
 public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
 
@@ -49,6 +46,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
     private final BizEventCosmosClient bizEventCosmosClient;
 
     private final ReceiptQueueClient queueClient;
+    private final CartQueueClient cartQueueClient;
 
     public BizEventToReceiptServiceImpl() {
         this.pdvTokenizerService = new PDVTokenizerServiceRetryWrapperImpl();
@@ -56,18 +54,21 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         this.cartReceiptsCosmosClient = CartReceiptsCosmosClientImpl.getInstance();
         this.bizEventCosmosClient = BizEventCosmosClientImpl.getInstance();
         this.queueClient = ReceiptQueueClientImpl.getInstance();
+        this.cartQueueClient = CartQueueClientImpl.getInstance();
     }
 
     public BizEventToReceiptServiceImpl(PDVTokenizerServiceRetryWrapper pdvTokenizerService,
                                         ReceiptCosmosClient receiptCosmosClient,
                                         CartReceiptsCosmosClient cartReceiptsCosmosClient,
                                         BizEventCosmosClient bizEventCosmosClient,
-                                        ReceiptQueueClient queueClient) {
+                                        ReceiptQueueClient queueClient,
+                                        CartQueueClientImpl cartQueueClient) {
         this.pdvTokenizerService = pdvTokenizerService;
         this.receiptCosmosClient = receiptCosmosClient;
         this.cartReceiptsCosmosClient = cartReceiptsCosmosClient;
         this.bizEventCosmosClient = bizEventCosmosClient;
         this.queueClient = queueClient;
+        this.cartQueueClient = cartQueueClient;
     }
 
     /**
@@ -86,11 +87,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             statusCode = sendMessageResult.getStatusCode();
         } catch (Exception e) {
             statusCode = ReasonErrorCode.ERROR_QUEUE.getCode();
-            if (bizEventList.size() == 1) {
-                logger.error("Sending BizEvent with id {} to queue failed", receipt.getEventId(), e);
-            } else {
-                logger.error("Failed to enqueue cart with id {}", receipt.getEventId(), e);
-            }
+            logger.error("Sending BizEvent with id {} to queue failed", receipt.getEventId(), e);
         }
 
         if (statusCode != HttpStatus.CREATED.value()) {
@@ -98,6 +95,34 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
                     "[BizEventToReceiptService] Error sending message to queue for receipt with eventId %s",
                     receipt.getEventId());
             handleError(receipt, ReceiptStatusType.NOT_QUEUE_SENT, errorString, statusCode);
+            //Error info
+            logger.error(errorString);
+        }
+    }
+
+    @Override
+    public void handleSendCartMessageToQueue(List<BizEvent> bizEventList, CartForReceipt cartForReceipt) {
+        //Encode biz-event to base64 string
+        String messageText = Base64.getMimeEncoder().encodeToString(
+                Objects.requireNonNull(ObjectMapperUtils.writeValueAsString(bizEventList)).getBytes(StandardCharsets.UTF_8));
+
+        //Add message to the queue
+        int statusCode;
+        try {
+            Response<SendMessageResult> sendMessageResult = cartQueueClient.sendMessageToQueue(messageText);
+            statusCode = sendMessageResult.getStatusCode();
+        } catch (Exception e) {
+            statusCode = ReasonErrorCode.ERROR_QUEUE.getCode();
+            logger.error("Failed to enqueue cart with id {}", cartForReceipt.getEventId(), e);
+        }
+
+        if (statusCode != HttpStatus.CREATED.value()) {
+            String errorString = String.format(
+                    "[BizEventToReceiptService] Error sending message to queue for cartForReceipt with eventId %s",
+                    cartForReceipt.getEventId());
+            cartForReceipt.setStatus(CartStatusType.NOT_QUEUE_SENT);
+            ReasonError reasonError = new ReasonError(statusCode, errorString);
+            cartForReceipt.setReasonErr(reasonError);
             //Error info
             logger.error(errorString);
         }
@@ -184,26 +209,9 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
     public void tokenizeFiscalCodes(BizEvent bizEvent, Receipt receipt, EventData eventData) throws JsonProcessingException, PDVTokenizerException {
         try {
             //Tokenize Debtor
-            eventData.setDebtorFiscalCode(
-                    bizEvent.getDebtor() != null && BizEventToReceiptUtils.isValidFiscalCode(bizEvent.getDebtor().getEntityUniqueIdentifierValue()) ?
-                            pdvTokenizerService.generateTokenForFiscalCodeWithRetry(bizEvent.getDebtor().getEntityUniqueIdentifierValue()) :
-                            FISCAL_CODE_ANONYMOUS
-            );
+            eventData.setDebtorFiscalCode(tokenizerDebtorFiscalCode(bizEvent));
             //Tokenize Payer
-            if (isValidChannelOrigin(bizEvent)) {
-                if (bizEvent.getTransactionDetails() != null &&
-                        bizEvent.getTransactionDetails().getUser() != null &&
-                        BizEventToReceiptUtils.isValidFiscalCode(bizEvent.getTransactionDetails().getUser().getFiscalCode())
-                ) {
-                    eventData.setPayerFiscalCode(
-                            pdvTokenizerService.generateTokenForFiscalCodeWithRetry(
-                                    bizEvent.getTransactionDetails().getUser().getFiscalCode()));
-                } else if (bizEvent.getPayer() != null && BizEventToReceiptUtils.isValidFiscalCode(bizEvent.getPayer().getEntityUniqueIdentifierValue())) {
-                    eventData.setPayerFiscalCode(
-                            pdvTokenizerService.generateTokenForFiscalCodeWithRetry(bizEvent.getPayer().getEntityUniqueIdentifierValue())
-                    );
-                }
-            }
+            eventData.setPayerFiscalCode(tokenizerPayerFiscalCode(bizEvent));
         } catch (PDVTokenizerException e) {
             handleTokenizerException(receipt, e.getMessage(), e.getStatusCode());
             throw e;
@@ -215,52 +223,145 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
 
 
     @Override
-    public void handleSaveCart(BizEvent bizEvent) {
+    public CartForReceipt buildCartForReceipt(BizEvent bizEvent) {
+        CartForReceipt cartForReceipt = new CartForReceipt();
         String transactionId = bizEvent.getTransactionDetails().getTransaction().getTransactionId();
-        CartForReceipt cartForReceipt;
-        Set<String> cartPaymentId = new HashSet<>();
         try {
-            cartForReceipt = cartReceiptsCosmosClient.getCartItem(transactionId);
+            cartForReceipt = findCart(transactionId);
             if (cartForReceipt == null) {
-                throw new CartNotFoundException("Missing Cart");
+                // if cart not found create a new one
+                List<CartPayment> cartItems = new ArrayList<>();
+                cartItems.add(buildCartPayment(bizEvent));
+                cartForReceipt = buildCart(bizEvent, transactionId, cartItems);
+            } else {
+                // if cart found update it with the new cart item
+                List<CartPayment> cartItems = cartForReceipt.getPayload().getCart();
+                cartItems.add(buildCartPayment(bizEvent));
+                if (cartItems.size() == Integer.parseInt(bizEvent.getPaymentInfo().getTotalNotice())) {
+                    // if all items have been added to the cart set status to INSERTED
+                    cartForReceipt.setStatus(CartStatusType.INSERTED);
+                    cartForReceipt.setInserted_at(System.currentTimeMillis());
+                }
             }
-        } catch (CartNotFoundException ignore) {
-            cartPaymentId.add(bizEvent.getId());
-            cartForReceipt = CartForReceipt.builder()
-                    .id(transactionId)
-                    .status(CartStatusType.INSERTED)
-                    .cartPaymentId(cartPaymentId)
-                    .totalNotice(BizEventToReceiptUtils.getTotalNotice(bizEvent, null, null))
-                    .inserted_at(System.currentTimeMillis())
-                    .build();
-            cartReceiptsCosmosClient.saveCart(cartForReceipt);
-
-            return;
+            return cartForReceipt;
+        } catch (PDVTokenizerException e) {
+            return buildCartWithFailedStatus(transactionId, cartForReceipt, e.getStatusCode(), e.getMessage(), e);
+        } catch (JsonProcessingException e) {
+            return buildCartWithFailedStatus(transactionId, cartForReceipt, ReasonErrorCode.ERROR_PDV_MAPPING.getCode(), e.getMessage(), e);
+        } catch (Exception e) {
+            return buildCartWithFailedStatus(transactionId, cartForReceipt, ReasonErrorCode.GENERIC_ERROR.getCode(), e.getMessage(), e);
         }
 
-        cartPaymentId = cartForReceipt.getCartPaymentId();
-        cartPaymentId.add(bizEvent.getId());
-        cartForReceipt.setCartPaymentId(cartPaymentId);
-        cartReceiptsCosmosClient.updateCart(cartForReceipt);
     }
 
     /**
-     * {@inheritDoc}
+     * @param cartForReceipt the cart to update with failed status
+     * @param code           the error code
+     * @param message        the error message
+     * @return the cart with failed status
      */
-    @Override
-    public List<BizEvent> getCartBizEvents(String cartId) {
-        List<BizEvent> bizEventList = new ArrayList<>();
-        String continuationToken = null;
-        do {
-            Iterable<FeedResponse<BizEvent>> feedResponseIterator =
-                    this.bizEventCosmosClient.getAllBizEventDocument(cartId, continuationToken, 100);
+    private CartForReceipt buildCartWithFailedStatus(String transactionId, CartForReceipt cartForReceipt, int code, String message, Exception e) {
+        if (cartForReceipt == null) {
+            cartForReceipt = new CartForReceipt();
+        }
+        logger.error("an error occurred during buildCartForReceipt method", e);
+        return cartForReceipt.toBuilder()
+                .status(CartStatusType.FAILED)
+                .eventId(transactionId)
+                .reasonErr(ReasonError.builder()
+                        .code(code)
+                        .message(message)
+                        .build())
+                .build();
+    }
 
-            for (FeedResponse<BizEvent> page : feedResponseIterator) {
-                bizEventList.addAll(page.getResults());
-                continuationToken = page.getContinuationToken();
+    private CartForReceipt buildCart(BizEvent bizEvent, String transactionId, List<CartPayment> cartItems) throws PDVTokenizerException, JsonProcessingException {
+        BigDecimal amount = getAmount(bizEvent);
+
+        return CartForReceipt.builder()
+                .id(String.format("%s-%s", transactionId, UUID.randomUUID()))
+                .eventId(transactionId)
+                .status(CartStatusType.WAITING_FOR_BIZ_EVENT)
+                .version("1") // this is the first version of this document
+                .payload(Payload.builder()
+                        .payerFiscalCode(tokenizerPayerFiscalCode(bizEvent))
+                        .totalNotice(bizEvent.getPaymentInfo().getTotalNotice())
+                        .totalAmount(!amount.equals(BigDecimal.ZERO) ? formatAmount(amount.toString()) : null)
+                        .transactionCreationDate(getTransactionCreationDate(bizEvent))
+                        .cart(cartItems)
+                        .build())
+                .build();
+    }
+
+    private CartPayment buildCartPayment(BizEvent bizEvent) throws PDVTokenizerException, JsonProcessingException {
+        String debtorFiscalCode = tokenizerDebtorFiscalCode(bizEvent);
+        return CartPayment.builder()
+                .bizEventId(bizEvent.getId())
+                .amount(bizEvent.getPaymentInfo().getAmount())
+                .debtorFiscalCode(debtorFiscalCode)
+                .payeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null)
+                .subject(getItemSubject(bizEvent))
+                .build();
+    }
+
+    private String tokenizerDebtorFiscalCode(BizEvent bizEvent) throws PDVTokenizerException, JsonProcessingException {
+        return bizEvent.getDebtor() != null && isValidFiscalCode(bizEvent.getDebtor().getEntityUniqueIdentifierValue()) ?
+                pdvTokenizerService.generateTokenForFiscalCodeWithRetry(bizEvent.getDebtor().getEntityUniqueIdentifierValue()) :
+                FISCAL_CODE_ANONYMOUS;
+    }
+
+
+    /**
+     * Find cart by transaction id in CosmosDB
+     *
+     * @param transactionId the transaction id
+     * @return the cart if found, null otherwise
+     */
+    private CartForReceipt findCart(String transactionId) {
+        try {
+            return cartReceiptsCosmosClient.getCartItem(transactionId);
+        } catch (CartNotFoundException e) {
+            return null;
+        }
+    }
+
+    private String tokenizerPayerFiscalCode(BizEvent bizEvent) throws PDVTokenizerException, JsonProcessingException {
+        //Tokenize Payer
+        if (isValidChannelOrigin(bizEvent)) {
+            if (bizEvent.getTransactionDetails() != null &&
+                    bizEvent.getTransactionDetails().getUser() != null &&
+                    BizEventToReceiptUtils.isValidFiscalCode(bizEvent.getTransactionDetails().getUser().getFiscalCode())
+            ) {
+                return
+                        pdvTokenizerService.generateTokenForFiscalCodeWithRetry(
+                                bizEvent.getTransactionDetails().getUser().getFiscalCode());
+            } else if (bizEvent.getPayer() != null && BizEventToReceiptUtils.isValidFiscalCode(bizEvent.getPayer().getEntityUniqueIdentifierValue())) {
+                return
+                        pdvTokenizerService.generateTokenForFiscalCodeWithRetry(bizEvent.getPayer().getEntityUniqueIdentifierValue())
+                        ;
             }
-        } while (continuationToken != null);
+        }
+        return null;
+    }
+
+
+    @Override
+    public List<BizEvent> getCartBizEvents(CartForReceipt cart) {
+        List<BizEvent> bizEventList = new ArrayList<>();
+        try {
+            for (CartPayment item : cart.getPayload().getCart()) {
+                BizEvent bizEvent = this.bizEventCosmosClient.getBizEventDocument(item.getBizEventId());
+                bizEventList.add(bizEvent);
+            }
+        } catch (BizEventNotFoundException e) {
+            cart.setStatus(CartStatusType.FAILED);
+        }
         return bizEventList;
+    }
+
+    @Override
+    public void saveCartForReceipt(CartForReceipt cartForReceipt) {
+        cartReceiptsCosmosClient.updateCart(cartForReceipt);
     }
 
     /**

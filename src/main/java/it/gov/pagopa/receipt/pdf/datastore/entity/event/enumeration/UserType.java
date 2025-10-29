@@ -5,10 +5,10 @@ import com.google.api.client.util.Value;
 
 
 public enum UserType {
-	@NullValue
-	UNKNOWN,
-	@Value("F")
-    F, 
+    @NullValue
+    UNKNOWN,
+    @Value("F")
+    F,
     @Value("G")
     G,
     @Value("GUEST")

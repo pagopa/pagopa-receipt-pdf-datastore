@@ -13,7 +13,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariables;
 
-class ReceiptQueueClientImplTest {
+class CartQueueClientImplTest {
 
     @Test
     void testSingletonConnectionError() throws Exception {
@@ -21,8 +21,8 @@ class ReceiptQueueClientImplTest {
         String mockKey = "mockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeyMK==";
         withEnvironmentVariables(
                 "RECEIPT_QUEUE_CONN_STRING", "DefaultEndpointsProtocol=https;AccountName=samplequeue;AccountKey=" + mockKey + ";EndpointSuffix=core.windows.net",
-                "RECEIPT_QUEUE_TOPIC", "validTopic"
-        ).execute(() -> Assertions.assertDoesNotThrow(ReceiptQueueClientImpl::getInstance)
+                "CART_QUEUE_TOPIC", "validTopic"
+        ).execute(() -> Assertions.assertDoesNotThrow(CartQueueClientImpl::getInstance)
         );
     }
 
@@ -37,7 +37,7 @@ class ReceiptQueueClientImplTest {
         when(mockClient.sendMessageWithResponse(eq(MESSAGE_TEXT), any(), eq(null), eq(null), eq(null)))
                 .thenReturn(response);
 
-        ReceiptQueueClientImpl client = new ReceiptQueueClientImpl(mockClient);
+        CartQueueClientImpl client = new CartQueueClientImpl(mockClient);
 
         Response<SendMessageResult> clientResponse = client.sendMessageToQueue(MESSAGE_TEXT);
 
@@ -55,10 +55,11 @@ class ReceiptQueueClientImplTest {
         when(mockClient.sendMessageWithResponse(eq(MESSAGE_TEXT), any(), eq(null), eq(null), eq(null)))
                 .thenReturn(response);
 
-        ReceiptQueueClientImpl client = new ReceiptQueueClientImpl(mockClient);
+        CartQueueClientImpl client = new CartQueueClientImpl(mockClient);
 
         Response<SendMessageResult> clientResponse = client.sendMessageToQueue(MESSAGE_TEXT);
 
         Assertions.assertEquals(HttpStatus.NO_CONTENT.value(), clientResponse.getStatusCode());
     }
+
 }

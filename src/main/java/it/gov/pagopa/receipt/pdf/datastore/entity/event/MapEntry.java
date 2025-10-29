@@ -12,6 +12,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MapEntry {
-	private String key;    
-	private String value;
+    private String key;
+    private String value;
 }
