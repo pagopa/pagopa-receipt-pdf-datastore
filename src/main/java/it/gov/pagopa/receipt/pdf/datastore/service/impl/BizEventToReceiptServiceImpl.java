@@ -301,6 +301,26 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         return cartForReceipt;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public CartForReceipt getCartForReceipt(String cartId) throws CartNotFoundException {
+        CartForReceipt cart;
+        try {
+            cart = this.cartReceiptsCosmosClient.getCartItem(cartId);
+        } catch (CartNotFoundException e) {
+            String errorMsg = String.format("CartForReceipt not found with the event id %s", cartId);
+            throw new CartNotFoundException(errorMsg, e);
+        }
+
+        if (cart == null) {
+            String errorMsg = String.format("CartForReceipt retrieved with the event id %s is null", cartId);
+            throw new CartNotFoundException(errorMsg);
+        }
+        return cart;
+    }
+
     private int trySaveCart(CartForReceipt cartForReceipt) {
         int statusCode;
         try {

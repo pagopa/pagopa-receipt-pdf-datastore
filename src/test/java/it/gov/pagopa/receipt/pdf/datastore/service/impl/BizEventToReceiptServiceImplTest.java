@@ -719,6 +719,33 @@ class BizEventToReceiptServiceImplTest {
         assertNotNull(cartForReceipt.getReasonErr().getMessage());
     }
 
+    @Test
+    void run_OK_getCartForReceipt() throws CartNotFoundException {
+        doReturn(new CartForReceipt()).when(cartReceiptsCosmosClient).getCartItem(anyString());
+
+        CartForReceipt result = assertDoesNotThrow(() -> sut.getCartForReceipt(anyString()));
+
+        assertNotNull(result);
+    }
+
+    @Test
+    void run_KO_getCartForReceipt_notFound() throws CartNotFoundException {
+        doThrow(CartNotFoundException.class).when(cartReceiptsCosmosClient).getCartItem(anyString());
+
+        CartNotFoundException e = assertThrows(CartNotFoundException.class, () -> sut.getCartForReceipt(anyString()));
+
+        assertNotNull(e);
+    }
+
+    @Test
+    void run_KO_getCartForReceipt_nullDocument() throws CartNotFoundException {
+        doReturn(null).when(cartReceiptsCosmosClient).getCartItem(anyString());
+
+        CartNotFoundException e = assertThrows(CartNotFoundException.class, () -> sut.getCartForReceipt(anyString()));
+
+        assertNotNull(e);
+    }
+
     private BizEvent buildValidBizEvent() {
         return BizEvent.builder()
                 .id(EVENT_ID)

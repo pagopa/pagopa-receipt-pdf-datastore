@@ -20,6 +20,7 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReasonError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReasonErrorCode;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.BizEventToReceiptServiceImpl;
@@ -262,6 +263,37 @@ class BizEventToReceiptTest {
     }
 
     @Test
+    void runDiscardedWithCartReceiptAlreadyInserted() throws CartNotFoundException {
+        CartForReceipt cart = CartForReceipt.builder()
+                .eventId(CART_ID)
+                .payload(Payload.builder()
+                        .cart(Collections.singletonList(
+                                CartPayment.builder()
+                                        .bizEventId(EVENT_ID)
+                                        .build()
+                        ))
+                        .build())
+                .build();
+
+        doReturn(cart).when(receiptService).getCartForReceipt(CART_ID);
+
+        List<BizEvent> bizEventItems = new ArrayList<>();
+        bizEventItems.add(generateValidBizEvent("2"));
+
+        // test execution
+        assertDoesNotThrow(() -> sut.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
+
+        verify(receiptService, never()).handleSaveReceipt(any());
+        verify(receiptService, never()).handleSendMessageToQueue(anyList(), any());
+        verify(receiptService, never()).buildCartForReceipt(any());
+        verify(receiptService, never()).saveCartForReceipt(any(), any());
+        verify(receiptService, never()).getCartBizEvents(any());
+        verify(receiptService, never()).handleSendCartMessageToQueue(anyList(), any());
+        verify(documentdb, never()).setValue(any());
+        verify(cartDocumentdb, never()).setValue(any());
+    }
+
+    @Test
     void runDiscardedWithEventNull() {
         List<BizEvent> bizEventItems = new ArrayList<>();
         bizEventItems.add(null);
@@ -280,9 +312,7 @@ class BizEventToReceiptTest {
     }
 
     @Test
-    void runDiscardedWithCartEventWithInvalidTotalNotice() throws ReceiptNotFoundException {
-        doThrow(ReceiptNotFoundException.class).when(receiptService).getReceipt(EVENT_ID);
-
+    void runDiscardedWithCartEventWithInvalidTotalNotice() {
         List<BizEvent> bizEventItems = new ArrayList<>();
         bizEventItems.add(generateValidBizEvent("invalid string"));
 
@@ -422,13 +452,11 @@ class BizEventToReceiptTest {
     }
 
     @Test
-    void bizEventNotProcessedCartNotEnabled() throws ReceiptNotFoundException {
+    void bizEventNotProcessedCartNotEnabled() {
         // instantiate here the service to be able to set the environment variable
         environmentVariables.set("ENABLE_CART", "false");
         BizEventToReceiptServiceImpl serviceMock = mock(BizEventToReceiptServiceImpl.class);
         BizEventToReceipt function = new BizEventToReceipt(serviceMock);
-
-        doThrow(ReceiptNotFoundException.class).when(serviceMock).getReceipt(EVENT_ID);
 
         List<BizEvent> bizEventItems = new ArrayList<>();
         bizEventItems.add(generateValidBizEvent("2"));
@@ -473,7 +501,7 @@ class BizEventToReceiptTest {
         CartForReceipt cartForReceipt = buildCartForReceiptWaitingForBiz();
         String totalNotice = cartForReceipt.getPayload().getTotalNotice();
 
-        doThrow(ReceiptNotFoundException.class).when(receiptService).getReceipt(EVENT_ID);
+        doThrow(CartNotFoundException.class).when(receiptService).getCartForReceipt(CART_ID);
         doReturn(cartForReceipt).when(receiptService).buildCartForReceipt(any());
         doReturn(cartForReceipt).when(receiptService).saveCartForReceipt(any(), any());
 
@@ -515,7 +543,7 @@ class BizEventToReceiptTest {
         CartForReceipt cartForReceipt = buildCartForReceiptInserted();
         String totalNotice = cartForReceipt.getPayload().getTotalNotice();
 
-        doThrow(ReceiptNotFoundException.class).when(receiptService).getReceipt(EVENT_ID);
+        doThrow(CartNotFoundException.class).when(receiptService).getCartForReceipt(CART_ID);
         doReturn(cartForReceipt).when(receiptService).buildCartForReceipt(any());
         doReturn(cartForReceipt).when(receiptService).saveCartForReceipt(any(), any());
 
@@ -560,7 +588,7 @@ class BizEventToReceiptTest {
         CartForReceipt cartForReceipt = buildCartForReceiptFailed();
         String totalNotice = cartForReceipt.getPayload().getTotalNotice();
 
-        doThrow(ReceiptNotFoundException.class).when(receiptService).getReceipt(EVENT_ID);
+        doThrow(CartNotFoundException.class).when(receiptService).getCartForReceipt(CART_ID);
         doReturn(cartForReceipt).when(receiptService).buildCartForReceipt(any());
 
         List<BizEvent> bizEventItems = new ArrayList<>();
@@ -607,7 +635,7 @@ class BizEventToReceiptTest {
                 .code(ReasonErrorCode.ERROR_COSMOS.getCode())
                 .build());
 
-        doThrow(ReceiptNotFoundException.class).when(receiptService).getReceipt(EVENT_ID);
+        doThrow(CartNotFoundException.class).when(receiptService).getCartForReceipt(CART_ID);
         doReturn(cartForReceipt).when(receiptService).buildCartForReceipt(any());
         doReturn(errorSaveCart).when(receiptService).saveCartForReceipt(any(), any());
 
@@ -655,7 +683,7 @@ class BizEventToReceiptTest {
         CartForReceipt cartForReceipt = buildCartForReceiptInserted();
         String totalNotice = cartForReceipt.getPayload().getTotalNotice();
 
-        doThrow(ReceiptNotFoundException.class).when(receiptService).getReceipt(EVENT_ID);
+        doThrow(CartNotFoundException.class).when(receiptService).getCartForReceipt(CART_ID);
         doReturn(cartForReceipt).when(receiptService).buildCartForReceipt(any());
         doReturn(cartForReceipt).when(receiptService).saveCartForReceipt(any(), any());
         doAnswer(invocation -> {
@@ -713,7 +741,7 @@ class BizEventToReceiptTest {
         CartForReceipt cartForReceipt = buildCartForReceiptInserted();
         String totalNotice = cartForReceipt.getPayload().getTotalNotice();
 
-        doThrow(ReceiptNotFoundException.class).when(receiptService).getReceipt(EVENT_ID);
+        doThrow(CartNotFoundException.class).when(receiptService).getCartForReceipt(CART_ID);
         doReturn(cartForReceipt).when(receiptService).buildCartForReceipt(any());
         doReturn(cartForReceipt).when(receiptService).saveCartForReceipt(any(), any());
         doAnswer(invocation -> {
@@ -841,6 +869,9 @@ class BizEventToReceiptTest {
         transaction.setCreationDate(CREATION_DATE);
         transaction.setOrigin(VALID_IO_CHANNEL);
         transaction.setAmount(10000);
+        if ("2".equals(totalNotice)) {
+            transaction.setTransactionId(CART_ID);
+        }
         transactionDetails.setTransaction(transaction);
 
         PaymentInfo paymentInfo = new PaymentInfo();

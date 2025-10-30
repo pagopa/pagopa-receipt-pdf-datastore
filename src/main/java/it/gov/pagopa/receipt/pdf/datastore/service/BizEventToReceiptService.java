@@ -9,6 +9,7 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReasonError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
+import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 
@@ -81,10 +82,10 @@ public interface BizEventToReceiptService {
     /**
      * Retrieve all events that are associated to the cart with the specified id
      *
-     * @param cartId the id of the cart
+     * @param cart the cart
      * @return a list of biz-events
      */
-    List<BizEvent> getCartBizEvents(CartForReceipt cartId);
+    List<BizEvent> getCartBizEvents(CartForReceipt cart);
 
     /**
      * This method saves the provided CartForReceipt object to the datastore.
@@ -102,4 +103,13 @@ public interface BizEventToReceiptService {
      * @return the saved cart or if it fails the cart updated with the reason error
      */
     CartForReceipt saveCartForReceipt(CartForReceipt cartForReceipt, BizEvent bizEvent);
+
+    /**
+     * Recovers a cart from the CosmosDB by the property eventId
+     *
+     * @param cartId the cart identifier
+     * @return the cart found
+     * @throws CartNotFoundException when no cart has been found
+     */
+     CartForReceipt getCartForReceipt(String cartId) throws CartNotFoundException;
 }
