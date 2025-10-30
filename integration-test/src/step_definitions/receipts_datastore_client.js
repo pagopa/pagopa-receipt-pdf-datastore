@@ -22,7 +22,7 @@ async function getDocumentByIdFromReceiptsDatastore(id) {
 async function getCartDocumentByIdFromReceiptsDatastore(id) {
     return await cartContainer.items
         .query({
-            query: "SELECT * from c WHERE c.id=@id",
+            query: "SELECT * from c WHERE c.eventId=@id",
             parameters: [{ name: "@id", value: id }]
         })
         .fetchNext();
