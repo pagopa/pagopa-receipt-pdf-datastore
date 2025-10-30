@@ -90,14 +90,16 @@ public interface BizEventToReceiptService {
      * This method saves the provided CartForReceipt object to the datastore.
      *
      * <p>
-     *     If the operation fail for concurrent update, it tries to rebuild a cart object
-     *     by invoking {@link #buildCartForReceipt(BizEvent)} with the provided biz event
-     *     and then saves it on Cosmos.
-     *     If the operation fail again or with another error it change the {@link CartForReceipt#getStatus()}
-     *     to {@link CartStatusType#FAILED} and add a {@link ReasonError}
+     * If the operation fail for concurrent update, it tries to rebuild a cart object
+     * by invoking {@link #buildCartForReceipt(BizEvent)} with the provided biz event
+     * and then saves it on Cosmos.
+     * If the operation fail again or with another error it change the {@link CartForReceipt#getStatus()}
+     * to {@link CartStatusType#FAILED} and add a {@link ReasonError}
      * </p>
+     *
      * @param cartForReceipt the cart to save
-     * @param bizEvent the biz event use to recreate the cart
+     * @param bizEvent       the biz event use to recreate the cart
+     * @return the saved cart or if it fails the cart updated with the reason error
      */
-    void saveCartForReceipt(CartForReceipt cartForReceipt, BizEvent bizEvent);
+    CartForReceipt saveCartForReceipt(CartForReceipt cartForReceipt, BizEvent bizEvent);
 }

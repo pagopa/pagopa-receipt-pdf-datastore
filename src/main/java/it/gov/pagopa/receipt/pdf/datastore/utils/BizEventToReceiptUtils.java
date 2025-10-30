@@ -1,6 +1,8 @@
 package it.gov.pagopa.receipt.pdf.datastore.utils;
 
 import com.microsoft.azure.functions.ExecutionContext;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.Transfer;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.enumeration.BizEventStatusType;
@@ -243,6 +245,10 @@ public class BizEventToReceiptUtils {
 
     public static boolean isReceiptStatusValid(Receipt receipt) {
         return receipt.getStatus() != ReceiptStatusType.FAILED && receipt.getStatus() != ReceiptStatusType.NOT_QUEUE_SENT;
+    }
+
+    public static boolean isCartStatusValid(CartForReceipt cartForReceipt) {
+        return cartForReceipt.getStatus() != CartStatusType.FAILED && cartForReceipt.getStatus() != CartStatusType.NOT_QUEUE_SENT;
     }
 
     public static boolean isValidFiscalCode(String fiscalCode) {

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.isCartStatusValid;
 import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.isReceiptStatusValid;
 
 /**
@@ -131,7 +132,7 @@ public class BizEventToReceipt {
 
                 if (isCartStatusValid(cartForReceipt)) {
                     // saved on CosmosDB
-                    this.bizEventToReceiptService.saveCartForReceipt(cartForReceipt, bizEvent);
+                    cartForReceipt = this.bizEventToReceiptService.saveCartForReceipt(cartForReceipt, bizEvent);
                 }
 
                 if (cartForReceipt.getStatus().equals(CartStatusType.INSERTED)) {
@@ -175,9 +176,5 @@ public class BizEventToReceipt {
                     context.getInvocationId(), receiptFailed.size());
             cartDocumentdb.setValue(cartFailed);
         }
-    }
-
-    private boolean isCartStatusValid(CartForReceipt cartForReceipt) {
-        return cartForReceipt.getStatus() != CartStatusType.FAILED && cartForReceipt.getStatus() != CartStatusType.NOT_QUEUE_SENT;
     }
 }

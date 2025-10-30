@@ -233,6 +233,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
                 if (cartItems.size() == Integer.parseInt(bizEvent.getPaymentInfo().getTotalNotice())) {
                     // if all items have been added to the cart set status to INSERTED
                     cartForReceipt.setStatus(CartStatusType.INSERTED);
+                    cartForReceipt.setInserted_at(System.currentTimeMillis());
                 }
             }
             return cartForReceipt;
@@ -256,7 +257,13 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
                 bizEventList.add(bizEvent);
             }
         } catch (BizEventNotFoundException e) {
+            String errMsg = String.format("Error while fetching cart with event id %s biz-events: %s", cart.getEventId(), e.getMessage());
+            logger.error("{}", errMsg, e);
             cart.setStatus(CartStatusType.FAILED);
+            cart.setReasonErr(ReasonError.builder()
+                    .code(ReasonErrorCode.GENERIC_ERROR.getCode())
+                    .message(errMsg)
+                    .build());
         }
         return bizEventList;
     }
@@ -265,7 +272,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
      * {@inheritDoc}
      */
     @Override
-    public void saveCartForReceipt(CartForReceipt cartForReceipt, BizEvent bizEvent) {
+    public CartForReceipt saveCartForReceipt(CartForReceipt cartForReceipt, BizEvent bizEvent) {
         int statusCode;
 
         statusCode = trySaveCart(cartForReceipt);
@@ -274,6 +281,10 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             logger.debug("Fetch again cart with eventId {} and then retry save on cosmos", cartForReceipt.getEventId());
             cartForReceipt = buildCartForReceipt(bizEvent);
 
+            if (!isCartStatusValid(cartForReceipt)) {
+                logger.error("Cart build after fetch failed");
+                return cartForReceipt;
+            }
             statusCode = trySaveCart(cartForReceipt);
         }
 
@@ -283,15 +294,16 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
                     cartForReceipt.getEventId(), statusCode);
             ReasonError reasonError = new ReasonError(statusCode, errorString);
             cartForReceipt.setReasonErr(reasonError);
+            cartForReceipt.setStatus(CartStatusType.FAILED);
             //Error info
             logger.error(errorString);
         }
+        return cartForReceipt;
     }
 
     private int trySaveCart(CartForReceipt cartForReceipt) {
         int statusCode;
         try {
-            cartForReceipt.setInserted_at(System.currentTimeMillis());
             CosmosItemResponse<CartForReceipt> response = this.cartReceiptsCosmosClient.updateCart(cartForReceipt);
 
             statusCode = response.getStatusCode();
