@@ -4,9 +4,10 @@ public enum ReasonErrorCode {
     GENERIC_ERROR(500),
     ERROR_QUEUE(902),
     ERROR_COSMOS(904),
+    ERROR_COSMOS_ETAG_MISMATCH(905),
     ERROR_PDV_IO(800),
     ERROR_PDV_UNEXPECTED(801),
-    ERROR_PDV_MAPPING(802);;
+    ERROR_PDV_MAPPING(802);
 
     private final int code;
 

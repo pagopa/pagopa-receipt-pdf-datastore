@@ -1,11 +1,14 @@
 package it.gov.pagopa.receipt.pdf.datastore.client.impl;
 
 import com.azure.cosmos.*;
+import com.azure.cosmos.implementation.PreconditionFailedException;
+import com.azure.cosmos.models.CosmosItemRequestOptions;
 import com.azure.cosmos.models.CosmosItemResponse;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.util.CosmosPagedIterable;
 import it.gov.pagopa.receipt.pdf.datastore.client.CartReceiptsCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
+import it.gov.pagopa.receipt.pdf.datastore.exception.CartConcurrentUpdateException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 
@@ -41,11 +44,7 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
     }
 
     /**
-     * Retrieve receipt document from CosmosDB database
-     *
-     * @param eventId Biz-event id
-     * @return receipt document
-     * @throws ReceiptNotFoundException in case no receipt has been found with the given idEvent
+     * {@inheritDoc}
      */
     @Override
     public CartForReceipt getCartItem(String eventId) throws CartNotFoundException {
@@ -69,10 +68,7 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
     }
 
     /**
-     * Save Cart For Receipt on CosmosDB database
-     *
-     * @param receipt Cart Data to save
-     * @return cart-to-receipts documents
+     * {@inheritDoc}
      */
     @Override
     public CosmosItemResponse<CartForReceipt> saveCart(CartForReceipt receipt) {
@@ -82,16 +78,17 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
     }
 
     /**
-     * Update Cart For Receipt on CosmosDB database
-     *
-     * @param receipt Cart Data to save
-     * @return cart-to-receipts documents
+     * {@inheritDoc}
      */
     @Override
-    public CosmosItemResponse<CartForReceipt> updateCart(CartForReceipt receipt) {
+    public CosmosItemResponse<CartForReceipt> updateCart(CartForReceipt receipt) throws CartConcurrentUpdateException {
         CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(cartForReceiptContainerName);
-        return cosmosContainer.upsertItem(receipt);
+        try {
+            return cosmosContainer.upsertItem(receipt, new CosmosItemRequestOptions().setIfMatchETag(receipt.get_etag()));
+        } catch (PreconditionFailedException e) {
+            throw new CartConcurrentUpdateException("The cart has been updated since the last fetch", e);
+        }
     }
 
 }
