@@ -5,7 +5,7 @@
 
     <groupId>it.gov.pagopa.receipt</groupId>
     <artifactId>receipt-pdf-datastore</artifactId>
-    <version>1.14.0-1-PAGOPA-3346-handle-concurrent-operation-on-cart-cosmos</version>
+    <version>1.14.0-2-PAGOPA-3346-handle-concurrent-operation-on-cart-cosmos</version>
     <packaging>jar</packaging>
 
     <name>pagopa-receipt-pdf-datastore</name>
