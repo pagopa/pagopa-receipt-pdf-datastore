@@ -288,7 +288,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             statusCode = trySaveCart(cartForReceipt);
         }
 
-        if (statusCode != HttpStatus.CREATED.value()) {
+        if (statusCode != HttpStatus.CREATED.value() && statusCode != HttpStatus.OK.value()) {
             String errorString = String.format(
                     "[BizEventToReceiptService] Error saving cart to cosmos for receipt with eventId %s, cosmos client responded with status %s",
                     cartForReceipt.getEventId(), statusCode);
