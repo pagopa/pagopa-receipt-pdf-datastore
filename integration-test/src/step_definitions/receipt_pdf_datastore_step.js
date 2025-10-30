@@ -55,11 +55,11 @@ Given('a list of {int} bizEvents starting with id {string} and transactionId {st
       this.eventId = transactionId;
       this.listOfBizEventsIds = [];
 
+      await deleteDocumentFromCartDatastore(transactionId);
       for(let i = 0; i < numberOfEvents; i++) {
         let finalId = id+i;
 
         await deleteDocumentFromBizEventsDatastore(finalId);
-        await deleteDocumentFromReceiptsDatastoreByEventId(finalId);
 
         let bizEventStoreResponse = await createDocumentInBizEventsDatastore(finalId, transactionId, `${numberOfEvents}`);
         assert.strictEqual(bizEventStoreResponse.statusCode, 201);
