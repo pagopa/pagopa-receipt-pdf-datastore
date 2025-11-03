@@ -114,7 +114,14 @@ function createEvent(id, transactionId, totalNotice) {
 				"grandTotal": 0,
 				"amount": 1000,
 				"fee": 0
-			}
+			},
+             "info": {
+                 "brand": "MC",
+                 "brandLogo": "https://assets.cdn.platform.pagopa.it/creditcard/mastercard.png",
+                 "clientId": "CHECKOUT_CART",
+                 "paymentMethodName": "CARDS",
+                 "type": "CP"
+             }
 		},
 		"timestamp": 1679067463501,
 		"properties": {

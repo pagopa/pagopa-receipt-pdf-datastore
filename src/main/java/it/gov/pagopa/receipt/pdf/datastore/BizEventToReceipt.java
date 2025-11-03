@@ -10,9 +10,10 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
+import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
+import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.BizEventToReceiptServiceImpl;
-import it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,6 +22,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.createReceipt;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.getTotalNotice;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.isBizEventInvalid;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.isCartStatusValid;
 import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.isReceiptStatusValid;
 
 /**
@@ -98,47 +103,55 @@ public class BizEventToReceipt {
         // Retrieve receipt data from biz-event
         for (BizEvent bizEvent : items) {
 
-            // Discard null biz events or not in status DONE
-            if (BizEventToReceiptUtils.isBizEventInvalid(bizEvent, context, bizEventToReceiptService, logger)) {
+            /*
+            Discard biz-events:
+              - null
+              - not in status DONE
+              - with invalid fiscal codes
+              - eCommerce filter (if enabled)
+              - legacy cart
+              - already processed
+             */
+            if (isBizEventInvalid(bizEvent, context, logger) || isBizEventAlreadyProcessed(context, bizEvent)) {
                 discarder++;
                 continue;
             }
 
-            Integer totalNotice = BizEventToReceiptUtils.getTotalNotice(bizEvent, context, logger);
+            logger.debug("[{}] function called at {} for event with id {} and status {}",
+                    context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
+
+            Integer totalNotice = getTotalNotice(bizEvent, context, logger);
             if (totalNotice == 1) {
 
-                Receipt receipt = BizEventToReceiptUtils.createReceipt(bizEvent, bizEventToReceiptService, logger);
-
-                logger.debug("[{}] function called at {} for event with id {} and status {}",
-                        context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
+                Receipt receipt = createReceipt(bizEvent, this.bizEventToReceiptService, logger);
 
                 if (isReceiptStatusValid(receipt)) {
                     // Add receipt to items to be saved on CosmosDB
-                    bizEventToReceiptService.handleSaveReceipt(receipt);
+                    this.bizEventToReceiptService.handleSaveReceipt(receipt);
                 }
 
                 if (isReceiptStatusValid(receipt)) {
                     // Send biz event as message to queue (to be processed from the other function)
-                    bizEventToReceiptService.handleSendMessageToQueue(Collections.singletonList(bizEvent), receipt);
+                    this.bizEventToReceiptService.handleSendMessageToQueue(Collections.singletonList(bizEvent), receipt);
                 }
 
                 if (!isReceiptStatusValid(receipt)) {
                     receiptFailed.add(receipt);
                 }
+            } else if (Boolean.TRUE.equals(isCartEnabled) && totalNotice > 1) {
 
-            } else if (isCartEnabled && totalNotice > 1) {
-                CartForReceipt cartForReceipt = bizEventToReceiptService.buildCartForReceipt(bizEvent);
+                CartForReceipt cartForReceipt = this.bizEventToReceiptService.buildCartForReceipt(bizEvent);
 
                 if (isCartStatusValid(cartForReceipt)) {
                     // saved on CosmosDB
-                    bizEventToReceiptService.saveCartForReceipt(cartForReceipt);
+                    cartForReceipt = this.bizEventToReceiptService.saveCartForReceipt(cartForReceipt, bizEvent);
                 }
 
                 if (cartForReceipt.getStatus().equals(CartStatusType.INSERTED)) {
                     // Send biz event as message to queue (to be processed from the other function)
-                    List<BizEvent> bizEvents = bizEventToReceiptService.getCartBizEvents(cartForReceipt);
+                    List<BizEvent> bizEvents = this.bizEventToReceiptService.getCartBizEvents(cartForReceipt);
                     if (isCartStatusValid(cartForReceipt)) {
-                        bizEventToReceiptService.handleSendCartMessageToQueue(bizEvents, cartForReceipt);
+                        this.bizEventToReceiptService.handleSendCartMessageToQueue(bizEvents, cartForReceipt);
                     }
                 }
 
@@ -177,7 +190,38 @@ public class BizEventToReceipt {
         }
     }
 
-    private boolean isCartStatusValid(CartForReceipt cartForReceipt) {
-        return cartForReceipt.getStatus() != CartStatusType.FAILED && cartForReceipt.getStatus() != CartStatusType.NOT_QUEUE_SENT;
+    private boolean isBizEventAlreadyProcessed(ExecutionContext context, BizEvent bizEvent) {
+        Integer totalNotice = getTotalNotice(bizEvent, context, logger);
+        if (totalNotice == 1) {
+            try {
+                Receipt receipt = this.bizEventToReceiptService.getReceipt(bizEvent.getId());
+                logger.debug("[{}] event with id {} discarded because already processed, receipt already exist with id {}",
+                        context.getFunctionName(), bizEvent.getId(), receipt.getId());
+                return true;
+            } catch (ReceiptNotFoundException ignored) {
+                // the receipt does not exist
+            }
+        } else {
+            try {
+                String transactionId = bizEvent.getTransactionDetails().getTransaction().getTransactionId();
+                CartForReceipt cart = this.bizEventToReceiptService.getCartForReceipt(transactionId);
+                if (isBizEventInCart(cart, bizEvent.getId())
+                ) {
+                    logger.debug("[{}] event with id {} discarded because already processed, cart-for-receipts already exist with id {}",
+                            context.getFunctionName(), bizEvent.getId(), transactionId);
+                    return true;
+                }
+            } catch (CartNotFoundException ignored) {
+                // the cart does not exist
+            }
+        }
+        return false;
+    }
+
+    private boolean isBizEventInCart(CartForReceipt cart, String bizEventId) {
+        return cart != null
+                && cart.getPayload() != null
+                && cart.getPayload().getCart() != null
+                && cart.getPayload().getCart().stream().anyMatch(cartPayment -> cartPayment.getBizEventId().equals(bizEventId));
     }
 }

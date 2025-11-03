@@ -3,9 +3,13 @@ package it.gov.pagopa.receipt.pdf.datastore.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.Payload;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
+import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReasonError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
+import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 
@@ -66,26 +70,46 @@ public interface BizEventToReceiptService {
     void tokenizeFiscalCodes(BizEvent bizEvent, Receipt receipt, EventData eventData) throws JsonProcessingException, PDVTokenizerException;
 
     /**
-     * Search for a cart associated with the provided biz-event, if present it updates the cart with the biz-event id
-     * otherwise it saves a new cart
+     * Search for a cart associated with the provided transaction id, if present
+     * it updates the cart section {@link Payload#getCart()} with the biz-event info
+     * otherwise it creates a new {@link CartForReceipt} with the biz-event info
      *
      * @param bizEvent the biz-event
-     * @return
+     * @return the cart with the biz-event info
      */
     CartForReceipt buildCartForReceipt(BizEvent bizEvent);
 
     /**
      * Retrieve all events that are associated to the cart with the specified id
      *
-     * @param cartId the id of the cart
+     * @param cart the cart
      * @return a list of biz-events
      */
-    List<BizEvent> getCartBizEvents(CartForReceipt cartId);
+    List<BizEvent> getCartBizEvents(CartForReceipt cart);
 
     /**
      * This method saves the provided CartForReceipt object to the datastore.
      *
+     * <p>
+     * If the operation fail for concurrent update, it tries to rebuild a cart object
+     * by invoking {@link #buildCartForReceipt(BizEvent)} with the provided biz event
+     * and then saves it on Cosmos.
+     * If the operation fail again or with another error it change the {@link CartForReceipt#getStatus()}
+     * to {@link CartStatusType#FAILED} and add a {@link ReasonError}
+     * </p>
+     *
      * @param cartForReceipt the cart to save
+     * @param bizEvent       the biz event use to recreate the cart
+     * @return the saved cart or if it fails the cart updated with the reason error
      */
-    void saveCartForReceipt(CartForReceipt cartForReceipt);
+    CartForReceipt saveCartForReceipt(CartForReceipt cartForReceipt, BizEvent bizEvent);
+
+    /**
+     * Recovers a cart from the CosmosDB by the property eventId
+     *
+     * @param cartId the cart identifier
+     * @return the cart found
+     * @throws CartNotFoundException when no cart has been found
+     */
+     CartForReceipt getCartForReceipt(String cartId) throws CartNotFoundException;
 }
