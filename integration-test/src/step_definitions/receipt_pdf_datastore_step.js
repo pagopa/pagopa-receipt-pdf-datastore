@@ -14,6 +14,7 @@ this.response = null;
 this.receiptId = null;
 this.event = null;
 this.cartId = null;
+this.cartEventId = null;
 this.listOfBizEventsIds = null;
 
 // After each Scenario
@@ -26,7 +27,7 @@ After(async function () {
         await deleteDocumentFromReceiptsDatastore(this.receiptId);
     }
     if(this.cartId != null) {
-        await deleteDocumentFromCartDatastore(this.cartId);
+        await deleteDocumentFromCartDatastore(this.cartId, this.cartEventId);
     }
     if(this.listOfBizEventsIds?.length > 0) {
         for(bizEvent of this.listOfBizEventsIds){
@@ -39,6 +40,7 @@ After(async function () {
     this.event = null;
     this.listOfBizEventsIds = null;
     this.cartId = null;
+    this.cartEventId = null;
 });
 
 Given('a random biz event with id {string} stored on biz-events datastore with status DONE', async function (id) {
@@ -55,7 +57,10 @@ Given('a list of {int} bizEvents starting with id {string} and transactionId {st
       this.eventId = transactionId;
       this.listOfBizEventsIds = [];
 
-      await deleteDocumentFromCartDatastore(transactionId);
+      let existingCart = await getCartDocumentByIdFromReceiptsDatastore(transactionId);
+      if (existingCart.resources[0]) {
+          await deleteDocumentFromCartDatastore(existingCart.resources[0].id, existingCart.resources[0].eventId);
+      }
       for(let i = 0; i < numberOfEvents; i++) {
         let finalId = id+i;
 
@@ -66,15 +71,6 @@ Given('a list of {int} bizEvents starting with id {string} and transactionId {st
 
         this.listOfBizEventsIds.push(finalId);
       }
-});
-
-Given('a cart event with id {string} containing the ids the bizEvents', async function (id) {
-    this.cartId = id;
-    // prior cancellation to avoid dirty cases
-    await deleteDocumentFromCartDatastore(id);
-
-    let cartResponse = await createDocumentInCartDatastore(id, this.listOfBizEventsIds);
-    assert.strictEqual(cartResponse.statusCode, 201);
 });
 
 When('biz event has been properly stored into receipt datastore after {int} ms with eventId {string}', async function (time, eventId) {
@@ -98,6 +94,7 @@ Then('the receipts datastore returns the receipt', async function () {
 Then('the receipts datastore return the cart event', async function () {
     assert.notStrictEqual(this.responseToCheck.resources.length, 0);
     this.cartId = this.responseToCheck.resources[0].id;
+    this.cartEventId = this.responseToCheck.resources[0].eventId;
     assert.strictEqual(this.responseToCheck.resources.length, 1);
 });
 
@@ -123,7 +120,7 @@ Then("the receipt has not a datastore reason error message", function(){
 });
 
 Then('the cart event has {int} cart item, equal to totalNotice', function (expectedCartItem) {
-    assert.strictEqual(this.responseToCheck.resources[0].payload.totalNotice, expectedCartItem);
+    assert.strictEqual(parseInt(this.responseToCheck.resources[0].payload.totalNotice), expectedCartItem);
     assert.strictEqual(this.responseToCheck.resources[0].payload.cart.length, expectedCartItem);
 });
 

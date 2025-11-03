@@ -55,9 +55,9 @@ async function createDocumentInCartDatastore(id, listOfBizEventsIds) {
     }
 }
 
-async function deleteDocumentFromCartDatastore(id) {
+async function deleteDocumentFromCartDatastore(id, eventId) {
     try {
-        return await cartContainer.item(id, id).delete();
+        return await cartContainer.item(id, eventId).delete();
     } catch (error) {
         if (error.code !== 404) {
             console.log(error)
