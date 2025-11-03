@@ -4,7 +4,7 @@ microservice-chart:
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-receipt-pdf-datastore
-    tag: "1.15.0-2-PAGOPA-3346-handle-concurrent-operation-on-cart-cosmos"
+    tag: "1.15.1-2-PAGOPA-3346-handle-concurrent-operation-on-cart-cosmos"
     pullPolicy: Always
   # https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script.WebHost/Controllers/HostController.cs
   livenessProbe:
@@ -24,6 +24,11 @@ microservice-chart:
   deployment:
     create: true
     replicas: 1
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxUnavailable: 0
+        maxSurge: 1
   serviceMonitor:
     create: true
     endpoints:
