@@ -83,12 +83,6 @@ When('biz event has been properly stored into receipt datastore after {int} ms w
     this.responseToCheck = await getDocumentByIdFromReceiptsDatastore(eventId);
 });
 
-When('receipt has been properly stored into receipt datastore after {int} ms with eventId {string}', async function (time, id) {
-    // boundary time spent by azure function to process event
-    await sleep(time);
-    this.responseToCheck = await getDocumentByIdFromReceiptsDatastore(id);
-});
-
 When('cart event has been properly stored into receipt datastore after {int} ms with id {string}', async function (time, id) {
     // boundary time spent by azure function to process event
     await sleep(time);
