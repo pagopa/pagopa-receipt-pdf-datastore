@@ -55,11 +55,11 @@ Given('a list of {int} bizEvents starting with id {string} and transactionId {st
       this.eventId = transactionId;
       this.listOfBizEventsIds = [];
 
+      await deleteDocumentFromCartDatastore(transactionId);
       for(let i = 0; i < numberOfEvents; i++) {
         let finalId = id+i;
 
         await deleteDocumentFromBizEventsDatastore(finalId);
-        await deleteDocumentFromReceiptsDatastoreByEventId(finalId);
 
         let bizEventStoreResponse = await createDocumentInBizEventsDatastore(finalId, transactionId, `${numberOfEvents}`);
         assert.strictEqual(bizEventStoreResponse.statusCode, 201);
@@ -81,12 +81,6 @@ When('biz event has been properly stored into receipt datastore after {int} ms w
     // boundary time spent by azure function to process event
     await sleep(time);
     this.responseToCheck = await getDocumentByIdFromReceiptsDatastore(eventId);
-});
-
-When('receipt has been properly stored into receipt datastore after {int} ms with eventId {string}', async function (time, id) {
-    // boundary time spent by azure function to process event
-    await sleep(time);
-    this.responseToCheck = await getDocumentByIdFromReceiptsDatastore(id);
 });
 
 When('cart event has been properly stored into receipt datastore after {int} ms with id {string}', async function (time, id) {
