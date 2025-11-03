@@ -13,4 +13,4 @@ Feature: All about payment events consumed by Azure functions receipt-pdf-datast
     When cart event has been properly stored into receipt datastore after 20000 ms with id "receipt-datastore-int-test-transactionId-2"
     Then the receipts datastore return the cart event
     And the cart event has status "INSERTED"
-    
+    And the cart event has 5 cart item, equal to totalNotice

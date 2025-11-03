@@ -122,5 +122,9 @@ Then("the receipt has not a datastore reason error message", function(){
     }
 });
 
+Then('the cart event has {int} cart item, equal to totalNotice', function (expectedCartItem) {
+    assert.strictEqual(this.responseToCheck.resources[0].payload.totalNotice, expectedCartItem);
+    assert.strictEqual(this.responseToCheck.resources[0].payload.cart.length, expectedCartItem);
+});
 
 
