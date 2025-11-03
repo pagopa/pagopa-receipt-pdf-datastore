@@ -3,7 +3,7 @@ name: pagopareceiptpdfdatastore
 description: Microservice description
 type: application
 version: 0.131.0
-appVersion: 1.14.0-2-PAGOPA-3346-handle-concurrent-operation-on-cart-cosmos
+appVersion: 1.15.0-2-PAGOPA-3346-handle-concurrent-operation-on-cart-cosmos
 dependencies:
   - name: microservice-chart
     version: 7.5.0
