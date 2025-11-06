@@ -27,7 +27,6 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
         this.cosmosClient = new CosmosClientBuilder()
                 .endpoint(serviceEndpoint)
                 .key(azureKey)
-                .consistencyLevel(ConsistencyLevel.STRONG)
                 .buildClient();
     }
 
