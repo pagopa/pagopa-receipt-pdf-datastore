@@ -499,14 +499,14 @@ class BizEventToReceiptTest {
     @SneakyThrows
     void runOkCartWaiting() {
         CartForReceipt cartForReceipt = buildCartForReceiptWaitingForBiz();
-        String totalNotice = cartForReceipt.getPayload().getTotalNotice();
+        int totalNotice = cartForReceipt.getPayload().getTotalNotice();
 
         doThrow(CartNotFoundException.class).when(receiptService).getCartForReceipt(CART_ID);
         doReturn(cartForReceipt).when(receiptService).buildCartForReceipt(any());
         doReturn(cartForReceipt).when(receiptService).saveCartForReceipt(any(), any());
 
         List<BizEvent> bizEventItems = new ArrayList<>();
-        bizEventItems.add(generateValidBizEvent(totalNotice));
+        bizEventItems.add(generateValidBizEvent(String.valueOf(totalNotice)));
 
         // test execution
         assertDoesNotThrow(() -> sut.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
@@ -541,14 +541,14 @@ class BizEventToReceiptTest {
     @SneakyThrows
     void runOkCartCompleted() {
         CartForReceipt cartForReceipt = buildCartForReceiptInserted();
-        String totalNotice = cartForReceipt.getPayload().getTotalNotice();
+        int totalNotice = cartForReceipt.getPayload().getTotalNotice();
 
         doThrow(CartNotFoundException.class).when(receiptService).getCartForReceipt(CART_ID);
         doReturn(cartForReceipt).when(receiptService).buildCartForReceipt(any());
         doReturn(cartForReceipt).when(receiptService).saveCartForReceipt(any(), any());
 
         List<BizEvent> bizEventItems = new ArrayList<>();
-        bizEventItems.add(generateValidBizEvent(totalNotice));
+        bizEventItems.add(generateValidBizEvent(String.valueOf(totalNotice)));
 
         // test execution
         assertDoesNotThrow(() -> sut.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
@@ -586,13 +586,13 @@ class BizEventToReceiptTest {
     @SneakyThrows
     void errorTokenizingFiscalCodesCart() {
         CartForReceipt cartForReceipt = buildCartForReceiptFailed();
-        String totalNotice = cartForReceipt.getPayload().getTotalNotice();
+        int totalNotice = cartForReceipt.getPayload().getTotalNotice();
 
         doThrow(CartNotFoundException.class).when(receiptService).getCartForReceipt(CART_ID);
         doReturn(cartForReceipt).when(receiptService).buildCartForReceipt(any());
 
         List<BizEvent> bizEventItems = new ArrayList<>();
-        bizEventItems.add(generateValidBizEvent(totalNotice));
+        bizEventItems.add(generateValidBizEvent(String.valueOf(totalNotice)));
 
         // test execution
         assertDoesNotThrow(() -> sut.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
@@ -628,7 +628,7 @@ class BizEventToReceiptTest {
     @SneakyThrows
     void errorSaveCart() {
         CartForReceipt cartForReceipt = buildCartForReceiptWaitingForBiz();
-        String totalNotice = cartForReceipt.getPayload().getTotalNotice();
+        int totalNotice = cartForReceipt.getPayload().getTotalNotice();
         CartForReceipt errorSaveCart = buildCartForReceiptWaitingForBiz();
         errorSaveCart.setStatus(CartStatusType.FAILED);
         errorSaveCart.setReasonErr(ReasonError.builder()
@@ -640,7 +640,7 @@ class BizEventToReceiptTest {
         doReturn(errorSaveCart).when(receiptService).saveCartForReceipt(any(), any());
 
         List<BizEvent> bizEventItems = new ArrayList<>();
-        bizEventItems.add(generateValidBizEvent(totalNotice));
+        bizEventItems.add(generateValidBizEvent(String.valueOf(totalNotice)));
 
         // test execution
         assertDoesNotThrow(() -> sut.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
@@ -681,7 +681,7 @@ class BizEventToReceiptTest {
     @SneakyThrows
     void errorFetchingBizEventForCart() {
         CartForReceipt cartForReceipt = buildCartForReceiptInserted();
-        String totalNotice = cartForReceipt.getPayload().getTotalNotice();
+        int totalNotice = cartForReceipt.getPayload().getTotalNotice();
 
         doThrow(CartNotFoundException.class).when(receiptService).getCartForReceipt(CART_ID);
         doReturn(cartForReceipt).when(receiptService).buildCartForReceipt(any());
@@ -696,7 +696,7 @@ class BizEventToReceiptTest {
         }).when(receiptService).getCartBizEvents(any(CartForReceipt.class));
 
         List<BizEvent> bizEventItems = new ArrayList<>();
-        bizEventItems.add(generateValidBizEvent(totalNotice));
+        bizEventItems.add(generateValidBizEvent(String.valueOf(totalNotice)));
 
         // test execution
         assertDoesNotThrow(() -> sut.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
@@ -739,7 +739,7 @@ class BizEventToReceiptTest {
     @SneakyThrows
     void errorSendOnQueueCart() {
         CartForReceipt cartForReceipt = buildCartForReceiptInserted();
-        String totalNotice = cartForReceipt.getPayload().getTotalNotice();
+        int totalNotice = cartForReceipt.getPayload().getTotalNotice();
 
         doThrow(CartNotFoundException.class).when(receiptService).getCartForReceipt(CART_ID);
         doReturn(cartForReceipt).when(receiptService).buildCartForReceipt(any());
@@ -754,7 +754,7 @@ class BizEventToReceiptTest {
         }).when(receiptService).handleSendCartMessageToQueue(anyList(), any(CartForReceipt.class));
 
         List<BizEvent> bizEventItems = new ArrayList<>();
-        bizEventItems.add(generateValidBizEvent(totalNotice));
+        bizEventItems.add(generateValidBizEvent(String.valueOf(totalNotice)));
 
         // test execution
         assertDoesNotThrow(() -> sut.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
@@ -800,7 +800,7 @@ class BizEventToReceiptTest {
                 .version("1")
                 .payload(Payload.builder()
                         .payerFiscalCode(TOKENIZED_PAYER_FISCAL_CODE)
-                        .totalNotice("2")
+                        .totalNotice(2)
                         .totalAmount("100.0")
                         .transactionCreationDate(CREATION_DATE)
                         .cart(Collections.singletonList(CartPayment.builder()
@@ -821,7 +821,7 @@ class BizEventToReceiptTest {
                 .version("1")
                 .payload(Payload.builder()
                         .payerFiscalCode(TOKENIZED_PAYER_FISCAL_CODE)
-                        .totalNotice("2")
+                        .totalNotice(2)
                         .totalAmount("100.0")
                         .transactionCreationDate(CREATION_DATE)
                         .cart(List.of(CartPayment.builder()
@@ -848,7 +848,7 @@ class BizEventToReceiptTest {
                 .status(CartStatusType.FAILED)
                 .version("1")
                 .payload(Payload.builder()
-                        .totalNotice("2")
+                        .totalNotice(2)
                         .build())
                 .reasonErr(ReasonError.builder()
                         .code(ReasonErrorCode.ERROR_PDV_IO.getCode())

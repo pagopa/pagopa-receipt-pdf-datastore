@@ -230,7 +230,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
                 // if cart found update it with the new cart item
                 List<CartPayment> cartItems = cartForReceipt.getPayload().getCart();
                 cartItems.add(buildCartPayment(bizEvent));
-                if (cartItems.size() == Integer.parseInt(bizEvent.getPaymentInfo().getTotalNotice())) {
+                if (cartItems.size() == cartForReceipt.getPayload().getTotalNotice()) {
                     // if all items have been added to the cart set status to INSERTED
                     cartForReceipt.setStatus(CartStatusType.INSERTED);
                     cartForReceipt.setInserted_at(System.currentTimeMillis());
@@ -381,7 +381,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
                 .version("1") // this is the first version of this document
                 .payload(Payload.builder()
                         .payerFiscalCode(tokenizerPayerFiscalCode(bizEvent))
-                        .totalNotice(bizEvent.getPaymentInfo().getTotalNotice())
+                        .totalNotice(Integer.parseInt(bizEvent.getPaymentInfo().getTotalNotice()))
                         .totalAmount(!amount.equals(BigDecimal.ZERO) ? formatAmount(amount.toString()) : null)
                         .transactionCreationDate(getTransactionCreationDate(bizEvent))
                         .cart(cartItems)
