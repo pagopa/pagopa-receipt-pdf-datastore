@@ -76,10 +76,10 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
      * {@inheritDoc}
      */
     @Override
-    public void handleSendMessageToQueue(List<BizEvent> bizEventList, Receipt receipt) {
+    public void handleSendMessageToQueue(BizEvent bizEvent, Receipt receipt) {
         //Encode biz-event to base64 string
         String messageText = Base64.getMimeEncoder().encodeToString(
-                Objects.requireNonNull(ObjectMapperUtils.writeValueAsString(bizEventList)).getBytes(StandardCharsets.UTF_8));
+                Objects.requireNonNull(ObjectMapperUtils.writeValueAsString(bizEvent)).getBytes(StandardCharsets.UTF_8));
 
         //Add message to the queue
         int statusCode;

@@ -133,7 +133,7 @@ class BizEventToReceiptTest {
         assertEquals(1, savedReceipt.getEventData().getCart().size());
         assertEquals(REMITTANCE_INFORMATION, savedReceipt.getEventData().getCart().get(0).getSubject());
 
-        verify(receiptService).handleSendMessageToQueue(anyList(), any());
+        verify(receiptService).handleSendMessageToQueue(any(), any());
         verify(receiptService, never()).buildCartForReceipt(any());
         verify(receiptService, never()).saveCartForReceipt(any(), any());
         verify(receiptService, never()).getCartBizEvents(any());
@@ -173,7 +173,7 @@ class BizEventToReceiptTest {
         assertEquals(1, savedReceipt.getEventData().getCart().size());
         assertEquals(REMITTANCE_INFORMATION, savedReceipt.getEventData().getCart().get(0).getSubject());
 
-        verify(receiptService).handleSendMessageToQueue(anyList(), any());
+        verify(receiptService).handleSendMessageToQueue(any(), any());
         verify(receiptService, never()).buildCartForReceipt(any());
         verify(receiptService, never()).saveCartForReceipt(any(), any());
         verify(receiptService, never()).getCartBizEvents(any());
@@ -191,7 +191,7 @@ class BizEventToReceiptTest {
         assertDoesNotThrow(() -> sut.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(receiptService, never()).handleSaveReceipt(any());
-        verify(receiptService, never()).handleSendMessageToQueue(anyList(), any());
+        verify(receiptService, never()).handleSendMessageToQueue(any(), any());
         verify(receiptService, never()).buildCartForReceipt(any());
         verify(receiptService, never()).saveCartForReceipt(any(), any());
         verify(receiptService, never()).getCartBizEvents(any());
@@ -210,7 +210,7 @@ class BizEventToReceiptTest {
         assertDoesNotThrow(() -> sut.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(receiptService, never()).handleSaveReceipt(any());
-        verify(receiptService, never()).handleSendMessageToQueue(anyList(), any());
+        verify(receiptService, never()).handleSendMessageToQueue(any(), any());
         verify(receiptService, never()).buildCartForReceipt(any());
         verify(receiptService, never()).saveCartForReceipt(any(), any());
         verify(receiptService, never()).getCartBizEvents(any());
@@ -233,7 +233,7 @@ class BizEventToReceiptTest {
         assertDoesNotThrow(() -> sut.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(receiptService, never()).handleSaveReceipt(any());
-        verify(receiptService, never()).handleSendMessageToQueue(anyList(), any());
+        verify(receiptService, never()).handleSendMessageToQueue(any(), any());
         verify(receiptService, never()).buildCartForReceipt(any());
         verify(receiptService, never()).saveCartForReceipt(any(), any());
         verify(receiptService, never()).getCartBizEvents(any());
@@ -253,7 +253,7 @@ class BizEventToReceiptTest {
         assertDoesNotThrow(() -> sut.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(receiptService, never()).handleSaveReceipt(any());
-        verify(receiptService, never()).handleSendMessageToQueue(anyList(), any());
+        verify(receiptService, never()).handleSendMessageToQueue(any(), any());
         verify(receiptService, never()).buildCartForReceipt(any());
         verify(receiptService, never()).saveCartForReceipt(any(), any());
         verify(receiptService, never()).getCartBizEvents(any());
@@ -284,7 +284,7 @@ class BizEventToReceiptTest {
         assertDoesNotThrow(() -> sut.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(receiptService, never()).handleSaveReceipt(any());
-        verify(receiptService, never()).handleSendMessageToQueue(anyList(), any());
+        verify(receiptService, never()).handleSendMessageToQueue(any(), any());
         verify(receiptService, never()).buildCartForReceipt(any());
         verify(receiptService, never()).saveCartForReceipt(any(), any());
         verify(receiptService, never()).getCartBizEvents(any());
@@ -302,7 +302,7 @@ class BizEventToReceiptTest {
         assertDoesNotThrow(() -> sut.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(receiptService, never()).handleSaveReceipt(any());
-        verify(receiptService, never()).handleSendMessageToQueue(anyList(), any());
+        verify(receiptService, never()).handleSendMessageToQueue(any(), any());
         verify(receiptService, never()).buildCartForReceipt(any());
         verify(receiptService, never()).saveCartForReceipt(any(), any());
         verify(receiptService, never()).getCartBizEvents(any());
@@ -320,7 +320,7 @@ class BizEventToReceiptTest {
         assertThrows(NumberFormatException.class, () -> sut.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(receiptService, never()).handleSaveReceipt(any());
-        verify(receiptService, never()).handleSendMessageToQueue(anyList(), any());
+        verify(receiptService, never()).handleSendMessageToQueue(any(), any());
         verify(receiptService, never()).buildCartForReceipt(any());
         verify(receiptService, never()).saveCartForReceipt(any(), any());
         verify(receiptService, never()).getCartBizEvents(any());
@@ -343,7 +343,7 @@ class BizEventToReceiptTest {
         assertDoesNotThrow(() -> sut.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(receiptService, never()).handleSaveReceipt(any());
-        verify(receiptService, never()).handleSendMessageToQueue(anyList(), any());
+        verify(receiptService, never()).handleSendMessageToQueue(any(), any());
         verify(receiptService, never()).buildCartForReceipt(any());
         verify(receiptService, never()).saveCartForReceipt(any(), any());
         verify(receiptService, never()).getCartBizEvents(any());
@@ -384,7 +384,7 @@ class BizEventToReceiptTest {
         assertDoesNotThrow(() -> sut.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(receiptService).handleSaveReceipt(any());
-        verify(receiptService, never()).handleSendMessageToQueue(anyList(), any());
+        verify(receiptService, never()).handleSendMessageToQueue(any(), any());
         verify(receiptService, never()).buildCartForReceipt(any());
         verify(receiptService, never()).saveCartForReceipt(any(), any());
         verify(receiptService, never()).getCartBizEvents(any());
@@ -421,7 +421,7 @@ class BizEventToReceiptTest {
                     .code(ReasonErrorCode.ERROR_QUEUE.getCode())
                     .build());
             return null;
-        }).when(receiptService).handleSendMessageToQueue(anyList(), any(Receipt.class));
+        }).when(receiptService).handleSendMessageToQueue(any(), any(Receipt.class));
 
 
         List<BizEvent> bizEventItems = new ArrayList<>();
@@ -431,7 +431,7 @@ class BizEventToReceiptTest {
         assertDoesNotThrow(() -> sut.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(receiptService).handleSaveReceipt(any());
-        verify(receiptService).handleSendMessageToQueue(anyList(), any());
+        verify(receiptService).handleSendMessageToQueue(any(), any());
         verify(receiptService, never()).buildCartForReceipt(any());
         verify(receiptService, never()).saveCartForReceipt(any(), any());
         verify(receiptService, never()).getCartBizEvents(any());
@@ -465,7 +465,7 @@ class BizEventToReceiptTest {
         assertDoesNotThrow(() -> function.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(receiptService, never()).handleSaveReceipt(any());
-        verify(receiptService, never()).handleSendMessageToQueue(anyList(), any());
+        verify(receiptService, never()).handleSendMessageToQueue(any(), any());
         verify(receiptService, never()).buildCartForReceipt(any());
         verify(receiptService, never()).saveCartForReceipt(any(), any());
         verify(receiptService, never()).getCartBizEvents(any());
@@ -486,7 +486,7 @@ class BizEventToReceiptTest {
         assertDoesNotThrow(() -> sut.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(receiptService, never()).handleSaveReceipt(any());
-        verify(receiptService, never()).handleSendMessageToQueue(anyList(), any());
+        verify(receiptService, never()).handleSendMessageToQueue(any(), any());
         verify(receiptService, never()).buildCartForReceipt(any());
         verify(receiptService, never()).saveCartForReceipt(any(), any());
         verify(receiptService, never()).getCartBizEvents(any());
@@ -512,7 +512,7 @@ class BizEventToReceiptTest {
         assertDoesNotThrow(() -> sut.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(receiptService, never()).handleSaveReceipt(any());
-        verify(receiptService, never()).handleSendMessageToQueue(anyList(), any());
+        verify(receiptService, never()).handleSendMessageToQueue(any(), any());
         verify(receiptService).buildCartForReceipt(any());
         verify(receiptService).saveCartForReceipt(cartForReceiptCaptor.capture(), any());
 
@@ -554,7 +554,7 @@ class BizEventToReceiptTest {
         assertDoesNotThrow(() -> sut.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(receiptService, never()).handleSaveReceipt(any());
-        verify(receiptService, never()).handleSendMessageToQueue(anyList(), any());
+        verify(receiptService, never()).handleSendMessageToQueue(any(), any());
         verify(receiptService).buildCartForReceipt(any());
         verify(receiptService).saveCartForReceipt(cartForReceiptCaptor.capture(), any());
 
@@ -598,7 +598,7 @@ class BizEventToReceiptTest {
         assertDoesNotThrow(() -> sut.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(receiptService, never()).handleSaveReceipt(any());
-        verify(receiptService, never()).handleSendMessageToQueue(anyList(), any());
+        verify(receiptService, never()).handleSendMessageToQueue(any(), any());
         verify(receiptService).buildCartForReceipt(any());
         verify(receiptService, never()).saveCartForReceipt(any(), any());
         verify(receiptService, never()).getCartBizEvents(any());
@@ -646,7 +646,7 @@ class BizEventToReceiptTest {
         assertDoesNotThrow(() -> sut.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(receiptService, never()).handleSaveReceipt(any());
-        verify(receiptService, never()).handleSendMessageToQueue(anyList(), any());
+        verify(receiptService, never()).handleSendMessageToQueue(any(), any());
         verify(receiptService).buildCartForReceipt(any());
         verify(receiptService).saveCartForReceipt(any(), any());
         verify(receiptService, never()).getCartBizEvents(any());
@@ -702,7 +702,7 @@ class BizEventToReceiptTest {
         assertDoesNotThrow(() -> sut.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(receiptService, never()).handleSaveReceipt(any());
-        verify(receiptService, never()).handleSendMessageToQueue(anyList(), any());
+        verify(receiptService, never()).handleSendMessageToQueue(any(), any());
         verify(receiptService).buildCartForReceipt(any());
         verify(receiptService).saveCartForReceipt(any(), any());
         verify(receiptService).getCartBizEvents(any());
@@ -760,7 +760,7 @@ class BizEventToReceiptTest {
         assertDoesNotThrow(() -> sut.processBizEventToReceipt(bizEventItems, documentdb, cartDocumentdb, context));
 
         verify(receiptService, never()).handleSaveReceipt(any());
-        verify(receiptService, never()).handleSendMessageToQueue(anyList(), any());
+        verify(receiptService, never()).handleSendMessageToQueue(any(), any());
         verify(receiptService).buildCartForReceipt(any());
         verify(receiptService).saveCartForReceipt(any(), any());
         verify(receiptService).getCartBizEvents(any());

@@ -107,7 +107,7 @@ class BizEventToReceiptServiceImplTest {
 
         Receipt receipt = new Receipt();
 
-        assertDoesNotThrow(() -> sut.handleSendMessageToQueue(anyList(), receipt));
+        assertDoesNotThrow(() -> sut.handleSendMessageToQueue(any(), receipt));
 
         assertNotNull(receipt);
         assertNotEquals(ReceiptStatusType.NOT_QUEUE_SENT, receipt.getStatus());
@@ -120,7 +120,7 @@ class BizEventToReceiptServiceImplTest {
 
         Receipt receipt = new Receipt();
 
-        assertDoesNotThrow(() -> sut.handleSendMessageToQueue(anyList(), receipt));
+        assertDoesNotThrow(() -> sut.handleSendMessageToQueue(any(), receipt));
 
         assertNotNull(receipt);
         assertEquals(ReceiptStatusType.NOT_QUEUE_SENT, receipt.getStatus());

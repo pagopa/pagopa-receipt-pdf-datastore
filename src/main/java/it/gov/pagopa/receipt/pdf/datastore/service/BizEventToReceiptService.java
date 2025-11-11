@@ -20,10 +20,10 @@ public interface BizEventToReceiptService {
     /**
      * Handles sending biz-events as message to queue and updates receipt's status
      *
-     * @param bizEventList list of Biz-event from CosmosDB
-     * @param receipt      Receipt to update
+     * @param bizEvent Biz-event from CosmosDB
+     * @param receipt  Receipt to update
      */
-    void handleSendMessageToQueue(List<BizEvent> bizEventList, Receipt receipt);
+    void handleSendMessageToQueue(BizEvent bizEvent, Receipt receipt);
 
     /**
      * This method handles sending biz-events as messages to the cart queue.
@@ -67,7 +67,11 @@ public interface BizEventToReceiptService {
      * @throws JsonProcessingException if an error occur when parsing input or output
      * @throws PDVTokenizerException   if an error occur when invoking the PDV Tokenizer
      */
-    void tokenizeFiscalCodes(BizEvent bizEvent, Receipt receipt, EventData eventData) throws JsonProcessingException, PDVTokenizerException;
+    void tokenizeFiscalCodes(
+            BizEvent bizEvent,
+            Receipt receipt,
+            EventData eventData
+    ) throws JsonProcessingException, PDVTokenizerException;
 
     /**
      * Search for a cart associated with the provided transaction id, if present
@@ -111,5 +115,5 @@ public interface BizEventToReceiptService {
      * @return the cart found
      * @throws CartNotFoundException when no cart has been found
      */
-     CartForReceipt getCartForReceipt(String cartId) throws CartNotFoundException;
+    CartForReceipt getCartForReceipt(String cartId) throws CartNotFoundException;
 }
