@@ -107,7 +107,7 @@ class BizEventToReceiptServiceImplTest {
 
         Receipt receipt = new Receipt();
 
-        assertDoesNotThrow(() -> sut.handleSendMessageToQueue(anyList(), receipt));
+        assertDoesNotThrow(() -> sut.handleSendMessageToQueue(any(), receipt));
 
         assertNotNull(receipt);
         assertNotEquals(ReceiptStatusType.NOT_QUEUE_SENT, receipt.getStatus());
@@ -120,7 +120,7 @@ class BizEventToReceiptServiceImplTest {
 
         Receipt receipt = new Receipt();
 
-        assertDoesNotThrow(() -> sut.handleSendMessageToQueue(anyList(), receipt));
+        assertDoesNotThrow(() -> sut.handleSendMessageToQueue(any(), receipt));
 
         assertNotNull(receipt);
         assertEquals(ReceiptStatusType.NOT_QUEUE_SENT, receipt.getStatus());
@@ -450,7 +450,7 @@ class BizEventToReceiptServiceImplTest {
         assertNotNull(result.getPayload());
         assertEquals(CREATION_DATE, result.getPayload().getTransactionCreationDate());
         assertEquals(TOKENIZED_PAYER_FISCAL_CODE, result.getPayload().getPayerFiscalCode());
-        assertEquals("2", result.getPayload().getTotalNotice());
+        assertEquals(2, result.getPayload().getTotalNotice());
         assertEquals("100,00", result.getPayload().getTotalAmount());
         assertNotNull(result.getPayload().getCart());
         assertEquals(1, result.getPayload().getCart().size());
@@ -477,7 +477,7 @@ class BizEventToReceiptServiceImplTest {
         assertNotNull(result.getPayload());
         assertEquals(CREATION_DATE, result.getPayload().getTransactionCreationDate());
         assertEquals(TOKENIZED_PAYER_FISCAL_CODE, result.getPayload().getPayerFiscalCode());
-        assertEquals("2", result.getPayload().getTotalNotice());
+        assertEquals(2, result.getPayload().getTotalNotice());
         assertEquals("100,00", result.getPayload().getTotalAmount());
         assertNotNull(result.getPayload().getCart());
         assertEquals(2, result.getPayload().getCart().size());
@@ -532,7 +532,7 @@ class BizEventToReceiptServiceImplTest {
         assertNotNull(result.getPayload());
         assertEquals(CREATION_DATE, result.getPayload().getTransactionCreationDate());
         assertEquals(TOKENIZED_PAYER_FISCAL_CODE, result.getPayload().getPayerFiscalCode());
-        assertEquals("2", result.getPayload().getTotalNotice());
+        assertEquals(2, result.getPayload().getTotalNotice());
         assertEquals("100,00", result.getPayload().getTotalAmount());
         assertNotNull(result.getReasonErr());
         assertEquals(ReasonErrorCode.ERROR_PDV_IO.getCode(), result.getReasonErr().getCode());
@@ -578,7 +578,7 @@ class BizEventToReceiptServiceImplTest {
         assertNotNull(result.getPayload());
         assertEquals(CREATION_DATE, result.getPayload().getTransactionCreationDate());
         assertEquals(TOKENIZED_PAYER_FISCAL_CODE, result.getPayload().getPayerFiscalCode());
-        assertEquals("2", result.getPayload().getTotalNotice());
+        assertEquals(2, result.getPayload().getTotalNotice());
         assertEquals("100,00", result.getPayload().getTotalAmount());
         assertNotNull(result.getReasonErr());
         assertEquals(ReasonErrorCode.GENERIC_ERROR.getCode(), result.getReasonErr().getCode());
@@ -788,7 +788,7 @@ class BizEventToReceiptServiceImplTest {
                 .version("1")
                 .payload(Payload.builder()
                         .payerFiscalCode(TOKENIZED_PAYER_FISCAL_CODE)
-                        .totalNotice("2")
+                        .totalNotice(2)
                         .totalAmount("100,00")
                         .transactionCreationDate(CREATION_DATE)
                         .cart(cartList)

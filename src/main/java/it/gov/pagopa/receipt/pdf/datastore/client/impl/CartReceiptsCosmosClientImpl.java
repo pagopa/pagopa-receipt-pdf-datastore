@@ -10,7 +10,6 @@ import it.gov.pagopa.receipt.pdf.datastore.client.CartReceiptsCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.datastore.exception.CartConcurrentUpdateException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
-import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 
 public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
 
@@ -27,6 +26,7 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
         this.cosmosClient = new CosmosClientBuilder()
                 .endpoint(serviceEndpoint)
                 .key(azureKey)
+                .consistencyLevel(ConsistencyLevel.BOUNDED_STALENESS)
                 .buildClient();
     }
 

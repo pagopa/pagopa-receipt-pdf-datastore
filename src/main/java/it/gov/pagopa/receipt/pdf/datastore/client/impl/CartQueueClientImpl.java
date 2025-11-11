@@ -16,7 +16,7 @@ public class CartQueueClientImpl implements CartQueueClient {
 
     private static CartQueueClientImpl instance;
 
-    private final int cartQueueDelay = Integer.parseInt(System.getenv().getOrDefault("RECEIPT_QUEUE_DELAY", "1"));
+    private final int cartQueueDelay = Integer.parseInt(System.getenv().getOrDefault("CART_RECEIPT_QUEUE_DELAY", "1"));
 
     private final QueueClient cartQueueClient;
 
