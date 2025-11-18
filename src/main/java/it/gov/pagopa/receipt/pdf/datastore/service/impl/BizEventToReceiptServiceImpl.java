@@ -372,7 +372,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
     }
 
     private CartForReceipt buildCart(BizEvent bizEvent, String transactionId, List<CartPayment> cartItems) throws PDVTokenizerException, JsonProcessingException {
-        BigDecimal amount = getAmount(bizEvent);
+        BigDecimal amount = getCartAmount(bizEvent);
 
         return CartForReceipt.builder()
                 .id(String.format("%s-%s", transactionId, UUID.randomUUID()))
