@@ -1,7 +1,7 @@
 microservice-chart:
   namespace: "receipts"
   nameOverride: ""
-  fullnameOverride: ""
+  fullnameOverride: "pagopa-receipt-pdf-datastore"
   image:
     repository: ghcr.io/pagopa/pagopa-receipt-pdf-datastore
     tag: "1.16.2"
