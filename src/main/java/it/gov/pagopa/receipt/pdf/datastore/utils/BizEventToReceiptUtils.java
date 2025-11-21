@@ -208,6 +208,13 @@ public class BizEventToReceiptUtils {
         return BigDecimal.ZERO;
     }
 
+    public static BigDecimal getCartAmount(BizEvent bizEvent) {
+        if (bizEvent.getTransactionDetails() != null && bizEvent.getTransactionDetails().getTransaction() != null) {
+            return formatEuroCentAmount(bizEvent.getTransactionDetails().getTransaction().getGrandTotal());
+        }
+        return BigDecimal.ZERO;
+    }
+
     private static BigDecimal formatEuroCentAmount(long grandTotal) {
         BigDecimal amount = new BigDecimal(grandTotal);
         BigDecimal divider = new BigDecimal(100);

@@ -78,8 +78,14 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
     @Override
     public void handleSendMessageToQueue(BizEvent bizEvent, Receipt receipt) {
         //Encode biz-event to base64 string
-        String messageText = Base64.getMimeEncoder().encodeToString(
-                Objects.requireNonNull(ObjectMapperUtils.writeValueAsString(bizEvent)).getBytes(StandardCharsets.UTF_8));
+        String messageText = Base64.getMimeEncoder()
+                .encodeToString(
+                        Objects.requireNonNull(
+                                ObjectMapperUtils.writeValueAsString(
+                                        // Keep a list for backwards compatibility
+                                        Collections.singletonList(bizEvent)
+                                )).getBytes(StandardCharsets.UTF_8)
+                );
 
         //Add message to the queue
         int statusCode;
@@ -372,7 +378,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
     }
 
     private CartForReceipt buildCart(BizEvent bizEvent, String transactionId, List<CartPayment> cartItems) throws PDVTokenizerException, JsonProcessingException {
-        BigDecimal amount = getAmount(bizEvent);
+        BigDecimal amount = getCartAmount(bizEvent);
 
         return CartForReceipt.builder()
                 .id(String.format("%s-%s", transactionId, UUID.randomUUID()))
