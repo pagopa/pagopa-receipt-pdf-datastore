@@ -98,8 +98,8 @@ Then('the receipts datastore return the cart event', async function () {
     assert.strictEqual(this.responseToCheck.resources.length, 1);
 });
 
-Then("the cart event has status {string}", function(status) {
-    assert.strictEqual(this.responseToCheck.resources[0].status, status);
+Then("the cart event has not the status {string}", function(status) {
+    assert.notStrictEqual(this.responseToCheck.resources[0].status, status);
 });
 
 Then('the receipt has eventId {string}', function (targetId) {

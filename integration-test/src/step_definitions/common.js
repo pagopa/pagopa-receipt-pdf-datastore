@@ -36,14 +36,14 @@ function createEvent(id, transactionId, totalNotice) {
 			"companyName": "PA paolo",
 			"officeName": "office"
 		},
-		"psp": {
-			"idPsp": "60000000001",
-			"idBrokerPsp": "60000000001",
-			"idChannel": "60000000001_08",
-			"psp": "PSP Paolo",
-			"pspFiscalCode": "CF60000000006",
-			"channelDescription": "app"
-		},
+        "psp": {
+          "idPsp": "BNLIITRR",
+          "idBrokerPsp": "05963231005",
+          "idChannel": "05963231005_01_ONUS",
+          "psp": "Worldline",
+          "pspFiscalCode": "05963231005",
+          "channelDescription": "app"
+        },
 		"debtor": {
 			"fullName": "paGetPaymentName",
 			"entityUniqueIdentifierType": "G",
