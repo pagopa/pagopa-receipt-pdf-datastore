@@ -110,15 +110,6 @@ Then('the receipt has not the status {string}', function (targetStatus) {
     assert.notStrictEqual(this.responseToCheck.resources[0].status, targetStatus);
 });
 
-Then("the receipt has not a datastore reason error message", function(){
-    let receiptResponse = this.responseToCheck.resources[0];
-    if(receiptResponse?.reasonErr.message){
-        let booleanResponseErr = receiptResponse.reasonErr.message.includes("BizEventToReceiptService") || !receiptResponse?.eventData?.amount;
-
-        assert.strictEqual(booleanResponseErr, false);
-    }
-});
-
 Then('the cart event has {int} cart item, equal to totalNotice', function (expectedCartItem) {
     assert.strictEqual(parseInt(this.responseToCheck.resources[0].payload.totalNotice), expectedCartItem);
     assert.strictEqual(this.responseToCheck.resources[0].payload.cart.length, expectedCartItem);
