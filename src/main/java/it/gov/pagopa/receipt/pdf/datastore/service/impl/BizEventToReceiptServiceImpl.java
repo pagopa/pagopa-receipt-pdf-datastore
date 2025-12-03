@@ -392,6 +392,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
                         .transactionCreationDate(getTransactionCreationDate(bizEvent))
                         .cart(cartItems)
                         .build())
+                ._etag("cart-insert")
                 .build();
     }
 
