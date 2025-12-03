@@ -381,7 +381,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         BigDecimal amount = getCartAmount(bizEvent);
 
         return CartForReceipt.builder()
-                .id(String.format("%s-%s", transactionId, UUID.randomUUID()))
+                .id(transactionId)
                 .eventId(transactionId)
                 .status(CartStatusType.WAITING_FOR_BIZ_EVENT)
                 .version("1") // this is the first version of this document
