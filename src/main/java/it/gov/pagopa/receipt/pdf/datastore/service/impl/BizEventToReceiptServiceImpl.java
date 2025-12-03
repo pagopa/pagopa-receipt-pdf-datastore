@@ -399,7 +399,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         String debtorFiscalCode = tokenizerDebtorFiscalCode(bizEvent);
         return CartPayment.builder()
                 .bizEventId(bizEvent.getId())
-                .amount(bizEvent.getPaymentInfo().getAmount())
+                .amount(formatAmount(bizEvent.getPaymentInfo().getAmount()))
                 .debtorFiscalCode(debtorFiscalCode)
                 .payeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null)
                 .subject(getItemSubject(bizEvent))
