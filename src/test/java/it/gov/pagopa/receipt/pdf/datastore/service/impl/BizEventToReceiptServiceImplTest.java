@@ -457,7 +457,7 @@ class BizEventToReceiptServiceImplTest {
         assertEquals(EVENT_ID, result.getPayload().getCart().get(0).getBizEventId());
         assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, result.getPayload().getCart().get(0).getDebtorFiscalCode());
         assertEquals(REMITTANCE_INFORMATION, result.getPayload().getCart().get(0).getSubject());
-        assertEquals("40.0", result.getPayload().getCart().get(0).getAmount());
+        assertEquals("40,00", result.getPayload().getCart().get(0).getAmount());
     }
 
     @Test
@@ -488,7 +488,7 @@ class BizEventToReceiptServiceImplTest {
         assertEquals(EVENT_ID, result.getPayload().getCart().get(1).getBizEventId());
         assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, result.getPayload().getCart().get(1).getDebtorFiscalCode());
         assertEquals(REMITTANCE_INFORMATION, result.getPayload().getCart().get(1).getSubject());
-        assertEquals("40.0", result.getPayload().getCart().get(1).getAmount());
+        assertEquals("40,00", result.getPayload().getCart().get(1).getAmount());
 
         verify(pdvTokenizerServiceMock, never()).generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE);
     }
