@@ -381,7 +381,9 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         BigDecimal amount = getCartAmount(bizEvent);
 
         return CartForReceipt.builder()
-                .id(String.format("%s-%s", transactionId, UUID.randomUUID()))
+                // remove UUID suffix in order to grant document overwrite in case of concurrent insert, in this way
+                // _etag check will avoid overwrite and prevent data loss
+                .id(transactionId)
                 .eventId(transactionId)
                 .status(CartStatusType.WAITING_FOR_BIZ_EVENT)
                 .version("1") // this is the first version of this document
@@ -392,6 +394,8 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
                         .transactionCreationDate(getTransactionCreationDate(bizEvent))
                         .cart(cartItems)
                         .build())
+                // added custom initial _etag value in order to avoid document overwrite due to concurrent insert
+                ._etag("cart-insert")
                 .build();
     }
 
@@ -399,7 +403,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         String debtorFiscalCode = tokenizerDebtorFiscalCode(bizEvent);
         return CartPayment.builder()
                 .bizEventId(bizEvent.getId())
-                .amount(bizEvent.getPaymentInfo().getAmount())
+                .amount(formatAmount(bizEvent.getPaymentInfo().getAmount()))
                 .debtorFiscalCode(debtorFiscalCode)
                 .payeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null)
                 .subject(getItemSubject(bizEvent))
