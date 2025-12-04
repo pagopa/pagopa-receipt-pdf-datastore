@@ -2,7 +2,7 @@ const assert = require('assert');
 const { After, Given, When, Then, setDefaultTimeout } = require('@cucumber/cucumber');
 const { sleep, recoverFailedEvent } = require("./common");
 const { createDocumentInBizEventsDatastore, deleteDocumentFromBizEventsDatastore } = require("./biz_events_datastore_client");
-const { getDocumentByIdFromReceiptsDatastore, deleteDocumentFromReceiptsDatastoreByEventId, deleteDocumentFromReceiptsDatastore, deleteDocumentFromCartDatastore, createDocumentInCartDatastore, getCartDocumentByIdFromReceiptsDatastore } = require("./receipts_datastore_client");
+const { getDocumentByIdFromReceiptsDatastore, deleteDocumentFromReceiptsDatastoreByEventId, deleteDocumentFromReceiptsDatastore, deleteDocumentFromCartDatastore, getCartDocumentByIdFromReceiptsDatastore } = require("./receipts_datastore_client");
 
 // set timeout for Hooks function, it allows to wait for long task
 setDefaultTimeout(360 * 1000);

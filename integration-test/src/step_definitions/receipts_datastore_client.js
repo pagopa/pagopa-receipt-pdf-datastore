@@ -1,5 +1,4 @@
 const { CosmosClient } = require("@azure/cosmos");
-const { createCartEvent } = require("./common");
 
 const cosmos_db_conn_string = process.env.RECEIPTS_COSMOS_CONN_STRING || "";
 const databaseId = process.env.RECEIPT_COSMOS_DB_NAME;
@@ -46,15 +45,6 @@ async function deleteDocumentFromReceiptsDatastore(id) {
     }
 }
 
-async function createDocumentInCartDatastore(id, listOfBizEventsIds) {
-    let event = createCartEvent(id, listOfBizEventsIds);
-    try {
-        return await cartContainer.items.create(event);
-    } catch (err) {
-        console.log(err);
-    }
-}
-
 async function deleteDocumentFromCartDatastore(id, eventId) {
     try {
         return await cartContainer.item(id, eventId).delete();
@@ -66,5 +56,5 @@ async function deleteDocumentFromCartDatastore(id, eventId) {
 }
 
 module.exports = {
-    getDocumentByIdFromReceiptsDatastore, deleteDocumentFromReceiptsDatastoreByEventId, deleteDocumentFromReceiptsDatastore, createDocumentInCartDatastore, deleteDocumentFromCartDatastore, getCartDocumentByIdFromReceiptsDatastore
+    getDocumentByIdFromReceiptsDatastore, deleteDocumentFromReceiptsDatastoreByEventId, deleteDocumentFromReceiptsDatastore, deleteDocumentFromCartDatastore, getCartDocumentByIdFromReceiptsDatastore
 }
