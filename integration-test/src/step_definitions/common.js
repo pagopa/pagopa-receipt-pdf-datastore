@@ -134,33 +134,7 @@ function createEvent(id, transactionId, totalNotice) {
 	return json_event
 }
 
-function createReceipt(id, fiscalCode, pdfName) {
-	let receipt =
-	{
-		"eventId": id,
-		"eventData": {
-			"debtorFiscalCode": fiscalCode,
-			"payerFiscalCode": fiscalCode
-		},
-		"status": "IO_NOTIFIED",
-		"mdAttach": {
-			"name": pdfName,
-			"url": pdfName
-		},
-		"id": id
-	}
-	return receipt
-}
-
-function createCartEvent(id, listOfBizEventsIds) {
-	return {
-		"id":id,
-		"cartPaymentId": listOfBizEventsIds,
-		"totalNotice": listOfBizEventsIds.length,
-		"status": "INSERTED"
-	}
-}
 
 module.exports = {
-	createEvent, sleep, createCartEvent
+	createEvent, sleep
 }
