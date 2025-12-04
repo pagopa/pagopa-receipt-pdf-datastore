@@ -5,7 +5,7 @@
 
     <groupId>it.gov.pagopa.receipt</groupId>
     <artifactId>receipt-pdf-datastore</artifactId>
-    <version>1.16.4-3-fix-concurrency-error-build-cart</version>
+    <version>1.16.5</version>
     <packaging>jar</packaging>
 
     <name>pagopa-receipt-pdf-datastore</name>
