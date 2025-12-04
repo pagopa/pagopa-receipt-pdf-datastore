@@ -381,6 +381,8 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         BigDecimal amount = getCartAmount(bizEvent);
 
         return CartForReceipt.builder()
+                // remove UUID suffix in order to grant document overwrite in case of concurrent insert, in this way
+                // _etag check will avoid overwrite and prevent data loss
                 .id(transactionId)
                 .eventId(transactionId)
                 .status(CartStatusType.WAITING_FOR_BIZ_EVENT)
@@ -392,6 +394,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
                         .transactionCreationDate(getTransactionCreationDate(bizEvent))
                         .cart(cartItems)
                         .build())
+                // added custom initial _etag value in order to avoid document overwrite due to concurrent insert
                 ._etag("cart-insert")
                 .build();
     }
