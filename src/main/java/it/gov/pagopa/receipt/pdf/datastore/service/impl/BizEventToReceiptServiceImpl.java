@@ -2,6 +2,7 @@ package it.gov.pagopa.receipt.pdf.datastore.service.impl;
 
 import com.azure.core.http.rest.Response;
 import com.azure.cosmos.models.CosmosItemResponse;
+import com.azure.cosmos.models.FeedResponse;
 import com.azure.storage.queue.models.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.HttpStatus;
@@ -217,6 +218,42 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         }
     }
 
+//    /**
+//     * {@inheritDoc}
+//     */
+//    @Override
+//    public void tokenizeFiscalCodes(BizEvent bizEvent, Receipt receipt, EventData eventData) throws JsonProcessingException, PDVTokenizerException {
+//        try {
+//            eventData.setDebtorFiscalCode(
+//                    bizEvent.getDebtor() != null && BizEventToReceiptUtils.isValidFiscalCode(bizEvent.getDebtor().getEntityUniqueIdentifierValue()) ?
+//                            pdvTokenizerService.generateTokenForFiscalCodeWithRetry(bizEvent.getDebtor().getEntityUniqueIdentifierValue()) :
+//                            FISCAL_CODE_ANONYMOUS
+//            );
+//
+//            if (isFromAuthenticatedOrigin(bizEvent)) {
+//                if (bizEvent.getTransactionDetails() != null && bizEvent.getTransactionDetails().getUser() != null
+//                        && bizEvent.getTransactionDetails().getUser().getFiscalCode() != null
+//                        && BizEventToReceiptUtils.isValidFiscalCode(bizEvent.getTransactionDetails().getUser().getFiscalCode())) {
+//                    eventData.setPayerFiscalCode(
+//                            pdvTokenizerService.generateTokenForFiscalCodeWithRetry(
+//                                    bizEvent.getTransactionDetails().getUser().getFiscalCode())
+//                    );
+//                } else if (bizEvent.getPayer() != null && BizEventToReceiptUtils.isValidFiscalCode(bizEvent.getPayer().getEntityUniqueIdentifierValue())) {
+//                    eventData.setPayerFiscalCode(
+//                            pdvTokenizerService.generateTokenForFiscalCodeWithRetry(
+//                                    bizEvent.getPayer().getEntityUniqueIdentifierValue())
+//                    );
+//                }
+//            }
+//        } catch (PDVTokenizerException e) {
+//            handleTokenizerException(receipt, e.getMessage(), e.getStatusCode());
+//            throw e;
+//        } catch (JsonProcessingException e) {
+//            handleTokenizerException(receipt, e.getMessage(), ReasonErrorCode.ERROR_PDV_MAPPING.getCode());
+//            throw e;
+//        }
+//    }
+
 
     /**
      * {@inheritDoc}
@@ -271,6 +308,25 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
                     .message(errMsg)
                     .build());
         }
+        return bizEventList;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<BizEvent> getCartBizEventsById(String cartId) {
+        List<BizEvent> bizEventList = new ArrayList<>();
+        String continuationToken = null;
+        do {
+            Iterable<FeedResponse<BizEvent>> feedResponseIterator =
+                    this.bizEventCosmosClient.getAllBizEventDocument(cartId, continuationToken, 100);
+
+            for (FeedResponse<BizEvent> page : feedResponseIterator) {
+                bizEventList.addAll(page.getResults());
+                continuationToken = page.getContinuationToken();
+            }
+        } while (continuationToken != null);
         return bizEventList;
     }
 

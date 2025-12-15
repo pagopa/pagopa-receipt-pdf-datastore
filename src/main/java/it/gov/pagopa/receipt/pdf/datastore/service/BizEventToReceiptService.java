@@ -92,6 +92,14 @@ public interface BizEventToReceiptService {
     List<BizEvent> getCartBizEvents(CartForReceipt cart);
 
     /**
+     * Retrieve all events that are associated to the cart with the specified id
+     *
+     * @param cartId the id of the cart
+     * @return a list of biz-events
+     */
+    List<BizEvent> getCartBizEventsById(String cartId);
+
+    /**
      * This method saves the provided CartForReceipt object to the datastore.
      *
      * <p>

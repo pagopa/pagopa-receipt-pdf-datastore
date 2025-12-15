@@ -1,6 +1,8 @@
 package it.gov.pagopa.receipt.pdf.datastore.utils;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.ExecutionContext;
+import it.gov.pagopa.receipt.pdf.datastore.client.BizEventCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
@@ -11,13 +13,18 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.CartItem;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventNotFoundException;
+import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
+import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
+import it.gov.pagopa.receipt.pdf.datastore.service.ReceiptCosmosService;
 import org.slf4j.Logger;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.NumberFormat;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,7 +39,132 @@ public class BizEventToReceiptUtils {
             "UNWANTED_REMITTANCE_INFO", "pagamento multibeneficiario,pagamento bpay").split(","));
     private static final String ECOMMERCE = "CHECKOUT";
 
+    private static final List<String> listOrigin;
+
+    static {
+        listOrigin = Arrays.asList(System.getenv().getOrDefault("LIST_VALID_ORIGINS", "IO,CHECKOUT,WISP,CHECKOUT_CART").split(","));
+    }
+
     private BizEventToReceiptUtils() {
+    }
+
+    public static Receipt getEvent(
+            String eventId,
+            ExecutionContext context,
+            BizEventToReceiptService bizEventToReceiptService,
+            BizEventCosmosClient bizEventCosmosClient,
+            ReceiptCosmosService receiptCosmosService,
+            Receipt receipt,
+            Logger logger,
+            Boolean isCart
+    ) throws BizEventNotFoundException, PDVTokenizerException, JsonProcessingException {
+
+        List<BizEvent> listCart = null;
+        BizEvent bizEvent;
+
+        if (isCart) {
+            listCart = bizEventToReceiptService.getCartBizEventsById(eventId);
+            bizEvent = listCart.get(0);
+        } else {
+            bizEvent = bizEventCosmosClient.getBizEventDocument(eventId);
+        }
+
+        if (isCart) {
+            Integer intTotalNotice = Integer.parseInt(bizEvent.getPaymentInfo().getTotalNotice());
+            if (!intTotalNotice.equals(listCart.size())) {
+                return null;
+            }
+            for (BizEvent event : listCart) {
+                if (isBizEventInvalid(event, context, logger)) {
+                    return null;
+                }
+            }
+        } else if (isBizEventInvalid(bizEvent, context, logger)) {
+            return null;
+        }
+
+
+        if (receipt == null) {
+            try {
+                receipt = receiptCosmosService.getReceipt(eventId);
+            } catch (ReceiptNotFoundException e) {
+                receipt = BizEventToReceiptUtils.createReceipt(bizEvent,
+                        bizEventToReceiptService, logger);
+                EventData eventData = receipt.getEventData();
+                if (isCart) {
+                    AtomicReference<BigDecimal> amount = new AtomicReference<>(BigDecimal.ZERO);
+                    List<CartItem> cartItems = new ArrayList<>();
+                    listCart.forEach(event -> {
+                        BigDecimal amountExtracted = getAmount(bizEvent);
+                        amount.updateAndGet(v -> v.add(amountExtracted));
+                        cartItems.add(
+                                CartItem.builder()
+                                        .payeeName(bizEvent.getCreditor() != null ?
+                                                bizEvent.getCreditor().getCompanyName() : null)
+                                        .subject(getItemSubject(bizEvent))
+                                        .build());
+                    });
+
+                    if (!amount.get().equals(BigDecimal.ZERO)) {
+                        eventData.setAmount(formatAmount(amount.get().toString()));
+                    }
+
+                    eventData.setCart(cartItems);
+                }
+                receipt.setStatus(ReceiptStatusType.FAILED);
+            }
+        }
+
+        if (receipt != null && (
+                receipt.getStatus().equals(ReceiptStatusType.FAILED) ||
+                        receipt.getStatus().equals(ReceiptStatusType.INSERTED) ||
+                        receipt.getStatus().equals(ReceiptStatusType.NOT_QUEUE_SENT)
+        )) {
+            if (receipt.getEventData() == null || receipt.getEventData().getDebtorFiscalCode() == null) {
+                tokenizeReceipt(bizEventToReceiptService, isCart ? listCart : Collections.singletonList(bizEvent), receipt);
+            }
+            receipt.setStatus(ReceiptStatusType.INSERTED);
+            bizEventToReceiptService.handleSendMessageToQueue(isCart ? listCart :
+                    Collections.singletonList(bizEvent), receipt);
+            if (receipt.getStatus() != ReceiptStatusType.NOT_QUEUE_SENT) {
+                receipt.setInserted_at(System.currentTimeMillis());
+                receipt.setReasonErr(null);
+                receipt.setReasonErrPayer(null);
+            }
+            return receipt;
+        }
+        return null;
+    }
+
+    public static void tokenizeReceipt(BizEventToReceiptService service, List<BizEvent> bizEvents, Receipt receipt)
+            throws PDVTokenizerException, JsonProcessingException {
+        BizEvent firstEvent = bizEvents.get(0);
+        if (receipt.getEventData() == null) {
+            EventData eventData = new EventData();
+            receipt.setEventData(eventData);
+            eventData.setTransactionCreationDate(
+                    service.getTransactionCreationDate(firstEvent));
+
+            AtomicReference<BigDecimal> amount = new AtomicReference<>(BigDecimal.ZERO);
+            List<CartItem> cartItems = new ArrayList<>();
+            bizEvents.forEach(bizEvent -> {
+                BigDecimal amountExtracted = getAmount(bizEvent);
+                amount.updateAndGet(v -> v.add(amountExtracted));
+                cartItems.add(
+                        CartItem.builder()
+                                .payeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null)
+                                .subject(getItemSubject(bizEvent))
+                                .build());
+            });
+
+            if (!amount.get().equals(BigDecimal.ZERO)) {
+                eventData.setAmount(formatAmount(amount.get().toString()));
+            }
+
+            eventData.setCart(cartItems);
+
+        }
+        service.tokenizeFiscalCodes(firstEvent, receipt, receipt.getEventData());
     }
 
     /**
@@ -292,6 +424,34 @@ public class BizEventToReceiptUtils {
 
         boolean originMatches = origin != null && AUTHENTICATED_CHANNELS.contains(origin);
         boolean clientIdMatches = clientId != null && AUTHENTICATED_CHANNELS.contains(clientId);
+
+        boolean isCheckoutOrigin = ECOMMERCE.equalsIgnoreCase(origin);
+        boolean isCheckoutClientId = ECOMMERCE.equalsIgnoreCase(clientId);
+        boolean isRegisteredUser = UserType.REGISTERED.equals(userType);
+
+        if ((isCheckoutOrigin || isCheckoutClientId) && !isRegisteredUser) {
+            return false;
+        }
+
+        return originMatches || clientIdMatches;
+    }
+
+    public static boolean isFromAuthenticatedOrigin(BizEvent bizEvent) {
+        if (bizEvent.getTransactionDetails() == null) {
+            return false;
+        }
+
+        var transactionDetails = bizEvent.getTransactionDetails();
+        var transaction = transactionDetails.getTransaction();
+        var info = transactionDetails.getInfo();
+        var user = transactionDetails.getUser();
+
+        String origin = (transaction != null) ? transaction.getOrigin() : null;
+        String clientId = (info != null) ? info.getClientId() : null;
+        UserType userType = (user != null) ? user.getType() : null;
+
+        boolean originMatches = origin != null && listOrigin.contains(origin);
+        boolean clientIdMatches = clientId != null && listOrigin.contains(clientId);
 
         boolean isCheckoutOrigin = ECOMMERCE.equalsIgnoreCase(origin);
         boolean isCheckoutClientId = ECOMMERCE.equalsIgnoreCase(clientId);
