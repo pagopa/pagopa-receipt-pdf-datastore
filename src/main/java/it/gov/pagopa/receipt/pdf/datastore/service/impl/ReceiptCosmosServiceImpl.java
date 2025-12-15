@@ -11,6 +11,7 @@ import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.IOMessage;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
+import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReceiptError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.IoMessageNotFoundException;
@@ -50,6 +51,26 @@ public class ReceiptCosmosServiceImpl implements ReceiptCosmosService {
 
         if (receipt == null) {
             String errorMsg = String.format("Receipt retrieved with the biz-event id %s is null", eventId);
+            throw new ReceiptNotFoundException(errorMsg);
+        }
+        return receipt;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ReceiptError getReceiptError(String eventId) throws ReceiptNotFoundException {
+        ReceiptError receipt;
+        try {
+            receipt = this.receiptCosmosClient.getReceiptError(eventId);
+        } catch (ReceiptNotFoundException e) {
+            String errorMsg = String.format("Receipt error not found with the biz-event id %s", eventId);
+            throw new ReceiptNotFoundException(errorMsg, e);
+        }
+
+        if (receipt == null) {
+            String errorMsg = String.format("Receipt error retrieved with the biz-event id %s is null", eventId);
             throw new ReceiptNotFoundException(errorMsg);
         }
         return receipt;

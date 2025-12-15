@@ -5,6 +5,7 @@ import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.IOMessage;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
+import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReceiptError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.IoMessageNotFoundException;
@@ -23,6 +24,15 @@ public interface ReceiptCosmosService {
      * @throws ReceiptNotFoundException if the receipt was not found or the retrieved receipt is null
      */
     Receipt getReceipt(String eventId) throws ReceiptNotFoundException;
+
+    /**
+     * Retrieve the receipt error with the provided biz-event id
+     *
+     * @param eventId the biz-event id
+     * @return the receipt error
+     * @throws ReceiptNotFoundException if the receipt was not found or the retrieved receipt is null
+     */
+    ReceiptError getReceiptError(String eventId) throws ReceiptNotFoundException;
 
     /**
      * Retrieve the not notified receipt with the provided {@link ReceiptStatusType} status

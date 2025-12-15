@@ -8,6 +8,8 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReceiptError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptErrorStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.model.ProblemJson;
+import it.gov.pagopa.receipt.pdf.datastore.service.ReceiptCosmosService;
+import it.gov.pagopa.receipt.pdf.datastore.service.impl.ReceiptCosmosServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,15 +22,17 @@ import java.util.Optional;
  */
 public class ReceiptToReviewed {
     private final Logger logger = LoggerFactory.getLogger(ReceiptToReviewed.class);
-    private final ReceiptCosmosClient receiptCosmosClient;
+
+    private final ReceiptCosmosService receiptCosmosService;
 
     public ReceiptToReviewed() {
-        this.receiptCosmosClient = ReceiptCosmosClientImpl.getInstance();
+        this.receiptCosmosService = new ReceiptCosmosServiceImpl();
     }
 
     ReceiptToReviewed(
-            ReceiptCosmosClient receiptCosmosClient) {
-        this.receiptCosmosClient = receiptCosmosClient;
+            ReceiptCosmosService receiptCosmosService
+    ) {
+        this.receiptCosmosService = receiptCosmosService;
     }
 
     /**
@@ -68,7 +72,7 @@ public class ReceiptToReviewed {
         ReceiptError receiptError;
 
         try {
-            receiptError = receiptCosmosClient.getReceiptError(eventId);
+            receiptError = receiptCosmosService.getReceiptError(eventId);
         } catch (NoSuchElementException | ReceiptNotFoundException e) {
             responseMsg = String.format("No receiptError has been found with bizEventId %s", eventId);
             logger.error("[{}] {}", context.getFunctionName(), responseMsg, e);
