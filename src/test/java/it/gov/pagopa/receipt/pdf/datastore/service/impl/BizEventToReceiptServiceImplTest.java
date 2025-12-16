@@ -41,6 +41,7 @@ import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static it.gov.pagopa.receipt.pdf.datastore.service.impl.BizEventToReceiptServiceImpl.FISCAL_CODE_ANONYMOUS;
@@ -120,7 +121,9 @@ class BizEventToReceiptServiceImplTest {
 
         Receipt receipt = new Receipt();
 
-        assertDoesNotThrow(() -> sut.handleSendMessageToQueue(any(), receipt));
+        List<BizEvent> events = Collections.singletonList(new BizEvent());
+
+        assertDoesNotThrow(() -> sut.handleSendMessageToQueue(events, receipt));
 
         assertNotNull(receipt);
         assertEquals(ReceiptStatusType.NOT_QUEUE_SENT, receipt.getStatus());

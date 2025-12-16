@@ -1,13 +1,13 @@
 package it.gov.pagopa.receipt.pdf.datastore.helpdesk.http;
 
 import com.microsoft.azure.functions.*;
-import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReceiptError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptErrorStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
+import it.gov.pagopa.receipt.pdf.datastore.service.impl.ReceiptCosmosServiceImpl;
 import it.gov.pagopa.receipt.pdf.datastore.util.HttpResponseMessageMock;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,7 +34,7 @@ class ReceiptToReviewedTest {
     private final ExecutionContext executionContextMock = mock(ExecutionContext.class);
     private ReceiptToReviewed function;
     @Mock
-    private ReceiptCosmosClient receiptCosmosClient;
+    private ReceiptCosmosServiceImpl receiptCosmosService;
     @Captor
     private ArgumentCaptor<ReceiptError> receiptErrorCaptor;
     @Mock
@@ -53,9 +53,9 @@ class ReceiptToReviewedTest {
                 .bizEventId(BIZ_EVENT_ID)
                 .status(ReceiptErrorStatusType.TO_REVIEW)
                 .build();
-        when(receiptCosmosClient.getReceiptError(BIZ_EVENT_ID)).thenReturn(receiptError);
+        when(receiptCosmosService.getReceiptError(BIZ_EVENT_ID)).thenReturn(receiptError);
 
-        function =  spy(new ReceiptToReviewed(receiptCosmosClient));
+        function =  spy(new ReceiptToReviewed(receiptCosmosService));
 
         // test execution
         AtomicReference<HttpResponseMessage> responseMessage = new AtomicReference<>();
@@ -79,9 +79,9 @@ class ReceiptToReviewedTest {
                 .bizEventId(BIZ_EVENT_ID)
                 .status(ReceiptErrorStatusType.TO_REVIEW)
                 .build();
-        when(receiptCosmosClient.getReceiptError(BIZ_EVENT_ID)).thenReturn(receiptError);
+        when(receiptCosmosService.getReceiptError(BIZ_EVENT_ID)).thenReturn(receiptError);
 
-        function =  spy(new ReceiptToReviewed(receiptCosmosClient));
+        function =  spy(new ReceiptToReviewed(receiptCosmosService));
 
         // test execution
         AtomicReference<HttpResponseMessage> responseMessage = new AtomicReference<>();
@@ -101,9 +101,9 @@ class ReceiptToReviewedTest {
             return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
         }).when(request).createResponseBuilder(any(HttpStatus.class));
 
-        when(receiptCosmosClient.getReceiptError(BIZ_EVENT_ID)).thenThrow(ReceiptNotFoundException.class);
+        when(receiptCosmosService.getReceiptError(BIZ_EVENT_ID)).thenThrow(ReceiptNotFoundException.class);
 
-        function = spy(new ReceiptToReviewed(receiptCosmosClient));
+        function = spy(new ReceiptToReviewed(receiptCosmosService));
 
         // test execution
         AtomicReference<HttpResponseMessage> responseMessage = new AtomicReference<>();
@@ -120,12 +120,12 @@ class ReceiptToReviewedTest {
             return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
         }).when(request).createResponseBuilder(any(HttpStatus.class));
 
-        when(receiptCosmosClient.getReceiptError(BIZ_EVENT_ID)).thenReturn(ReceiptError.builder()
+        when(receiptCosmosService.getReceiptError(BIZ_EVENT_ID)).thenReturn(ReceiptError.builder()
                 .bizEventId(BIZ_EVENT_ID)
                 .status(ReceiptErrorStatusType.REQUEUED)
                 .build());
 
-        function = spy(new ReceiptToReviewed(receiptCosmosClient));
+        function = spy(new ReceiptToReviewed(receiptCosmosService));
 
         // test execution
         AtomicReference<HttpResponseMessage> responseMessage = new AtomicReference<>();
@@ -142,7 +142,7 @@ class ReceiptToReviewedTest {
             return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
         }).when(request).createResponseBuilder(any(HttpStatus.class));
 
-        function = spy(new ReceiptToReviewed(receiptCosmosClient));
+        function = spy(new ReceiptToReviewed(receiptCosmosService));
 
         // test execution
         AtomicReference<HttpResponseMessage> responseMessage = new AtomicReference<>();

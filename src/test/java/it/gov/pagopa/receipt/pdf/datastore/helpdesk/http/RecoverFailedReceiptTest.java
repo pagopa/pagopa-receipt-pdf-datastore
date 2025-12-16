@@ -4,8 +4,10 @@ import com.azure.core.http.rest.Response;
 import com.azure.cosmos.models.FeedResponse;
 import com.azure.storage.queue.models.SendMessageResult;
 import com.microsoft.azure.functions.*;
+import it.gov.pagopa.receipt.pdf.datastore.client.CartReceiptsCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptQueueClient;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.BizEventCosmosClientImpl;
+import it.gov.pagopa.receipt.pdf.datastore.client.impl.CartQueueClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.*;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.enumeration.BizEventStatusType;
@@ -57,15 +59,17 @@ class RecoverFailedReceiptTest {
     @Mock
     private ReceiptCosmosService receiptCosmosServiceMock;
     @Mock
+    private CartReceiptsCosmosClient cartReceiptsCosmosClientMock;
+    @Mock
     private ReceiptQueueClient queueClientMock;
     @Mock
     private BizEventCosmosClientImpl bizEventCosmosClientMock;
-
     @Mock
     private ReceiptCosmosClientImpl receiptCosmosClient;
-
     @Mock
     private HttpRequestMessage<Optional<String>> requestMock;
+    @Mock
+    private CartQueueClientImpl cartQueueClientMock;
 
     @Captor
     private ArgumentCaptor<Receipt> receiptCaptor;
@@ -81,7 +85,13 @@ class RecoverFailedReceiptTest {
     public void openMocks() {
         closeable = MockitoAnnotations.openMocks(this);
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
-                pdvTokenizerServiceMock, queueClientMock, bizEventCosmosClientMock, receiptCosmosClient);
+                pdvTokenizerServiceMock,
+                receiptCosmosClient,
+                cartReceiptsCosmosClientMock,
+                bizEventCosmosClientMock,
+                queueClientMock,
+                cartQueueClientMock
+        );
         sut = spy(new RecoverFailedReceipt(receiptService, bizEventCosmosClientMock, receiptCosmosServiceMock));
     }
 
@@ -425,7 +435,7 @@ class RecoverFailedReceiptTest {
     }
 
     @Test
-    void runDiscardedWithCartEventWithInvalidTotalNotice() throws BizEventNotFoundException {
+    void runDiscardedEventWithInvalidTotalNotice() throws BizEventNotFoundException {
         when(bizEventCosmosClientMock.getBizEventDocument(EVENT_ID))
                 .thenReturn(generateValidBizEvent("invalid string"));
 

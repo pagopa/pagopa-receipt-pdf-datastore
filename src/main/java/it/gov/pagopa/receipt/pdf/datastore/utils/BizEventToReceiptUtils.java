@@ -76,7 +76,7 @@ public class BizEventToReceiptUtils {
                     return null;
                 }
             }
-        } else if (isBizEventInvalid(bizEvent, context, logger)) {
+        } else if (isBizEventInvalidHelpDesk(bizEvent, context, logger)) {
             return null;
         }
 
@@ -246,6 +246,81 @@ public class BizEventToReceiptUtils {
                             " or it is a legacy cart element",
                     context.getFunctionName(), bizEvent.getId());
             return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Checks if the instance of Biz Event is in status DONE and contains all the required information to process
+     * in the receipt generation
+     *
+     * @param bizEvent BizEvent to validate
+     * @param context  Function context
+     * @param logger   Function logger
+     * @return boolean to determine if the proposed event is invalid
+     */
+    public static boolean isBizEventInvalidHelpDesk(BizEvent bizEvent, ExecutionContext context, Logger logger) {
+
+        if (bizEvent == null) {
+            logger.error("[{}] event is null", context.getFunctionName());
+            return true;
+        }
+
+        if (!BizEventStatusType.DONE.equals(bizEvent.getEventStatus()) && !BizEventStatusType.INGESTED.equals(bizEvent.getEventStatus())) {
+            logger.error("[{}] event with id {} discarded because in status {}",
+                    context.getFunctionName(), bizEvent.getId(), bizEvent.getEventStatus());
+            return true;
+        }
+
+        if (!hasValidFiscalCode(bizEvent)) {
+            logger.error("[{}] event with id {} discarded because debtor's and payer's identifiers are missing or not valid",
+                    context.getFunctionName(), bizEvent.getId());
+            return true;
+        }
+
+        if (Boolean.TRUE.equals(ECOMMERCE_FILTER_ENABLED)
+                && bizEvent.getTransactionDetails() != null
+                && bizEvent.getTransactionDetails().getInfo() != null
+                && ECOMMERCE.equals(bizEvent.getTransactionDetails().getInfo().getClientId())
+        ) {
+            logger.error("[{}] event with id {} discarded because from e-commerce {}",
+                    context.getFunctionName(), bizEvent.getId(), bizEvent.getTransactionDetails().getInfo().getClientId());
+            return true;
+        }
+
+        if (!isCartMod1(bizEvent)) {
+            logger.error("[{}] event with id {} contain either an invalid amount value," +
+                            " or it is a legacy cart element",
+                    context.getFunctionName(), bizEvent.getId());
+            return true;
+        }
+
+
+        if (bizEvent.getPaymentInfo() != null) {
+            String totalNotice = bizEvent.getPaymentInfo().getTotalNotice();
+
+            if (totalNotice != null) {
+                int intTotalNotice;
+
+                try {
+                    intTotalNotice = Integer.parseInt(totalNotice);
+
+                } catch (NumberFormatException e) {
+                    logger.error("[{}] event with id {} discarded because has an invalid total notice value: {}",
+                            context.getFunctionName(), bizEvent.getId(),
+                            totalNotice,
+                            e);
+                    return true;
+                }
+
+                if (intTotalNotice > 1) {
+                    logger.error("[{}] event with id {} discarded because is part of a payment cart ({} total notice)",
+                            context.getFunctionName(), bizEvent.getId(),
+                            intTotalNotice);
+                    return true;
+                }
+            }
         }
 
         return false;
