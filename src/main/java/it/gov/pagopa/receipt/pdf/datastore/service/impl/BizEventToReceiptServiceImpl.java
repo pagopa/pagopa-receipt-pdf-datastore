@@ -77,16 +77,10 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
      * {@inheritDoc}
      */
     @Override
-    public void handleSendMessageToQueue(BizEvent bizEvent, Receipt receipt) {
+    public void handleSendMessageToQueue(List<BizEvent> bizEventList, Receipt receipt) {
         //Encode biz-event to base64 string
-        String messageText = Base64.getMimeEncoder()
-                .encodeToString(
-                        Objects.requireNonNull(
-                                ObjectMapperUtils.writeValueAsString(
-                                        // Keep a list for backwards compatibility
-                                        Collections.singletonList(bizEvent)
-                                )).getBytes(StandardCharsets.UTF_8)
-                );
+        String messageText = Base64.getMimeEncoder().encodeToString(
+                Objects.requireNonNull(ObjectMapperUtils.writeValueAsString(bizEventList)).getBytes(StandardCharsets.UTF_8));
 
         //Add message to the queue
         int statusCode;
@@ -95,7 +89,12 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             statusCode = sendMessageResult.getStatusCode();
         } catch (Exception e) {
             statusCode = ReasonErrorCode.ERROR_QUEUE.getCode();
-            logger.error("Sending BizEvent with id {} to queue failed", receipt.getEventId(), e);
+            if (bizEventList.size() == 1) {
+                logger.error("Sending BizEvent with id {} to queue failed", bizEventList.get(0).getId(), e);
+            } else {
+                logger.error("Failed to enqueue cart with id {}",
+                        bizEventList.get(0).getTransactionDetails().getTransaction().getIdTransaction(), e);
+            }
         }
 
         if (statusCode != HttpStatus.CREATED.value()) {

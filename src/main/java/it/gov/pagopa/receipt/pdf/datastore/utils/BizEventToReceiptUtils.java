@@ -1,5 +1,6 @@
 package it.gov.pagopa.receipt.pdf.datastore.utils;
 
+import com.azure.cosmos.models.FeedResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.ExecutionContext;
 import it.gov.pagopa.receipt.pdf.datastore.client.BizEventCosmosClient;
@@ -16,6 +17,7 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptSta
 import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
+import it.gov.pagopa.receipt.pdf.datastore.model.MassiveRecoverResult;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.datastore.service.ReceiptCosmosService;
 import org.slf4j.Logger;
@@ -124,8 +126,7 @@ public class BizEventToReceiptUtils {
                 tokenizeReceipt(bizEventToReceiptService, isCart ? listCart : Collections.singletonList(bizEvent), receipt);
             }
             receipt.setStatus(ReceiptStatusType.INSERTED);
-            bizEventToReceiptService.handleSendMessageToQueue(isCart ? listCart :
-                    Collections.singletonList(bizEvent), receipt);
+            bizEventToReceiptService.handleSendMessageToQueue(isCart ? listCart : Collections.singletonList(bizEvent), receipt);
             if (receipt.getStatus() != ReceiptStatusType.NOT_QUEUE_SENT) {
                 receipt.setInserted_at(System.currentTimeMillis());
                 receipt.setReasonErr(null);
@@ -462,5 +463,40 @@ public class BizEventToReceiptUtils {
         }
 
         return originMatches || clientIdMatches;
+    }
+
+    public static MassiveRecoverResult massiveRecoverByStatus(
+            ExecutionContext context,
+            BizEventToReceiptService bizEventToReceiptService,
+            BizEventCosmosClient bizEventCosmosClient,
+            ReceiptCosmosService receiptCosmosService,
+            Logger logger,
+            ReceiptStatusType statusType) {
+        int errorCounter = 0;
+        List<Receipt> receiptList = new ArrayList<>();
+        String continuationToken = null;
+        do {
+            Iterable<FeedResponse<Receipt>> feedResponseIterator =
+                    receiptCosmosService.getFailedReceiptByStatus(continuationToken, 100, statusType);
+
+            for (FeedResponse<Receipt> page : feedResponseIterator) {
+                for (Receipt receipt : page.getResults()) {
+                    try {
+                        Receipt restored = getEvent(receipt.getEventId(), context, bizEventToReceiptService,
+                                bizEventCosmosClient, receiptCosmosService, receipt, logger, receipt.getIsCart() != null ?
+                                        receipt.getIsCart() : false);
+                        receiptList.add(restored);
+                    } catch (Exception e) {
+                        logger.error(e.getMessage(), e);
+                        errorCounter++;
+                    }
+                }
+                continuationToken = page.getContinuationToken();
+            }
+        } while (continuationToken != null);
+        return MassiveRecoverResult.builder()
+                .receiptList(receiptList)
+                .errorCounter(errorCounter)
+                .build();
     }
 }

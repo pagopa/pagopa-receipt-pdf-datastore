@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.createReceipt;
@@ -131,7 +132,7 @@ public class BizEventToReceipt {
 
                 if (isReceiptStatusValid(receipt)) {
                     // Send biz event as message to queue (to be processed from the other function)
-                    this.bizEventToReceiptService.handleSendMessageToQueue(bizEvent, receipt);
+                    this.bizEventToReceiptService.handleSendMessageToQueue(Collections.singletonList(bizEvent), receipt);
                 }
 
                 if (!isReceiptStatusValid(receipt)) {
