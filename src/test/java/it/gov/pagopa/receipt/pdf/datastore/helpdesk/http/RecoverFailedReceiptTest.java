@@ -22,7 +22,7 @@ import it.gov.pagopa.receipt.pdf.datastore.model.ProblemJson;
 import it.gov.pagopa.receipt.pdf.datastore.service.PDVTokenizerServiceRetryWrapper;
 import it.gov.pagopa.receipt.pdf.datastore.service.ReceiptCosmosService;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.BizEventToReceiptServiceImpl;
-import it.gov.pagopa.receipt.pdf.datastore.util.HttpResponseMessageMock;
+import it.gov.pagopa.receipt.pdf.datastore.utils.HttpResponseMessageMock;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

@@ -8,7 +8,7 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptErr
 import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.ReceiptCosmosServiceImpl;
-import it.gov.pagopa.receipt.pdf.datastore.util.HttpResponseMessageMock;
+import it.gov.pagopa.receipt.pdf.datastore.utils.HttpResponseMessageMock;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
