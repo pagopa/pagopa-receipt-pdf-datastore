@@ -20,11 +20,30 @@ public interface ReceiptCosmosClient {
      */
     Receipt getReceiptDocument(String eventId) throws ReceiptNotFoundException;
 
+    /**
+     * Retrieve receiptError document from CosmosDB database
+     *
+     * @param bizEventId BizEvent ID
+     * @return ReceiptError found
+     * @throws ReceiptNotFoundException If the document isn't found
+     */
+    ReceiptError getReceiptError(String bizEventId) throws  ReceiptNotFoundException;
+
+    /**
+     * Retrieve failed receipt documents from CosmosDB database
+     *
+     * @param continuationToken Paged query continuation token
+     * @return receipt documents
+     */
     Iterable<FeedResponse<Receipt>> getFailedReceiptDocuments(String continuationToken, Integer pageSize);
 
+    /**
+     * Save Receipts on CosmosDB database
+     *
+     * @param receipt Receipts to save
+     * @return receipt documents
+     */
     CosmosItemResponse<Receipt> saveReceipts(Receipt receipt);
-
-    ReceiptError getReceiptError(String bizEventId) throws  ReceiptNotFoundException;
 
     /**
      * Retrieve the not notified receipt documents with {@link ReceiptStatusType#GENERATED}
@@ -53,6 +72,13 @@ public interface ReceiptCosmosClient {
      */
     Iterable<FeedResponse<Receipt>> getInsertedReceiptDocuments(String continuationToken, Integer pageSize);
 
+    /**
+     * Retrieve receipt document from CosmosDB database
+     *
+     * @param messageId IO Message id
+     * @return io message document
+     * @throws IoMessageNotFoundException in case no receipt has been found with the given messageId
+     */
     IOMessage getIoMessage(String messageId) throws IoMessageNotFoundException;
 
 }
