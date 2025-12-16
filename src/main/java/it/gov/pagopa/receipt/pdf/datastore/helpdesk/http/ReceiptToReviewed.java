@@ -1,9 +1,7 @@
-package it.gov.pagopa.receipt.pdf.datastore.helpdesk;
+package it.gov.pagopa.receipt.pdf.datastore.helpdesk.http;
 
 import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.*;
-import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptCosmosClient;
-import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReceiptError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptErrorStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;

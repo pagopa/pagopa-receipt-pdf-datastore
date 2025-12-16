@@ -1,4 +1,4 @@
-package it.gov.pagopa.receipt.pdf.datastore.helpdesk;
+package it.gov.pagopa.receipt.pdf.datastore.helpdesk.schedule;
 
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.OutputBinding;

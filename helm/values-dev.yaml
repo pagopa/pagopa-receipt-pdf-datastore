@@ -85,6 +85,7 @@ microservice-chart:
   fileConfig: {}
   envConfig:
     ENV: "dev"
+    TZ: "Europe/Rome"
     WEBSITE_SITE_NAME: "pagopareceiptpdfdatastore" # required to show cloud role name in application insights
     ASPNETCORE_URLS: "http://*:8080"
     FUNCTIONS_WORKER_RUNTIME: "java"
@@ -92,13 +93,14 @@ microservice-chart:
     CART_QUEUE_TOPIC: "pagopa-d-weu-receipts-queue-cart-receipt-waiting-4-gen"
     COSMOS_RECEIPT_SERVICE_ENDPOINT: "https://pagopa-d-weu-receipts-ds-cosmos-account.documents.azure.com:443/"
     COSMOS_BIZ_EVENT_SERVICE_ENDPOINT: "https://pagopa-d-weu-bizevents-ds-cosmos-account.documents.azure.com:443/"
-    COSMOS_RECEIPT_ERROR_CONTAINER_NAME: "receipts-message-errors"
     COSMOS_RECEIPT_DB_NAME: "db"
     COSMOS_BIZ_EVENT_DB_NAME: "db"
     COSMOS_RECEIPT_CONTAINER_NAME: "receipts"
     CART_FOR_RECEIPT_CONTAINER_NAME: "cart-for-receipts"
+    COSMOS_RECEIPT_ERROR_CONTAINER_NAME: "receipts-message-errors"
+    COSMOS_RECEIPT_MESSAGE_CONTAINER_NAME: "receipts-io-messages-evt"
+    COSMOS_RECEIPT_CART_CONTAINER_NAME: "cart-for-receipts"
     COSMOS_BIZ_EVENT_CONTAINER_NAME: "biz-events"
-    LIST_VALID_ORIGINS: "IO,CHECKOUT,WISP,CHECKOUT_CART"
     PDV_TOKENIZER_BASE_PATH: "https://api.uat.tokenizer.pdv.pagopa.it/tokenizer/v1"
     PDV_TOKENIZER_INITIAL_INTERVAL: "200"
     PDV_TOKENIZER_MULTIPLIER: "2.0"
@@ -112,10 +114,19 @@ microservice-chart:
     OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.elastic-system.svc:4317"
     OTEL_LOGS_EXPORTER: none
     OTEL_TRACES_SAMPLER: "always_on"
+    MAX_DATE_DIFF_MILLIS: "1800000" # 30min
+    MAX_DATE_DIFF_NOTIFY_MILLIS: "1800000" # 30min
+    TRIGGER_NOTIFY_REC_SCHEDULE: "0 0 */2 * * *"
+    RECOVER_FAILED_CRON: "0 0 */2 * * *"
     AZURE_FUNCTIONS_MESH_JAVA_OPTS: "-javaagent:/home/site/wwwroot/jmx_prometheus_javaagent-0.19.0.jar=12345:/home/site/wwwroot/config.yaml -javaagent:/home/site/wwwroot/opentelemetry-javaagent.jar -Xmx768m -XX:+UseG1GC"
+    FAILED_AUTORECOVER_ENABLED: "false"
+    NOT_NOTIFIED_AUTORECOVER_ENABLED: "false"
+    RECOVER_FAILED_MASSIVE_MAX_DAYS: "0"
+    RECOVER_NOT_NOTIFIED_MASSIVE_MAX_DAYS: "0"
     ECOMMERCE_FILTER_ENABLED: "false"
     ENABLE_CART: "true"
     AUTHENTICATED_CHANNELS: "IO,CHECKOUT,WISP,CHECKOUT_CART"
+    UNWANTED_REMITTANCE_INFO: "pagamento multibeneficiario,pagamento bpay"
   envFieldRef:
     APP_NAME: "metadata.labels['app.kubernetes.io/instance']"
     APP_VERSION: "metadata.labels['app.kubernetes.io/version']"
@@ -123,6 +134,7 @@ microservice-chart:
     APPLICATIONINSIGHTS_CONNECTION_STRING: "ai-d-connection-string"
     COSMOS_RECEIPTS_CONN_STRING: "cosmos-receipt-connection-string"
     RECEIPT_QUEUE_CONN_STRING: "receipts-storage-account-connection-string"
+    AzureWebJobsStorage: "receipts-storage-account-connection-string"
     COSMOS_BIZ_EVENT_CONN_STRING: "cosmos-biz-event-d-connection-string"
     COSMOS_RECEIPT_KEY: "cosmos-receipt-pkey"
     COSMOS_BIZ_EVENT_KEY: "cosmos-bizevent-pkey"

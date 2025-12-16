@@ -1,4 +1,4 @@
-package it.gov.pagopa.receipt.pdf.datastore.helpdesk;
+package it.gov.pagopa.receipt.pdf.datastore.helpdesk.http;
 
 import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;

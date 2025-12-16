@@ -1,4 +1,4 @@
-package it.gov.pagopa.receipt.pdf.datastore.helpdesk;
+package it.gov.pagopa.receipt.pdf.datastore.helpdesk.http;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.*;
