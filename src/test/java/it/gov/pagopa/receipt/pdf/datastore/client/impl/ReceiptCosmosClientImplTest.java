@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
+import java.util.stream.Stream;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
@@ -37,20 +38,17 @@ class ReceiptCosmosClientImplTest {
         CosmosDatabase mockDatabase = mock(CosmosDatabase.class);
         CosmosContainer mockContainer = mock(CosmosContainer.class);
 
-        CosmosPagedIterable mockIterable = mock(CosmosPagedIterable.class);
-
         Iterator<Receipt> mockIterator = mock(Iterator.class);
         Receipt receipt = new Receipt();
         receipt.setId(RECEIPT_ID);
 
-        when(mockIterator.hasNext()).thenReturn(true);
-        when(mockIterator.next()).thenReturn(receipt);
+        CosmosPagedIterable mockIterable = mock(CosmosPagedIterable.class);
+        when(mockIterable.stream()).thenAnswer(invocation -> Stream.of(receipt));
 
         when(mockIterable.iterator()).thenReturn(mockIterator);
 
-        when(mockContainer.queryItems(anyString(), any(), eq(Receipt.class))).thenReturn(
-                mockIterable
-        );
+        when(mockContainer.queryItems(anyString(), any(), eq(Receipt.class)))
+                .thenReturn(mockIterable);
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
         when(mockClient.getDatabase(any())).thenReturn(mockDatabase);
 

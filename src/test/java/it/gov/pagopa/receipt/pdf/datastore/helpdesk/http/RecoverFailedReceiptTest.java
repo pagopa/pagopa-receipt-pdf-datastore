@@ -390,6 +390,7 @@ class RecoverFailedReceiptTest {
         verifyNoInteractions(queueClientMock);
     }
 
+
     @Test
     void generateAnonymousDebtorBizEvent() throws BizEventNotFoundException {
         BizEvent bizEvent = generateAnonymDebtorBizEvent();
@@ -406,7 +407,7 @@ class RecoverFailedReceiptTest {
 
         // test assertion
         assertNotNull(response);
-        assertEquals(HttpStatus.OK, response.getStatus());
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatus());
         assertNotNull(response.getBody());
 
         verifyNoInteractions(receiptCosmosServiceMock);
@@ -484,7 +485,11 @@ class RecoverFailedReceiptTest {
     @SneakyThrows
     void errorTokenizingFiscalCodes() {
         when(bizEventCosmosClientMock.getBizEventDocument(EVENT_ID)).thenReturn(generateValidBizEvent("1"));
-        when(receiptCosmosServiceMock.getReceipt(EVENT_ID)).thenThrow(ReceiptNotFoundException.class);
+
+        Receipt receipt = createFailedReceipt();
+        receipt.setEventData(null);
+        when(receiptCosmosServiceMock.getReceipt(EVENT_ID)).thenReturn(receipt);
+
         lenient().when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE))
                 .thenThrow(new PDVTokenizerException(HTTP_MESSAGE_ERROR, org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR));
 

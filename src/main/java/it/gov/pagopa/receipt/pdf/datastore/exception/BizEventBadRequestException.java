@@ -6,15 +6,15 @@ import lombok.Getter;
 /**
  * Thrown in case no receipt is found in the CosmosDB container
  */
-public class BizEventNotFoundException extends BizEventException {
+public class BizEventBadRequestException extends BizEventException {
 
     /**
      * Constructs new exception with provided message and cause
      *
      * @param message Detail message
      */
-    public BizEventNotFoundException(String message) {
-        super(message, HttpStatus.NOT_FOUND);
+    public BizEventBadRequestException(String message) {
+        super(message, HttpStatus.BAD_REQUEST);
     }
 
     /**
@@ -23,8 +23,8 @@ public class BizEventNotFoundException extends BizEventException {
      * @param message Detail message
      * @param cause   Exception thrown
      */
-    public BizEventNotFoundException(String message, Throwable cause) {
-        super(message, cause, HttpStatus.NOT_FOUND);
+    public BizEventBadRequestException(String message, Throwable cause) {
+        super(message, cause, HttpStatus.BAD_REQUEST);
     }
 }
 

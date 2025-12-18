@@ -14,6 +14,7 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.CartItem;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventBadRequestException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
@@ -52,115 +53,42 @@ public class BizEventToReceiptUtils {
             BizEventCosmosClient bizEventCosmosClient,
             ReceiptCosmosService receiptCosmosService,
             Receipt receipt,
-            Logger logger,
-            Boolean isCart
-    ) throws BizEventNotFoundException, PDVTokenizerException, JsonProcessingException {
+            Logger logger
+    ) throws BizEventNotFoundException, BizEventBadRequestException, ReceiptNotFoundException, PDVTokenizerException, JsonProcessingException {
 
-        List<BizEvent> listCart = null;
-        BizEvent bizEvent;
+        BizEvent bizEvent = bizEventCosmosClient.getBizEventDocument(eventId);
 
-        if (isCart) {
-            listCart = bizEventToReceiptService.getCartBizEventsById(eventId);
-            bizEvent = listCart.get(0);
-        } else {
-            bizEvent = bizEventCosmosClient.getBizEventDocument(eventId);
+        if (isBizEventInvalid(bizEvent, context, logger)) {
+            throw new BizEventBadRequestException("BizEvent not valid");
         }
 
-        if (isCart) {
-            Integer intTotalNotice = Integer.parseInt(bizEvent.getPaymentInfo().getTotalNotice());
-            if (!intTotalNotice.equals(listCart.size())) {
-                return null;
-            }
-            for (BizEvent event : listCart) {
-                if (isBizEventInvalid(event, context, logger)) {
-                    return null;
-                }
-            }
-        } else if (isBizEventInvalidHelpDesk(bizEvent, context, logger)) {
-            return null;
+        if (!hasValidTotalNotice(bizEvent, context, logger)) {
+            throw new BizEventBadRequestException("BizEvent has not a valid total notice");
         }
-
 
         if (receipt == null) {
-            try {
-                receipt = receiptCosmosService.getReceipt(eventId);
-            } catch (ReceiptNotFoundException e) {
-                receipt = BizEventToReceiptUtils.createReceipt(bizEvent,
-                        bizEventToReceiptService, logger);
-                EventData eventData = receipt.getEventData();
-                if (isCart) {
-                    AtomicReference<BigDecimal> amount = new AtomicReference<>(BigDecimal.ZERO);
-                    List<CartItem> cartItems = new ArrayList<>();
-                    listCart.forEach(event -> {
-                        BigDecimal amountExtracted = getAmount(bizEvent);
-                        amount.updateAndGet(v -> v.add(amountExtracted));
-                        cartItems.add(
-                                CartItem.builder()
-                                        .payeeName(bizEvent.getCreditor() != null ?
-                                                bizEvent.getCreditor().getCompanyName() : null)
-                                        .subject(getItemSubject(bizEvent))
-                                        .build());
-                    });
-
-                    if (!amount.get().equals(BigDecimal.ZERO)) {
-                        eventData.setAmount(formatAmount(amount.get().toString()));
-                    }
-
-                    eventData.setCart(cartItems);
-                }
-                receipt.setStatus(ReceiptStatusType.FAILED);
-            }
+            receipt = receiptCosmosService.getReceipt(eventId);
         }
 
+        // check that the receipt is in one of the 3 manageable states: FAILED, INSERTED, and NOT_QUEUE_SENT -> if not, error
         if (receipt != null && (
                 receipt.getStatus().equals(ReceiptStatusType.FAILED) ||
-                        receipt.getStatus().equals(ReceiptStatusType.INSERTED) ||
-                        receipt.getStatus().equals(ReceiptStatusType.NOT_QUEUE_SENT)
+                receipt.getStatus().equals(ReceiptStatusType.INSERTED) ||
+                receipt.getStatus().equals(ReceiptStatusType.NOT_QUEUE_SENT)
         )) {
-            if (receipt.getEventData() == null || receipt.getEventData().getDebtorFiscalCode() == null) {
-                tokenizeReceipt(bizEventToReceiptService, isCart ? listCart : Collections.singletonList(bizEvent), receipt);
+            // recreate the receipt from the biz
+            receipt = createReceipt(bizEvent, bizEventToReceiptService, logger);
+            if (isReceiptStatusValid(receipt)) {
+                bizEventToReceiptService.handleSaveReceipt(receipt);
+
+                if (isReceiptStatusValid(receipt)) {
+                    bizEventToReceiptService.handleSendMessageToQueue(Collections.singletonList(bizEvent), receipt);
+
+                    return receipt;
+                }
             }
-            receipt.setStatus(ReceiptStatusType.INSERTED);
-            bizEventToReceiptService.handleSendMessageToQueue(isCart ? listCart : Collections.singletonList(bizEvent), receipt);
-            if (receipt.getStatus() != ReceiptStatusType.NOT_QUEUE_SENT) {
-                receipt.setInserted_at(System.currentTimeMillis());
-                receipt.setReasonErr(null);
-                receipt.setReasonErrPayer(null);
-            }
-            return receipt;
         }
-        return null;
-    }
-
-    public static void tokenizeReceipt(BizEventToReceiptService service, List<BizEvent> bizEvents, Receipt receipt)
-            throws PDVTokenizerException, JsonProcessingException {
-        BizEvent firstEvent = bizEvents.get(0);
-        if (receipt.getEventData() == null) {
-            EventData eventData = new EventData();
-            receipt.setEventData(eventData);
-            eventData.setTransactionCreationDate(
-                    service.getTransactionCreationDate(firstEvent));
-
-            AtomicReference<BigDecimal> amount = new AtomicReference<>(BigDecimal.ZERO);
-            List<CartItem> cartItems = new ArrayList<>();
-            bizEvents.forEach(bizEvent -> {
-                BigDecimal amountExtracted = getAmount(bizEvent);
-                amount.updateAndGet(v -> v.add(amountExtracted));
-                cartItems.add(
-                        CartItem.builder()
-                                .payeeName(bizEvent.getCreditor() != null ? bizEvent.getCreditor().getCompanyName() : null)
-                                .subject(getItemSubject(bizEvent))
-                                .build());
-            });
-
-            if (!amount.get().equals(BigDecimal.ZERO)) {
-                eventData.setAmount(formatAmount(amount.get().toString()));
-            }
-
-            eventData.setCart(cartItems);
-
-        }
-        service.tokenizeFiscalCodes(firstEvent, receipt, receipt.getEventData());
+        return receipt;
     }
 
     /**
@@ -251,52 +179,7 @@ public class BizEventToReceiptUtils {
         return false;
     }
 
-    /**
-     * Checks if the instance of Biz Event is in status DONE and contains all the required information to process
-     * in the receipt generation
-     *
-     * @param bizEvent BizEvent to validate
-     * @param context  Function context
-     * @param logger   Function logger
-     * @return boolean to determine if the proposed event is invalid
-     */
-    public static boolean isBizEventInvalidHelpDesk(BizEvent bizEvent, ExecutionContext context, Logger logger) {
-
-        if (bizEvent == null) {
-            logger.error("[{}] event is null", context.getFunctionName());
-            return true;
-        }
-
-        if (!BizEventStatusType.DONE.equals(bizEvent.getEventStatus()) && !BizEventStatusType.INGESTED.equals(bizEvent.getEventStatus())) {
-            logger.error("[{}] event with id {} discarded because in status {}",
-                    context.getFunctionName(), bizEvent.getId(), bizEvent.getEventStatus());
-            return true;
-        }
-
-        if (!hasValidFiscalCode(bizEvent)) {
-            logger.error("[{}] event with id {} discarded because debtor's and payer's identifiers are missing or not valid",
-                    context.getFunctionName(), bizEvent.getId());
-            return true;
-        }
-
-        if (Boolean.TRUE.equals(ECOMMERCE_FILTER_ENABLED)
-                && bizEvent.getTransactionDetails() != null
-                && bizEvent.getTransactionDetails().getInfo() != null
-                && ECOMMERCE.equals(bizEvent.getTransactionDetails().getInfo().getClientId())
-        ) {
-            logger.error("[{}] event with id {} discarded because from e-commerce {}",
-                    context.getFunctionName(), bizEvent.getId(), bizEvent.getTransactionDetails().getInfo().getClientId());
-            return true;
-        }
-
-        if (!isCartMod1(bizEvent)) {
-            logger.error("[{}] event with id {} contain either an invalid amount value," +
-                            " or it is a legacy cart element",
-                    context.getFunctionName(), bizEvent.getId());
-            return true;
-        }
-
-
+    private static boolean hasValidTotalNotice(BizEvent bizEvent, ExecutionContext context, Logger logger) {
         if (bizEvent.getPaymentInfo() != null) {
             String totalNotice = bizEvent.getPaymentInfo().getTotalNotice();
 
@@ -311,19 +194,18 @@ public class BizEventToReceiptUtils {
                             context.getFunctionName(), bizEvent.getId(),
                             totalNotice,
                             e);
-                    return true;
+                    return false;
                 }
 
                 if (intTotalNotice > 1) {
                     logger.error("[{}] event with id {} discarded because is part of a payment cart ({} total notice)",
                             context.getFunctionName(), bizEvent.getId(),
                             intTotalNotice);
-                    return true;
+                    return false;
                 }
             }
         }
-
-        return false;
+        return true;
     }
 
     private static boolean hasValidFiscalCode(BizEvent bizEvent) {
@@ -553,8 +435,7 @@ public class BizEventToReceiptUtils {
                 for (Receipt receipt : page.getResults()) {
                     try {
                         Receipt restored = getEvent(receipt.getEventId(), context, bizEventToReceiptService,
-                                bizEventCosmosClient, receiptCosmosService, receipt, logger, receipt.getIsCart() != null ?
-                                        receipt.getIsCart() : false);
+                                bizEventCosmosClient, receiptCosmosService, receipt, logger);
                         receiptList.add(restored);
                     } catch (Exception e) {
                         logger.error(e.getMessage(), e);
