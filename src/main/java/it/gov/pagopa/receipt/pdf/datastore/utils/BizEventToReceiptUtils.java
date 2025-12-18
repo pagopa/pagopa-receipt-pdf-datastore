@@ -128,6 +128,7 @@ public class BizEventToReceiptUtils {
         eventData.setCart(cartItems);
 
         receipt.setEventData(eventData);
+        receipt.setStatus(ReceiptStatusType.INSERTED);
         return receipt;
     }
 
@@ -436,7 +437,12 @@ public class BizEventToReceiptUtils {
                     try {
                         Receipt restored = getEvent(receipt.getEventId(), context, bizEventToReceiptService,
                                 bizEventCosmosClient, receiptCosmosService, receipt, logger);
-                        receiptList.add(restored);
+                        if (!isReceiptStatusValid(restored)) {
+                            errorCounter++;
+                        }
+                        else {
+                            receiptList.add(restored);
+                        }
                     } catch (Exception e) {
                         logger.error(e.getMessage(), e);
                         errorCounter++;
@@ -445,6 +451,7 @@ public class BizEventToReceiptUtils {
                 continuationToken = page.getContinuationToken();
             }
         } while (continuationToken != null);
+
         return MassiveRecoverResult.builder()
                 .receiptList(receiptList)
                 .errorCounter(errorCounter)

@@ -569,7 +569,7 @@ class RecoverFailedReceiptTest {
         return item;
     }
 
-    private BizEvent generateValidBizEventWithTDetails(String totalNotice){
+    private BizEvent generateValidBizEventWithTDetails(String totalNotice) {
         BizEvent item = new BizEvent();
 
         Debtor debtor = new Debtor();

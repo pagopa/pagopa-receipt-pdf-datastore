@@ -53,7 +53,7 @@ public class RecoverFailedReceiptMassive {
     }
 
     /**
-     * This function will be invoked when a Http Trigger occurs.
+     * This function will be invoked when an Http Trigger occurs.
      * <p>
      * It recovers all the receipts with the specified status that has to be one of:
      * - ({@link ReceiptStatusType#INSERTED})

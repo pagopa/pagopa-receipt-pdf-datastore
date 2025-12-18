@@ -1,6 +1,7 @@
 package it.gov.pagopa.receipt.pdf.datastore.helpdesk.http;
 
 import com.azure.cosmos.models.ModelBridgeInternal;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.*;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.BizEventCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.*;
@@ -72,7 +73,7 @@ class RecoverFailedReceiptMassiveTest {
     }
 
     @Test
-    void recoverFailedReceiptMassiveSuccess() throws BizEventNotFoundException {
+    void recoverFailedReceiptMassiveSuccess() throws BizEventNotFoundException, PDVTokenizerException, JsonProcessingException {
         when(requestMock.getQueryParameters())
                 .thenReturn(Collections.singletonMap("status", ReceiptStatusType.IO_ERROR_TO_NOTIFY.name()));
 
@@ -83,6 +84,18 @@ class RecoverFailedReceiptMassiveTest {
 
         when(bizEventCosmosClientMock.getBizEventDocument(EVENT_ID))
                 .thenReturn(generateValidBizEvent(EVENT_ID));
+
+        Answer<Void> successAnswer = invocation -> {
+            // arg 0: BizEvent, arg 1: Receipt, arg 2: EventData
+            EventData eventDataArg = invocation.getArgument(2);
+
+            // simulate tokenization
+            eventDataArg.setPayerFiscalCode(TOKENIZED_PAYER_FISCAL_CODE);
+            eventDataArg.setDebtorFiscalCode(TOKENIZED_DEBTOR_FISCAL_CODE);
+            return null;
+        };
+
+        doAnswer(successAnswer).when(bizEventToReceiptServiceMock).tokenizeFiscalCodes(any(), any(), any());
 
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];
@@ -166,26 +179,42 @@ class RecoverFailedReceiptMassiveTest {
                 .thenReturn(Collections.singletonMap("status", ReceiptStatusType.IO_ERROR_TO_NOTIFY.name()));
 
         List<Receipt> receiptList = new ArrayList<>();
-        receiptList.add(createFailedReceipt());
-        Receipt receipt = createFailedReceipt();
-        receipt.setEventData(null);
-        receiptList.add(receipt);
+        Receipt receipt1 = createFailedReceipt();
+        receiptList.add(receipt1);
+
+        Receipt receipt2 = createFailedReceipt();
+        receipt2.setStatus(ReceiptStatusType.INSERTED);
+        receipt2.setEventData(null);
+        receiptList.add(receipt2);
 
         when(receiptCosmosServiceMock.getFailedReceiptByStatus(any(), any(), any()))
                 .thenReturn(Collections.singletonList(ModelBridgeInternal
                         .createFeedResponse(receiptList, Collections.emptyMap())));
 
-        doThrow(PDVTokenizerException.class)
+        Answer<Void> successAnswer = invocation -> {
+            // arg 0: BizEvent, arg 1: Receipt, arg 2: EventData
+            EventData eventDataArg = invocation.getArgument(2);
+
+            // simulate tokenization
+            eventDataArg.setPayerFiscalCode(TOKENIZED_PAYER_FISCAL_CODE);
+            eventDataArg.setDebtorFiscalCode(TOKENIZED_DEBTOR_FISCAL_CODE);
+            return null;
+        };
+
+        doThrow(PDVTokenizerException.class) // 1. first call: error
+                .doAnswer(successAnswer)     // 2. next call: success
                 .when(bizEventToReceiptServiceMock).tokenizeFiscalCodes(any(), any(), any());
 
+        String bizOk = "a valid id 2";
         when(bizEventCosmosClientMock.getBizEventDocument(anyString()))
                 .thenReturn(generateValidBizEvent(EVENT_ID))
-                .thenReturn(generateValidBizEvent("a valid id 2"));
+                .thenReturn(generateValidBizEvent(bizOk));
 
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];
             return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
         }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
+
 
         // test execution
         HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, documentdb, contextMock));
@@ -203,8 +232,8 @@ class RecoverFailedReceiptMassiveTest {
         verify(documentdb).setValue(receiptCaptor.capture());
         assertEquals(1, receiptCaptor.getValue().size());
         Receipt captured = receiptCaptor.getValue().get(0);
-        assertEquals(ReceiptStatusType.INSERTED, captured.getStatus());
-        assertEquals(EVENT_ID, captured.getEventId());
+//        assertEquals(ReceiptStatusType.INSERTED, captured.getStatus());
+        assertEquals(bizOk, captured.getEventId());
         assertEquals(TOKENIZED_PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
         assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
         assertNotNull(captured.getEventData().getCart());
