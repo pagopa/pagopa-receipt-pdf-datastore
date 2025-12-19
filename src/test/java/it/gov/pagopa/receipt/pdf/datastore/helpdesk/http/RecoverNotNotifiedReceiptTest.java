@@ -92,7 +92,7 @@ class RecoverNotNotifiedReceiptTest {
     }
 
     @Test
-    void recoverNotNotifiedCartReceiptSuccess() throws ReceiptNotFoundException, CartNotFoundException {
+    void recoverNotNotifiedCartReceiptSuccess() throws ReceiptNotFoundException {
         Receipt receipt = buildReceipt();
         when(receiptCosmosServiceMock.getReceipt(EVENT_ID)).thenReturn(receipt);
 

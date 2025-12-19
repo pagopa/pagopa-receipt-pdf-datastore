@@ -18,6 +18,8 @@ import it.gov.pagopa.receipt.pdf.datastore.exception.IoMessageNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.service.ReceiptCosmosService;
 
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 
@@ -49,10 +51,6 @@ public class ReceiptCosmosServiceImpl implements ReceiptCosmosService {
             throw new ReceiptNotFoundException(errorMsg, e);
         }
 
-        if (receipt == null) {
-            String errorMsg = String.format("Receipt retrieved with the biz-event id %s is null", eventId);
-            throw new ReceiptNotFoundException(errorMsg);
-        }
         return receipt;
     }
 

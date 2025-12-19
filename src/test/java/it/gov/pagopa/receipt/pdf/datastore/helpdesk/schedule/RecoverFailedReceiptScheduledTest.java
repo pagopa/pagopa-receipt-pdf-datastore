@@ -1,6 +1,7 @@
 package it.gov.pagopa.receipt.pdf.datastore.helpdesk.schedule;
 
 import com.azure.cosmos.models.ModelBridgeInternal;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.OutputBinding;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.BizEventCosmosClientImpl;
@@ -11,6 +12,7 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventNotFoundException;
+import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.datastore.service.ReceiptCosmosService;
 import org.junit.jupiter.api.AfterEach;
@@ -18,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
+import org.mockito.stubbing.Answer;
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
@@ -72,13 +75,15 @@ class RecoverFailedReceiptScheduledTest {
     }
 
     @Test
-    void recoverFailedReceiptScheduledSuccess() throws BizEventNotFoundException {
+    void recoverFailedReceiptScheduledSuccess() throws BizEventNotFoundException, PDVTokenizerException, JsonProcessingException {
         sut = spy(new RecoverFailedReceiptScheduled(bizEventToReceiptServiceMock, bizEventCosmosClientMock, receiptCosmosServiceMock));
+
         when(receiptCosmosServiceMock.getFailedReceiptByStatus(any(), any(), eq(ReceiptStatusType.FAILED)))
                 .thenReturn(Collections.singletonList(ModelBridgeInternal
                         .createFeedResponse(Collections.singletonList(
                                         createFailedReceipt(EVENT_ID_1, ReceiptStatusType.FAILED)),
                                 Collections.emptyMap())));
+
         when(receiptCosmosServiceMock.getFailedReceiptByStatus(any(), any(), eq(ReceiptStatusType.INSERTED)))
                 .thenReturn(Collections.singletonList(ModelBridgeInternal
                         .createFeedResponse(Collections.singletonList(
@@ -96,6 +101,18 @@ class RecoverFailedReceiptScheduledTest {
                 .thenReturn(generateValidBizEvent(EVENT_ID_2));
         when(bizEventCosmosClientMock.getBizEventDocument(EVENT_ID_3))
                 .thenReturn(generateValidBizEvent(EVENT_ID_3));
+
+        Answer<Void> successAnswer = invocation -> {
+            // arg 0: BizEvent, arg 1: Receipt, arg 2: EventData
+            EventData eventDataArg = invocation.getArgument(2);
+
+            // simulate tokenization
+            eventDataArg.setPayerFiscalCode(TOKENIZED_PAYER_FISCAL_CODE);
+            eventDataArg.setDebtorFiscalCode(TOKENIZED_DEBTOR_FISCAL_CODE);
+            return null;
+        };
+
+        doAnswer(successAnswer).when(bizEventToReceiptServiceMock).tokenizeFiscalCodes(any(), any(), any());
 
         // test execution
         assertDoesNotThrow(() -> sut.run("info", documentdb, contextMock));

@@ -90,14 +90,13 @@ public class RecoverFailedReceipt {
             Receipt receipt = BizEventToReceiptUtils.getEvent(eventId, context, this.bizEventToReceiptService,
                     this.bizEventCosmosClient, this.receiptCosmosService, null, logger);
 
+            documentdb.setValue(receipt);
             if (BizEventToReceiptUtils.isReceiptStatusValid(receipt)) {
-                documentdb.setValue(receipt);
                 String responseMsg = String.format("Receipt with eventId %s recovered", eventId);
                 return request.createResponseBuilder(HttpStatus.OK)
                         .body(responseMsg)
                         .build();
             } else {
-                documentdb.setValue(receipt);
                 return request
                         .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body(ProblemJson.builder()

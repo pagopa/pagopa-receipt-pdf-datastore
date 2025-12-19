@@ -15,22 +15,17 @@ public class RecoverNotNotifiedReceiptUtils {
         receipt.setNotificationNumRetry(0);
         receipt.setNotified_at(0);
 
-        if (receipt.getReasonErr() != null) {
-            receipt.setReasonErr(null);
-        }
-        if (receipt.getReasonErrPayer() != null) {
-            receipt.setReasonErrPayer(null);
-        }
+        receipt.setReasonErr(null);
+        receipt.setReasonErrPayer(null);
+
         return receipt;
     }
 
     public static List<Receipt> receiptMassiveRestore(ReceiptStatusType statusType, ReceiptCosmosService receiptCosmosService) {
 
-
         List<Receipt> receiptList = new ArrayList<>();
         String continuationToken = null;
         do {
-
             Iterable<FeedResponse<Receipt>> feedResponseIterator =
                     receiptCosmosService.getNotNotifiedReceiptByStatus(continuationToken, 100, statusType);
 
@@ -43,7 +38,6 @@ public class RecoverNotNotifiedReceiptUtils {
 
             }
         } while (continuationToken != null);
-
 
         return receiptList;
     }

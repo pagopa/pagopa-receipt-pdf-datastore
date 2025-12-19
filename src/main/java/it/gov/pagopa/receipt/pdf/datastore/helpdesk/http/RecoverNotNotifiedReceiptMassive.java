@@ -39,7 +39,7 @@ public class RecoverNotNotifiedReceiptMassive {
     }
 
     /**
-     * This function will be invoked when a Http Trigger occurs.
+     * This function will be invoked when an Http Trigger occurs.
      * <p>
      * It recovers all receipt with the provided status.
      * <p>
@@ -93,8 +93,7 @@ public class RecoverNotNotifiedReceiptMassive {
         }
 
         if (!statusType.equals(ReceiptStatusType.IO_ERROR_TO_NOTIFY) && !statusType.equals(ReceiptStatusType.GENERATED)) {
-            String responseMsg = String.format("The requested status to recover %s is not one of the expected status",
-                    statusType);
+            String responseMsg = String.format("The requested status to recover %s is not one of the expected status", statusType);
             return request
                     .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ProblemJson.builder()
