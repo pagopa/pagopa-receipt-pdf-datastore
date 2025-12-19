@@ -79,6 +79,6 @@ public interface ReceiptCosmosClient {
      * @return io message document
      * @throws IoMessageNotFoundException in case no receipt has been found with the given messageId
      */
-    IOMessage getIoMessage(String messageId) throws IoMessageNotFoundException;
+    IOMessage getIoMessage(String messageId) throws IoMessageNotFoundException, IoMessageNotFoundException;
 
 }
