@@ -47,13 +47,13 @@ class RecoverNotNotifiedReceiptScheduledTest {
     private AutoCloseable closeable;
 
     @BeforeEach
-    public void openMocks() {
+    void openMocks() {
         closeable = MockitoAnnotations.openMocks(this);
         sut = spy(new RecoverNotNotifiedReceiptScheduled(receiptCosmosServiceMock));
     }
 
     @AfterEach
-    public void releaseMocks() throws Exception {
+    void releaseMocks() throws Exception {
         closeable.close();
     }
 

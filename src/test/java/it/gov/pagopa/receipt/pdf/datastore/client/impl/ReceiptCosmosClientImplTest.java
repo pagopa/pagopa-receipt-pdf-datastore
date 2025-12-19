@@ -3,22 +3,17 @@ package it.gov.pagopa.receipt.pdf.datastore.client.impl;
 import com.azure.cosmos.CosmosClient;
 import com.azure.cosmos.CosmosContainer;
 import com.azure.cosmos.CosmosDatabase;
-import com.azure.cosmos.models.FeedResponse;
 import com.azure.cosmos.util.CosmosPagedIterable;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.IOMessage;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.IoMessageNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Iterator;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -38,7 +33,7 @@ class ReceiptCosmosClientImplTest {
 
     @Test
     void runOk() throws ReceiptNotFoundException {
-        String RECEIPT_ID = "a valid receipt id";
+        String receiptId = "a valid receipt id";
 
         CosmosClient mockClient = mock(CosmosClient.class);
 
@@ -47,7 +42,7 @@ class ReceiptCosmosClientImplTest {
 
         Iterator<Receipt> mockIterator = mock(Iterator.class);
         Receipt receipt = new Receipt();
-        receipt.setId(RECEIPT_ID);
+        receipt.setId(receiptId);
 
         CosmosPagedIterable mockIterable = mock(CosmosPagedIterable.class);
         when(mockIterable.stream()).thenAnswer(invocation -> Stream.of(receipt));
@@ -60,10 +55,10 @@ class ReceiptCosmosClientImplTest {
 
         ReceiptCosmosClientImpl client = new ReceiptCosmosClientImpl(mockClient);
 
-        Assertions.assertDoesNotThrow(() -> client.getReceiptDocument(RECEIPT_ID));
+        Assertions.assertDoesNotThrow(() -> client.getReceiptDocument(receiptId));
 
-        Receipt receiptResponse = client.getReceiptDocument(RECEIPT_ID);
-        Assertions.assertEquals(RECEIPT_ID, receiptResponse.getId());
+        Receipt receiptResponse = client.getReceiptDocument(receiptId);
+        Assertions.assertEquals(receiptId, receiptResponse.getId());
     }
 
     @Test
@@ -94,7 +89,7 @@ class ReceiptCosmosClientImplTest {
 
     @Test
     void runOk_FailedQueryClient() {
-        String RECEIPT_ID = "a valid receipt id";
+        String receiptId = "a valid receipt id";
 
         CosmosClient mockClient = mock(CosmosClient.class);
 
@@ -105,7 +100,7 @@ class ReceiptCosmosClientImplTest {
 
         Iterator<Receipt> mockIterator = mock(Iterator.class);
         Receipt receipt = new Receipt();
-        receipt.setId(RECEIPT_ID);
+        receipt.setId(receiptId);
 
         when(mockIterator.hasNext()).thenReturn(true);
         when(mockIterator.next()).thenReturn(receipt);
@@ -125,7 +120,7 @@ class ReceiptCosmosClientImplTest {
 
     @Test
     void getGeneratedReceiptDocuments_Success() {
-        String RECEIPT_ID = "a valid receipt id";
+        String receiptId = "a valid receipt id";
 
         CosmosClient mockClient = mock(CosmosClient.class);
 
@@ -134,7 +129,7 @@ class ReceiptCosmosClientImplTest {
 
         Iterator<Receipt> mockIterator = mock(Iterator.class);
         Receipt receipt = new Receipt();
-        receipt.setId(RECEIPT_ID);
+        receipt.setId(receiptId);
 
         CosmosPagedIterable mockIterable = mock(CosmosPagedIterable.class);
         when(mockIterable.stream()).thenAnswer(invocation -> Stream.of(receipt));
@@ -153,7 +148,7 @@ class ReceiptCosmosClientImplTest {
 
     @Test
     void getIOErrorToNotifyReceiptDocuments_Success() {
-        String RECEIPT_ID = "a valid receipt id";
+        String receiptId = "a valid receipt id";
 
         CosmosClient mockClient = mock(CosmosClient.class);
 
@@ -162,7 +157,7 @@ class ReceiptCosmosClientImplTest {
 
         Iterator<Receipt> mockIterator = mock(Iterator.class);
         Receipt receipt = new Receipt();
-        receipt.setId(RECEIPT_ID);
+        receipt.setId(receiptId);
 
         CosmosPagedIterable mockIterable = mock(CosmosPagedIterable.class);
         when(mockIterable.stream()).thenAnswer(invocation -> Stream.of(receipt));
@@ -180,7 +175,7 @@ class ReceiptCosmosClientImplTest {
 
     @Test
     void getInsertedReceiptDocuments_Success() {
-        String RECEIPT_ID = "a valid receipt id";
+        String receiptId = "a valid receipt id";
 
         CosmosClient mockClient = mock(CosmosClient.class);
 
@@ -189,7 +184,7 @@ class ReceiptCosmosClientImplTest {
 
         Iterator<Receipt> mockIterator = mock(Iterator.class);
         Receipt receipt = new Receipt();
-        receipt.setId(RECEIPT_ID);
+        receipt.setId(receiptId);
 
         CosmosPagedIterable mockIterable = mock(CosmosPagedIterable.class);
         when(mockIterable.stream()).thenAnswer(invocation -> Stream.of(receipt));

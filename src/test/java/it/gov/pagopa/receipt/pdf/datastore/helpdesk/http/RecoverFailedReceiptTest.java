@@ -24,7 +24,6 @@ import it.gov.pagopa.receipt.pdf.datastore.service.PDVTokenizerServiceRetryWrapp
 import it.gov.pagopa.receipt.pdf.datastore.service.ReceiptCosmosService;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.BizEventToReceiptServiceImpl;
 import it.gov.pagopa.receipt.pdf.datastore.utils.HttpResponseMessageMock;
-import it.gov.pagopa.receipt.pdf.datastore.utils.ObjectMapperUtils;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -84,7 +83,7 @@ class RecoverFailedReceiptTest {
     private RecoverFailedReceipt sut;
 
     @BeforeEach
-    public void openMocks() {
+    void openMocks() {
         closeable = MockitoAnnotations.openMocks(this);
         BizEventToReceiptServiceImpl receiptService = new BizEventToReceiptServiceImpl(
                 pdvTokenizerServiceMock,
@@ -98,7 +97,7 @@ class RecoverFailedReceiptTest {
     }
 
     @AfterEach
-    public void releaseMocks() throws Exception {
+    void releaseMocks() throws Exception {
         closeable.close();
     }
 

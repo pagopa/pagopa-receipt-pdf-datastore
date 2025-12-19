@@ -390,34 +390,6 @@ public class BizEventToReceiptUtils {
         return originMatches || clientIdMatches;
     }
 
-//    public static boolean isFromAuthenticatedOrigin(BizEvent bizEvent) {
-//        if (bizEvent.getTransactionDetails() == null) {
-//            return false;
-//        }
-//
-//        var transactionDetails = bizEvent.getTransactionDetails();
-//        var transaction = transactionDetails.getTransaction();
-//        var info = transactionDetails.getInfo();
-//        var user = transactionDetails.getUser();
-//
-//        String origin = (transaction != null) ? transaction.getOrigin() : null;
-//        String clientId = (info != null) ? info.getClientId() : null;
-//        UserType userType = (user != null) ? user.getType() : null;
-//
-//        boolean originMatches = origin != null && AUTHENTICATED_CHANNELS.contains(origin);
-//        boolean clientIdMatches = clientId != null && AUTHENTICATED_CHANNELS.contains(clientId);
-//
-//        boolean isCheckoutOrigin = ECOMMERCE.equalsIgnoreCase(origin);
-//        boolean isCheckoutClientId = ECOMMERCE.equalsIgnoreCase(clientId);
-//        boolean isRegisteredUser = UserType.REGISTERED.equals(userType);
-//
-//        if ((isCheckoutOrigin || isCheckoutClientId) && !isRegisteredUser) {
-//            return false;
-//        }
-//
-//        return originMatches || clientIdMatches;
-//    }
-
     public static MassiveRecoverResult massiveRecoverByStatus(
             ExecutionContext context,
             BizEventToReceiptService bizEventToReceiptService,

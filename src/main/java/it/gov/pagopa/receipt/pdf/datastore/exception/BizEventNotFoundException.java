@@ -1,7 +1,6 @@
 package it.gov.pagopa.receipt.pdf.datastore.exception;
 
 import com.microsoft.azure.functions.HttpStatus;
-import lombok.Getter;
 
 /**
  * Thrown in case no receipt is found in the CosmosDB container

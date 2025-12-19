@@ -65,12 +65,12 @@ class RecoverFailedReceiptScheduledTest {
     private RecoverFailedReceiptScheduled sut;
 
     @BeforeEach
-    public void openMocks() {
+    void openMocks() {
         closeable = MockitoAnnotations.openMocks(this);
     }
 
     @AfterEach
-    public void releaseMocks() throws Exception {
+    void releaseMocks() throws Exception {
         closeable.close();
     }
 

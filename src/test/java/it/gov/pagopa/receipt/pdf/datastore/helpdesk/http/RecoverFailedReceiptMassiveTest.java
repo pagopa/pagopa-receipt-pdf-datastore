@@ -35,9 +35,9 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class RecoverFailedReceiptMassiveTest {
 
-    private final String TOKENIZED_DEBTOR_FISCAL_CODE = "tokenizedDebtorFiscalCode";
-    private final String TOKENIZED_PAYER_FISCAL_CODE = "tokenizedPayerFiscalCode";
-    private final String EVENT_ID = "a valid id";
+    private final String tokenizedDebtorFiscalCode = "tokenizedDebtorFiscalCode";
+    private final String tokenizedPayerFiscalCode = "tokenizedPayerFiscalCode";
+    private final String eventId = "a valid id";
 
     @Mock
     private ExecutionContext contextMock;
@@ -62,13 +62,13 @@ class RecoverFailedReceiptMassiveTest {
     private RecoverFailedReceiptMassive sut;
 
     @BeforeEach
-    public void openMocks() {
+    void openMocks() {
         closeable = MockitoAnnotations.openMocks(this);
         sut = spy(new RecoverFailedReceiptMassive(bizEventToReceiptServiceMock, bizEventCosmosClientMock, receiptCosmosServiceMock));
     }
 
     @AfterEach
-    public void releaseMocks() throws Exception {
+    void releaseMocks() throws Exception {
         closeable.close();
     }
 
@@ -82,16 +82,16 @@ class RecoverFailedReceiptMassiveTest {
                         .createFeedResponse(Collections.singletonList(createFailedReceipt()),
                                 Collections.emptyMap())));
 
-        when(bizEventCosmosClientMock.getBizEventDocument(EVENT_ID))
-                .thenReturn(generateValidBizEvent(EVENT_ID));
+        when(bizEventCosmosClientMock.getBizEventDocument(eventId))
+                .thenReturn(generateValidBizEvent(eventId));
 
         Answer<Void> successAnswer = invocation -> {
             // arg 0: BizEvent, arg 1: Receipt, arg 2: EventData
             EventData eventDataArg = invocation.getArgument(2);
 
             // simulate tokenization
-            eventDataArg.setPayerFiscalCode(TOKENIZED_PAYER_FISCAL_CODE);
-            eventDataArg.setDebtorFiscalCode(TOKENIZED_DEBTOR_FISCAL_CODE);
+            eventDataArg.setPayerFiscalCode(tokenizedPayerFiscalCode);
+            eventDataArg.setDebtorFiscalCode(tokenizedDebtorFiscalCode);
             return null;
         };
 
@@ -114,9 +114,9 @@ class RecoverFailedReceiptMassiveTest {
         assertEquals(1, receiptCaptor.getValue().size());
         Receipt captured = receiptCaptor.getValue().get(0);
         assertEquals(ReceiptStatusType.INSERTED, captured.getStatus());
-        assertEquals(EVENT_ID, captured.getEventId());
-        assertEquals(TOKENIZED_PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
-        assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
+        assertEquals(eventId, captured.getEventId());
+        assertEquals(tokenizedPayerFiscalCode, captured.getEventData().getPayerFiscalCode());
+        assertEquals(tokenizedDebtorFiscalCode, captured.getEventData().getDebtorFiscalCode());
         assertNotNull(captured.getEventData().getCart());
         assertEquals(1, captured.getEventData().getCart().size());
     }
@@ -196,8 +196,8 @@ class RecoverFailedReceiptMassiveTest {
             EventData eventDataArg = invocation.getArgument(2);
 
             // simulate tokenization
-            eventDataArg.setPayerFiscalCode(TOKENIZED_PAYER_FISCAL_CODE);
-            eventDataArg.setDebtorFiscalCode(TOKENIZED_DEBTOR_FISCAL_CODE);
+            eventDataArg.setPayerFiscalCode(tokenizedPayerFiscalCode);
+            eventDataArg.setDebtorFiscalCode(tokenizedDebtorFiscalCode);
             return null;
         };
 
@@ -207,7 +207,7 @@ class RecoverFailedReceiptMassiveTest {
 
         String bizOk = "a valid id 2";
         when(bizEventCosmosClientMock.getBizEventDocument(anyString()))
-                .thenReturn(generateValidBizEvent(EVENT_ID))
+                .thenReturn(generateValidBizEvent(eventId))
                 .thenReturn(generateValidBizEvent(bizOk));
 
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
@@ -232,10 +232,9 @@ class RecoverFailedReceiptMassiveTest {
         verify(documentdb).setValue(receiptCaptor.capture());
         assertEquals(1, receiptCaptor.getValue().size());
         Receipt captured = receiptCaptor.getValue().get(0);
-//        assertEquals(ReceiptStatusType.INSERTED, captured.getStatus());
         assertEquals(bizOk, captured.getEventId());
-        assertEquals(TOKENIZED_PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
-        assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
+        assertEquals(tokenizedPayerFiscalCode, captured.getEventData().getPayerFiscalCode());
+        assertEquals(tokenizedDebtorFiscalCode, captured.getEventData().getDebtorFiscalCode());
         assertNotNull(captured.getEventData().getCart());
         assertEquals(1, captured.getEventData().getCart().size());
     }
@@ -309,8 +308,8 @@ class RecoverFailedReceiptMassiveTest {
 
         receipt.setStatus(ReceiptStatusType.FAILED);
         EventData eventData = new EventData();
-        eventData.setDebtorFiscalCode(TOKENIZED_DEBTOR_FISCAL_CODE);
-        eventData.setPayerFiscalCode(TOKENIZED_PAYER_FISCAL_CODE);
+        eventData.setDebtorFiscalCode(tokenizedDebtorFiscalCode);
+        eventData.setPayerFiscalCode(tokenizedPayerFiscalCode);
         receipt.setEventData(eventData);
 
         CartItem item = new CartItem();

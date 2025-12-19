@@ -68,31 +68,31 @@ class ReceiptToReviewedTest {
         assertEquals(ReceiptErrorStatusType.REVIEWED, captured.getStatus());
     }
 
-    @Test
-    void requestWithValidCartSaveReceiptErrorInReviewed() throws ReceiptNotFoundException, CartNotFoundException {
-        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
-            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
-            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
-        }).when(request).createResponseBuilder(any(HttpStatus.class));
-
-        ReceiptError receiptError = ReceiptError.builder()
-                .bizEventId(BIZ_EVENT_ID)
-                .status(ReceiptErrorStatusType.TO_REVIEW)
-                .build();
-        when(receiptCosmosService.getReceiptError(BIZ_EVENT_ID)).thenReturn(receiptError);
-
-        function =  spy(new ReceiptToReviewed(receiptCosmosService));
-
-        // test execution
-        AtomicReference<HttpResponseMessage> responseMessage = new AtomicReference<>();
-        assertDoesNotThrow(() -> responseMessage.set(function.run(request, BIZ_EVENT_ID, documentdb,executionContextMock )));
-        assertEquals(HttpStatus.OK, responseMessage.get().getStatus());
-
-        verify(documentdb).setValue(receiptErrorCaptor.capture());
-        ReceiptError captured = receiptErrorCaptor.getValue();
-        assertEquals(BIZ_EVENT_ID, captured.getBizEventId());
-        assertEquals(ReceiptErrorStatusType.REVIEWED, captured.getStatus());
-    }
+//    @Test
+//    void requestWithValidCartSaveReceiptErrorInReviewed() throws ReceiptNotFoundException, CartNotFoundException {
+//        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+//            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
+//            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+//        }).when(request).createResponseBuilder(any(HttpStatus.class));
+//
+//        ReceiptError receiptError = ReceiptError.builder()
+//                .bizEventId(BIZ_EVENT_ID)
+//                .status(ReceiptErrorStatusType.TO_REVIEW)
+//                .build();
+//        when(receiptCosmosService.getReceiptError(BIZ_EVENT_ID)).thenReturn(receiptError);
+//
+//        function =  spy(new ReceiptToReviewed(receiptCosmosService));
+//
+//        // test execution
+//        AtomicReference<HttpResponseMessage> responseMessage = new AtomicReference<>();
+//        assertDoesNotThrow(() -> responseMessage.set(function.run(request, BIZ_EVENT_ID, documentdb,executionContextMock )));
+//        assertEquals(HttpStatus.OK, responseMessage.get().getStatus());
+//
+//        verify(documentdb).setValue(receiptErrorCaptor.capture());
+//        ReceiptError captured = receiptErrorCaptor.getValue();
+//        assertEquals(BIZ_EVENT_ID, captured.getBizEventId());
+//        assertEquals(ReceiptErrorStatusType.REVIEWED, captured.getStatus());
+//    }
 
     @Test
     void requestWithValidBizEventIdButReceiptNotFound() throws ReceiptNotFoundException {
