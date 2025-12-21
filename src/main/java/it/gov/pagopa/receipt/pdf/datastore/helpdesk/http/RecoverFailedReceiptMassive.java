@@ -122,12 +122,12 @@ public class RecoverFailedReceiptMassive {
                             .build())
                     .build();
         }
-        List<Receipt> receiptList = recoverResult.getReceiptList();
+
+        int successCounter = recoverResult.getSuccessCounter();
         int errorCounter = recoverResult.getErrorCounter();
 
-        documentdb.setValue(receiptList);
         if (errorCounter > 0) {
-            String msg = String.format("Recovered %s receipts but %s encountered an error.", receiptList.size(), errorCounter);
+            String msg = String.format("Recovered %s receipts but %s encountered an error.", successCounter, errorCounter);
             return request
                     .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ProblemJson.builder()
@@ -137,7 +137,7 @@ public class RecoverFailedReceiptMassive {
                             .build())
                     .build();
         }
-        String responseMsg = String.format("Recovered %s receipts", receiptList.size());
+        String responseMsg = String.format("Recovered %s receipts", successCounter);
         return request.createResponseBuilder(HttpStatus.OK)
                 .body(responseMsg)
                 .build();

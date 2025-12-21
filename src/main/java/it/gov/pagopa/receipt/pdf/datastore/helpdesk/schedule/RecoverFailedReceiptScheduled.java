@@ -19,10 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.massiveRecoverByStatus;
 
@@ -77,13 +74,9 @@ public class RecoverFailedReceiptScheduled {
     ) {
         if (isEnabled) {
             logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
-            List<Receipt> receiptList = new ArrayList<>();
-
-            receiptList.addAll(recover(context, ReceiptStatusType.INSERTED));
-            receiptList.addAll(recover(context, ReceiptStatusType.FAILED));
-            receiptList.addAll(recover(context, ReceiptStatusType.NOT_QUEUE_SENT));
-
-            documentdb.setValue(receiptList);
+            recover(context, ReceiptStatusType.INSERTED);
+            recover(context, ReceiptStatusType.FAILED);
+            recover(context, ReceiptStatusType.NOT_QUEUE_SENT);
         }
     }
 
@@ -95,9 +88,11 @@ public class RecoverFailedReceiptScheduled {
                 logger.error("[{}] Error recovering {} failed receipts for status {}",
                         context.getFunctionName(), recoverResult.getErrorCounter(), statusType);
             }
+
             List<String> idList = recoverResult.getReceiptList().parallelStream().map(Receipt::getId).toList();
+
             logger.info("[{}] Recovered {} receipts for status {} with ids: {}",
-                    context.getFunctionName(), recoverResult.getReceiptList().size(), statusType, idList);
+                    context.getFunctionName(), idList.size(), statusType, idList);
             return recoverResult.getReceiptList();
         } catch (NoSuchElementException e) {
             logger.error("[{}] Unexpected error during recover of failed receipt for status {}",

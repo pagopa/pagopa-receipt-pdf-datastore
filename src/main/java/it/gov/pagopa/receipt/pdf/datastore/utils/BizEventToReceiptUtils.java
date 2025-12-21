@@ -397,8 +397,9 @@ public class BizEventToReceiptUtils {
             ReceiptCosmosService receiptCosmosService,
             Logger logger,
             ReceiptStatusType statusType) {
-        int errorCounter = 0;
         List<Receipt> receiptList = new ArrayList<>();
+        int successCounter = 0;
+        int errorCounter = 0;
         String continuationToken = null;
         do {
             Iterable<FeedResponse<Receipt>> feedResponseIterator =
@@ -409,11 +410,11 @@ public class BizEventToReceiptUtils {
                     try {
                         Receipt restored = getEvent(receipt.getEventId(), context, bizEventToReceiptService,
                                 bizEventCosmosClient, receiptCosmosService, receipt, logger);
-                        if (!isReceiptStatusValid(restored)) {
-                            errorCounter++;
-                        }
-                        else {
+                        if (isReceiptStatusValid(restored)) {
                             receiptList.add(restored);
+                            successCounter++;
+                        } else {
+                            errorCounter++;
                         }
                     } catch (Exception e) {
                         logger.error(e.getMessage(), e);
@@ -426,6 +427,7 @@ public class BizEventToReceiptUtils {
 
         return MassiveRecoverResult.builder()
                 .receiptList(receiptList)
+                .successCounter(successCounter)
                 .errorCounter(errorCounter)
                 .build();
     }

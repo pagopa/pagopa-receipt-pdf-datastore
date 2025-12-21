@@ -12,4 +12,5 @@ public class MassiveRecoverResult {
 
     private List<Receipt> receiptList;
     private int errorCounter;
+    private int successCounter;
 }

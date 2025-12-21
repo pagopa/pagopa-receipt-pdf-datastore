@@ -108,17 +108,7 @@ class RecoverFailedReceiptMassiveTest {
         // test assertion
         assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatus());
-        assertNotNull(response.getBody());
-
-        verify(documentdb).setValue(receiptCaptor.capture());
-        assertEquals(1, receiptCaptor.getValue().size());
-        Receipt captured = receiptCaptor.getValue().get(0);
-        assertEquals(ReceiptStatusType.INSERTED, captured.getStatus());
-        assertEquals(eventId, captured.getEventId());
-        assertEquals(tokenizedPayerFiscalCode, captured.getEventData().getPayerFiscalCode());
-        assertEquals(tokenizedDebtorFiscalCode, captured.getEventData().getDebtorFiscalCode());
-        assertNotNull(captured.getEventData().getCart());
-        assertEquals(1, captured.getEventData().getCart().size());
+        assertEquals("Recovered 1 receipts", response.getBody());
     }
 
     @Test
@@ -225,18 +215,9 @@ class RecoverFailedReceiptMassiveTest {
 
         ProblemJson problemJson = (ProblemJson) response.getBody();
         assertNotNull(problemJson);
-        assertEquals(HttpStatus.MULTI_STATUS.value(), problemJson.getStatus());
+        assertEquals(HttpStatus.MULTI_STATUS.value(), problemJson.getStatus()); // 207
         assertEquals("Partial OK", problemJson.getTitle());
-        assertNotNull(problemJson.getDetail());
-
-        verify(documentdb).setValue(receiptCaptor.capture());
-        assertEquals(1, receiptCaptor.getValue().size());
-        Receipt captured = receiptCaptor.getValue().get(0);
-        assertEquals(bizOk, captured.getEventId());
-        assertEquals(tokenizedPayerFiscalCode, captured.getEventData().getPayerFiscalCode());
-        assertEquals(tokenizedDebtorFiscalCode, captured.getEventData().getDebtorFiscalCode());
-        assertNotNull(captured.getEventData().getCart());
-        assertEquals(1, captured.getEventData().getCart().size());
+        assertTrue(problemJson.getDetail().contains("Recovered 1 receipts but 1 encountered an error"));
     }
 
     @Test

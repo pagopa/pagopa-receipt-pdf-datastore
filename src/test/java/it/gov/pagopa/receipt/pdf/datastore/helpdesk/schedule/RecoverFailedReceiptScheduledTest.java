@@ -13,6 +13,7 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
+import it.gov.pagopa.receipt.pdf.datastore.model.MassiveRecoverResult;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.datastore.service.ReceiptCosmosService;
 import org.junit.jupiter.api.AfterEach;
@@ -28,6 +29,7 @@ import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -117,29 +119,11 @@ class RecoverFailedReceiptScheduledTest {
         // test execution
         assertDoesNotThrow(() -> sut.run("info", documentdb, contextMock));
 
-        verify(documentdb).setValue(receiptCaptor.capture());
-        assertEquals(3, receiptCaptor.getValue().size());
+        verify(receiptCosmosServiceMock).getFailedReceiptByStatus(any(), any(), eq(ReceiptStatusType.INSERTED));
+        verify(receiptCosmosServiceMock).getFailedReceiptByStatus(any(), any(), eq(ReceiptStatusType.FAILED));
+        verify(receiptCosmosServiceMock).getFailedReceiptByStatus(any(), any(), eq(ReceiptStatusType.NOT_QUEUE_SENT));
 
-        Receipt captured = receiptCaptor.getValue().get(0);
-        assertEquals(ReceiptStatusType.INSERTED, captured.getStatus());
-        assertEquals(TOKENIZED_PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
-        assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
-        assertNotNull(captured.getEventData().getCart());
-        assertEquals(1, captured.getEventData().getCart().size());
-
-        captured = receiptCaptor.getValue().get(1);
-        assertEquals(ReceiptStatusType.INSERTED, captured.getStatus());
-        assertEquals(TOKENIZED_PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
-        assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
-        assertNotNull(captured.getEventData().getCart());
-        assertEquals(1, captured.getEventData().getCart().size());
-
-        captured = receiptCaptor.getValue().get(2);
-        assertEquals(ReceiptStatusType.INSERTED, captured.getStatus());
-        assertEquals(TOKENIZED_PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
-        assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
-        assertNotNull(captured.getEventData().getCart());
-        assertEquals(1, captured.getEventData().getCart().size());
+        verify(bizEventCosmosClientMock, times(3)).getBizEventDocument(anyString());
     }
 
     @Test

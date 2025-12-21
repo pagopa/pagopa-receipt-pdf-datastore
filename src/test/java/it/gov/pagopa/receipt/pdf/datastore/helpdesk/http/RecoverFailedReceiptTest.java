@@ -101,43 +101,27 @@ class RecoverFailedReceiptTest {
         closeable.close();
     }
 
-    // TODO Gioele questo scenario è cambiato
-//    @Test
-//    @SneakyThrows
-//    void requestOnValidBizEventShouldCreateRequest() {
-//        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE))
-//                .thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
-//
-//        Response<SendMessageResult> queueResponse = mock(Response.class);
-//        when(queueResponse.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
-//        when(queueClientMock.sendMessageToQueue(anyString())).thenReturn(queueResponse);
-//
-//        when(bizEventCosmosClientMock.getBizEventDocument(EVENT_ID))
-//                .thenReturn(generateValidBizEvent("1"));
-//
-//        when(receiptCosmosServiceMock.getReceipt(EVENT_ID)).thenThrow(ReceiptNotFoundException.class);
-//
-//        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
-//            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
-//            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
-//        }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
-//
-//        // test execution
-//        HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, EVENT_ID, documentdb, contextMock));
-//
-//        // test assertion
-//        assertNotNull(response);
-//        assertEquals(HttpStatus.BAD_REQUEST, response.getStatus());
-//        assertNotNull(response.getBody());
-//
-//        verify(documentdb).setValue(receiptCaptor.capture());
-//        Receipt captured = receiptCaptor.getValue();
-//        assertEquals(ReceiptStatusType.INSERTED, captured.getStatus());
-//        assertEquals(EVENT_ID, captured.getEventId());
-//        assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
-//        assertNotNull(captured.getEventData().getCart());
-//        assertEquals(1, captured.getEventData().getCart().size());
-//    }
+    @Test
+    @SneakyThrows
+    void requestOnValidBizEventShouldNotCreateRequest() {
+        when(bizEventCosmosClientMock.getBizEventDocument(EVENT_ID))
+                .thenReturn(generateValidBizEvent("1"));
+
+        when(receiptCosmosServiceMock.getReceipt(EVENT_ID)).thenThrow(ReceiptNotFoundException.class);
+
+        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
+            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+        }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
+
+        // test execution
+        HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, EVENT_ID, documentdb, contextMock));
+
+        // test assertion
+        assertNotNull(response);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatus());
+        assertNotNull(response.getBody());
+    }
 
 //    @Test
 //    @SneakyThrows
@@ -180,47 +164,6 @@ class RecoverFailedReceiptTest {
 //        assertNotNull(captured.getEventData().getCart());
 //        assertEquals(1, captured.getEventData().getCart().size());
 //    }
-
-//    @Test
-//    @SneakyThrows
-//    void requestOnValidBizEventTransactionDetailsShouldCreateRequest() {
-//        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE))
-//                .thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
-//        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE))
-//                .thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
-//
-//        Response<SendMessageResult> queueResponse = mock(Response.class);
-//        when(queueResponse.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
-//        when(queueClientMock.sendMessageToQueue(anyString())).thenReturn(queueResponse);
-//
-//        when(bizEventCosmosClientMock.getBizEventDocument(EVENT_ID))
-//                .thenReturn(generateValidBizEventWithTDetails("1"));
-//
-//        when(receiptCosmosServiceMock.getReceipt(EVENT_ID)).thenThrow(ReceiptNotFoundException.class);
-//
-//        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
-//            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
-//            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
-//        }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
-//
-//        // test execution
-//        HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, EVENT_ID, documentdb, contextMock));
-//
-//        // test assertion
-//        assertNotNull(response);
-//        assertEquals(HttpStatus.OK, response.getStatus());
-//        assertNotNull(response.getBody());
-//
-//        verify(documentdb).setValue(receiptCaptor.capture());
-//        Receipt captured = receiptCaptor.getValue();
-//        assertEquals(ReceiptStatusType.INSERTED, captured.getStatus());
-//        assertEquals(EVENT_ID, captured.getEventId());
-//        assertEquals(TOKENIZED_PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
-//        assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
-//        assertNotNull(captured.getEventData().getCart());
-//        assertEquals(1, captured.getEventData().getCart().size());
-//    }
-
 
     @Test
     void requestOnValidBizEventAndFailedReceiptShouldResend() throws BizEventNotFoundException, ReceiptNotFoundException, PDVTokenizerException, JsonProcessingException {
@@ -293,23 +236,24 @@ class RecoverFailedReceiptTest {
 //        assertEquals(1, captured.getEventData().getCart().size());
 //    }
 
-    // TODO Gioele
     @Test
     @SneakyThrows
     void requestOnValidBizEventAndFailedReceiptWithoutEventDataShouldUpdateWithToken() {
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE))
                 .thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
 
-//        Response<SendMessageResult> queueResponse = mock(Response.class);
-//        when(queueResponse.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
-//        when(queueClientMock.sendMessageToQueue(anyString())).thenReturn(queueResponse);
+        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(PAYER_FISCAL_CODE))
+                .thenReturn(TOKENIZED_PAYER_FISCAL_CODE);
 
         Receipt receipt = createFailedReceipt();
         receipt.setEventData(null);
         when(receiptCosmosServiceMock.getReceipt(EVENT_ID)).thenReturn(receipt);
 
+        BizEvent bizEvent = generateValidBizEvent("1");
+        bizEvent.getTransactionDetails().getTransaction().setOrigin("IO");
+
         when(bizEventCosmosClientMock.getBizEventDocument(EVENT_ID))
-                .thenReturn(generateValidBizEvent("1"));
+                .thenReturn(bizEvent);
 
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];
@@ -329,6 +273,7 @@ class RecoverFailedReceiptTest {
         assertEquals(ReceiptStatusType.FAILED, captured.getStatus());
         assertEquals(EVENT_ID, captured.getEventId());
         assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
+        assertEquals(TOKENIZED_PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
         assertNotNull(captured.getEventData().getCart());
         assertEquals(1, captured.getEventData().getCart().size());
     }

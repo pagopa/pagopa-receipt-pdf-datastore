@@ -71,7 +71,6 @@ public class RecoverNotNotifiedReceiptScheduled {
 
             documentReceipts.setValue(receiptList);
         }
-
     }
 
     private List<Receipt> process(ExecutionContext context, ReceiptStatusType statusType) {
