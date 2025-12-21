@@ -1,4 +1,4 @@
-package it.gov.pagopa.receipt.pdf.datastore.util;
+package it.gov.pagopa.receipt.pdf.datastore.utils;
 
 
 import com.microsoft.azure.functions.HttpResponseMessage;

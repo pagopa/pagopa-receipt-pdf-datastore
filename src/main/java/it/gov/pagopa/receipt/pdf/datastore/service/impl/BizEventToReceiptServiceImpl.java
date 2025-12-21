@@ -2,6 +2,7 @@ package it.gov.pagopa.receipt.pdf.datastore.service.impl;
 
 import com.azure.core.http.rest.Response;
 import com.azure.cosmos.models.CosmosItemResponse;
+import com.azure.cosmos.models.FeedResponse;
 import com.azure.storage.queue.models.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.HttpStatus;
@@ -76,16 +77,10 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
      * {@inheritDoc}
      */
     @Override
-    public void handleSendMessageToQueue(BizEvent bizEvent, Receipt receipt) {
+    public void handleSendMessageToQueue(List<BizEvent> bizEventList, Receipt receipt) {
         //Encode biz-event to base64 string
-        String messageText = Base64.getMimeEncoder()
-                .encodeToString(
-                        Objects.requireNonNull(
-                                ObjectMapperUtils.writeValueAsString(
-                                        // Keep a list for backwards compatibility
-                                        Collections.singletonList(bizEvent)
-                                )).getBytes(StandardCharsets.UTF_8)
-                );
+        String messageText = Base64.getMimeEncoder().encodeToString(
+                Objects.requireNonNull(ObjectMapperUtils.writeValueAsString(bizEventList)).getBytes(StandardCharsets.UTF_8));
 
         //Add message to the queue
         int statusCode;
@@ -94,7 +89,12 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             statusCode = sendMessageResult.getStatusCode();
         } catch (Exception e) {
             statusCode = ReasonErrorCode.ERROR_QUEUE.getCode();
-            logger.error("Sending BizEvent with id {} to queue failed", receipt.getEventId(), e);
+            if (bizEventList.size() == 1) {
+                logger.error("Sending BizEvent with id {} to queue failed", bizEventList.get(0).getId(), e);
+            } else {
+                logger.error("Failed to enqueue cart with id {}",
+                        bizEventList.get(0).getTransactionDetails().getTransaction().getIdTransaction(), e);
+            }
         }
 
         if (statusCode != HttpStatus.CREATED.value()) {
@@ -217,7 +217,6 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         }
     }
 
-
     /**
      * {@inheritDoc}
      */
@@ -271,6 +270,25 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
                     .message(errMsg)
                     .build());
         }
+        return bizEventList;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<BizEvent> getCartBizEventsById(String cartId) {
+        List<BizEvent> bizEventList = new ArrayList<>();
+        String continuationToken = null;
+        do {
+            Iterable<FeedResponse<BizEvent>> feedResponseIterator =
+                    this.bizEventCosmosClient.getAllBizEventDocument(cartId, continuationToken, 100);
+
+            for (FeedResponse<BizEvent> page : feedResponseIterator) {
+                bizEventList.addAll(page.getResults());
+                continuationToken = page.getContinuationToken();
+            }
+        } while (continuationToken != null);
         return bizEventList;
     }
 

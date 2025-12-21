@@ -20,10 +20,10 @@ public interface BizEventToReceiptService {
     /**
      * Handles sending biz-events as message to queue and updates receipt's status
      *
-     * @param bizEvent Biz-event from CosmosDB
+     * @param bizEventList Biz-event list from CosmosDB
      * @param receipt  Receipt to update
      */
-    void handleSendMessageToQueue(BizEvent bizEvent, Receipt receipt);
+    void handleSendMessageToQueue(List<BizEvent> bizEventList, Receipt receipt);
 
     /**
      * This method handles sending biz-events as messages to the cart queue.
@@ -90,6 +90,14 @@ public interface BizEventToReceiptService {
      * @return a list of biz-events
      */
     List<BizEvent> getCartBizEvents(CartForReceipt cart);
+
+    /**
+     * Retrieve all events that are associated to the cart with the specified id
+     *
+     * @param cartId the id of the cart
+     * @return a list of biz-events
+     */
+    List<BizEvent> getCartBizEventsById(String cartId);
 
     /**
      * This method saves the provided CartForReceipt object to the datastore.
