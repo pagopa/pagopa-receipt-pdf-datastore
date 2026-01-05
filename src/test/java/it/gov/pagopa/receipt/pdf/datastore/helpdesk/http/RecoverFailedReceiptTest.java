@@ -123,48 +123,6 @@ class RecoverFailedReceiptTest {
         assertNotNull(response.getBody());
     }
 
-//    @Test
-//    @SneakyThrows
-//    void requestOnValidCartShouldCreateRequest() {
-//        when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE))
-//                .thenReturn(TOKENIZED_DEBTOR_FISCAL_CODE);
-//
-//        Response<SendMessageResult> queueResponse = mock(Response.class);
-//        when(queueResponse.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
-//        when(queueClientMock.sendMessageToQueue(anyString())).thenReturn(queueResponse);
-//
-//        when(requestMock.getQueryParameters()).thenReturn(Collections.singletonMap("isCart","true"));
-//
-//        FeedResponse feedResponseMock = mock(FeedResponse.class);
-//        List<BizEvent> receiptList = Collections.singletonList(generateValidBizEvent("1"));
-//        when(feedResponseMock.getResults()).thenReturn(receiptList);
-//        doReturn(Collections.singletonList(feedResponseMock)).when(bizEventCosmosClientMock)
-//                .getAllBizEventDocument(Mockito.eq("a valid id"), any(), any());
-//
-//        when(receiptCosmosServiceMock.getReceipt(EVENT_ID)).thenThrow(ReceiptNotFoundException.class);
-//
-//        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
-//            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
-//            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
-//        }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
-//
-//        // test execution
-//        HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, EVENT_ID, documentdb, contextMock));
-//
-//        // test assertion
-//        assertNotNull(response);
-//        assertEquals(HttpStatus.OK, response.getStatus());
-//        assertNotNull(response.getBody());
-//
-//        verify(documentdb).setValue(receiptCaptor.capture());
-//        Receipt captured = receiptCaptor.getValue();
-//        assertEquals(ReceiptStatusType.INSERTED, captured.getStatus());
-//        assertEquals(EVENT_ID, captured.getEventId());
-//        assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
-//        assertNotNull(captured.getEventData().getCart());
-//        assertEquals(1, captured.getEventData().getCart().size());
-//    }
-
     @Test
     void requestOnValidBizEventAndFailedReceiptShouldResend() throws BizEventNotFoundException, ReceiptNotFoundException, PDVTokenizerException, JsonProcessingException {
         when(pdvTokenizerServiceMock.generateTokenForFiscalCodeWithRetry(DEBTOR_FISCAL_CODE))
@@ -196,45 +154,6 @@ class RecoverFailedReceiptTest {
         assertNotNull(captured.getEventData().getCart());
         assertEquals(1, captured.getEventData().getCart().size());
     }
-
-//    @Test
-//    void requestOnValidCartAndFailedReceiptShouldResend() throws ReceiptNotFoundException {
-//        when(receiptCosmosServiceMock.getReceipt(EVENT_ID)).thenReturn(createFailedReceipt());
-//
-//        Response<SendMessageResult> queueResponse = mock(Response.class);
-//        when(queueResponse.getStatusCode()).thenReturn(HttpStatus.CREATED.value());
-//        when(queueClientMock.sendMessageToQueue(anyString())).thenReturn(queueResponse);
-//
-//        FeedResponse feedResponseMock = mock(FeedResponse.class);
-//        List<BizEvent> receiptList = Collections.singletonList(generateValidBizEvent("1"));
-//        when(feedResponseMock.getResults()).thenReturn(receiptList);
-//        doReturn(Collections.singletonList(feedResponseMock)).when(bizEventCosmosClientMock)
-//                .getAllBizEventDocument(Mockito.eq("a valid id"), any(), any());
-//
-//        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
-//            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
-//            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
-//        }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
-//
-//        when(requestMock.getQueryParameters()).thenReturn(Collections.singletonMap("isCart","true"));
-//
-//        // test execution
-//        HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, EVENT_ID, documentdb, contextMock));
-//
-//        // test assertion
-//        assertNotNull(response);
-//        assertEquals(HttpStatus.OK, response.getStatus());
-//        assertNotNull(response.getBody());
-//
-//        verify(documentdb).setValue(receiptCaptor.capture());
-//        Receipt captured = receiptCaptor.getValue();
-//        assertEquals(ReceiptStatusType.INSERTED, captured.getStatus());
-//        assertEquals(EVENT_ID, captured.getEventId());
-//        assertEquals(TOKENIZED_PAYER_FISCAL_CODE, captured.getEventData().getPayerFiscalCode());
-//        assertEquals(TOKENIZED_DEBTOR_FISCAL_CODE, captured.getEventData().getDebtorFiscalCode());
-//        assertNotNull(captured.getEventData().getCart());
-//        assertEquals(1, captured.getEventData().getCart().size());
-//    }
 
     @Test
     @SneakyThrows
@@ -403,30 +322,6 @@ class RecoverFailedReceiptTest {
         verifyNoInteractions(receiptCosmosServiceMock);
         verifyNoInteractions(queueClientMock);
     }
-
-//    @Test
-//    void runDiscardedWithInvalidCartAmounts() throws BizEventNotFoundException {
-//        BizEvent bizEvent = generateValidBizEvent(null);
-//        bizEvent.getTransactionDetails().getTransaction().setAmount(10);
-//        when(bizEventCosmosClientMock.getBizEventDocument(EVENT_ID))
-//                .thenReturn(bizEvent);
-//
-//        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
-//            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
-//            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
-//        }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
-//
-//        HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, EVENT_ID, documentdb, contextMock));
-//
-//        // test assertion
-//        assertNotNull(response);
-//        assertEquals(HttpStatus.OK, response.getStatus());
-//        assertNotNull(response.getBody());
-//
-//        verifyNoInteractions(receiptCosmosServiceMock);
-//        verifyNoInteractions(queueClientMock);
-//
-//    }
 
     @Test
     @SneakyThrows
