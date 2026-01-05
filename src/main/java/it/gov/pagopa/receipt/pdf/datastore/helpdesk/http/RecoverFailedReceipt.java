@@ -87,7 +87,7 @@ public class RecoverFailedReceipt {
         logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
 
         try {
-            Receipt receipt = BizEventToReceiptUtils.getEvent(eventId, context, this.bizEventToReceiptService,
+            Receipt receipt = BizEventToReceiptUtils.retrieveBizAndSendReceipt(eventId, context, this.bizEventToReceiptService,
                     this.bizEventCosmosClient, this.receiptCosmosService, null, logger);
 
             documentdb.setValue(receipt);

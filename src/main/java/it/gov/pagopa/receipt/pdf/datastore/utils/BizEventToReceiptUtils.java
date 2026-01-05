@@ -27,7 +27,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.NumberFormat;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -46,7 +45,7 @@ public class BizEventToReceiptUtils {
     private BizEventToReceiptUtils() {
     }
 
-    public static Receipt getEvent(
+    public static Receipt retrieveBizAndSendReceipt(
             String eventId,
             ExecutionContext context,
             BizEventToReceiptService bizEventToReceiptService,
@@ -408,7 +407,7 @@ public class BizEventToReceiptUtils {
             for (FeedResponse<Receipt> page : feedResponseIterator) {
                 for (Receipt receipt : page.getResults()) {
                     try {
-                        Receipt restored = getEvent(receipt.getEventId(), context, bizEventToReceiptService,
+                        Receipt restored = retrieveBizAndSendReceipt(receipt.getEventId(), context, bizEventToReceiptService,
                                 bizEventCosmosClient, receiptCosmosService, receipt, logger);
                         if (isReceiptStatusValid(restored)) {
                             receiptList.add(restored);

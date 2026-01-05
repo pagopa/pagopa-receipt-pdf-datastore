@@ -21,7 +21,14 @@
     "fileLoggingMode": "always",
     "logLevel": {
       "Function.BizEventToReceiptProcessor": "Information",
-      "Function.CartEventToReceiptProcessor": "Information"
+      "Function.ReceiptToReviewed": "Information",
+      "Function.CartNotSentRecoverScheduled": "Information",
+      "Function.RecoverFailedReceipt": "Information",
+      "Function.RecoverFailedReceiptMassive": "Information",
+      "Function.RecoverFailedReceiptScheduled": "Information",
+      "Function.RecoverNotNotifiedReceipt": "Information",
+      "Function.RecoverNotNotifiedReceiptMassive": "Information",
+      "Function.RecoverNotNotifiedTimerTriggerProcessor": "Information"
     },
     "applicationInsights": {
       "samplingSettings": {
