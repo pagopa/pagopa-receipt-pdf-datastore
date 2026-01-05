@@ -124,14 +124,4 @@ class ReceiptToReviewedTest {
 
         verifyNoInteractions(documentdb);
     }
-
-    private CartForReceipt generateCart() {
-        CartForReceipt cart = new CartForReceipt();
-        cart.setId("1");
-        cart.setStatus(CartStatusType.FAILED);
-        cart.setTotalNotice(1);
-        cart.setCartPaymentId(new HashSet<>(new ArrayList<>(
-                List.of(new String[]{"valid_biz_event_id"}))));
-        return cart;
-    }
 }

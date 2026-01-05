@@ -58,7 +58,7 @@ class RecoverNotNotifiedReceiptScheduledTest {
     }
 
     @Test
-    public void scheduledTriggerShouldReturnAllValidReceiptsProcessed() {
+    void scheduledTriggerShouldReturnAllValidReceiptsProcessed() {
         FeedResponse feedResponseMock = mock(FeedResponse.class);
         List<Receipt> receiptList = getReceiptList(ReceiptStatusType.IO_ERROR_TO_NOTIFY);
         when(feedResponseMock.getResults()).thenReturn(receiptList);

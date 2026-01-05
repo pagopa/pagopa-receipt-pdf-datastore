@@ -417,31 +417,6 @@ class RecoverFailedReceiptTest {
         return item;
     }
 
-    private BizEvent generateValidBizEventWithTDetails(String totalNotice) {
-        BizEvent item = new BizEvent();
-
-        Debtor debtor = new Debtor();
-        debtor.setEntityUniqueIdentifierValue(DEBTOR_FISCAL_CODE);
-
-        TransactionDetails transactionDetails = new TransactionDetails();
-        transactionDetails.setInfo(InfoTransaction.builder().clientId("IO").build());
-        Transaction transaction = new Transaction();
-        transaction.setCreationDate(String.valueOf(LocalDateTime.now()));
-        transactionDetails.setTransaction(transaction);
-        transactionDetails.setUser(User.builder().fiscalCode(PAYER_FISCAL_CODE).build());
-
-        PaymentInfo paymentInfo = new PaymentInfo();
-        paymentInfo.setTotalNotice(totalNotice);
-
-        item.setEventStatus(BizEventStatusType.DONE);
-        item.setId(EVENT_ID);
-        item.setDebtor(debtor);
-        item.setTransactionDetails(transactionDetails);
-        item.setPaymentInfo(paymentInfo);
-
-        return item;
-    }
-
     private Receipt createFailedReceipt() {
         Receipt receipt = new Receipt();
 

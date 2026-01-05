@@ -91,35 +91,6 @@ class RecoverNotNotifiedReceiptTest {
     }
 
     @Test
-    void recoverNotNotifiedCartReceiptSuccess() throws ReceiptNotFoundException {
-        Receipt receipt = buildReceipt();
-        when(receiptCosmosServiceMock.getReceipt(EVENT_ID)).thenReturn(receipt);
-
-        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
-            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
-            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
-        }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
-
-        // test execution
-        HttpResponseMessage response = sut.run(requestMock, EVENT_ID, documentReceipts, executionContextMock);
-
-        // test assertion
-        assertNotNull(response);
-        assertEquals(HttpStatus.OK, response.getStatus());
-        assertNotNull(response.getBody());
-
-        verify(documentReceipts).setValue(receiptCaptor.capture());
-
-        assertEquals(1, receiptCaptor.getValue().size());
-        Receipt captured = receiptCaptor.getValue().get(0);
-        assertEquals(ReceiptStatusType.GENERATED, captured.getStatus());
-        assertEquals(EVENT_ID, captured.getEventId());
-        assertEquals(0, captured.getNotificationNumRetry());
-        assertNull(captured.getReasonErr());
-        assertNull(captured.getReasonErrPayer());
-    }
-
-    @Test
     void recoverReceiptFailForMissingEventId() {
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];
@@ -236,13 +207,4 @@ class RecoverNotNotifiedReceiptTest {
                 .build();
     }
 
-    private CartForReceipt generateCart() {
-        CartForReceipt cart = new CartForReceipt();
-        cart.setId("1");
-        cart.setStatus(CartStatusType.FAILED);
-        cart.setTotalNotice(1);
-        cart.setCartPaymentId(new HashSet<>(new ArrayList<>(
-                List.of(new String[]{"eventId"}))));
-        return cart;
-    }
 }
