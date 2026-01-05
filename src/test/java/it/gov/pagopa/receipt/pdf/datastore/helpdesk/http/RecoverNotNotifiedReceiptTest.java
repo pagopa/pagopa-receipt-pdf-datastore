@@ -1,8 +1,6 @@
 package it.gov.pagopa.receipt.pdf.datastore.helpdesk.http;
 
 import com.microsoft.azure.functions.*;
-import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
-import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReasonError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
@@ -18,8 +16,6 @@ import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
