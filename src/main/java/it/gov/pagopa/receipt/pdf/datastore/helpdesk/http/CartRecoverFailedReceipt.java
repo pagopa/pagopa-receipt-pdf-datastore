@@ -1,30 +1,42 @@
 package it.gov.pagopa.receipt.pdf.datastore.helpdesk.http;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.microsoft.azure.functions.*;
-import com.microsoft.azure.functions.annotation.*;
+import com.microsoft.azure.functions.ExecutionContext;
+import com.microsoft.azure.functions.HttpMethod;
+import com.microsoft.azure.functions.HttpRequestMessage;
+import com.microsoft.azure.functions.HttpResponseMessage;
+import com.microsoft.azure.functions.HttpStatus;
+import com.microsoft.azure.functions.OutputBinding;
+import com.microsoft.azure.functions.annotation.AuthorizationLevel;
+import com.microsoft.azure.functions.annotation.BindingName;
+import com.microsoft.azure.functions.annotation.CosmosDBOutput;
+import com.microsoft.azure.functions.annotation.FunctionName;
+import com.microsoft.azure.functions.annotation.HttpTrigger;
 import it.gov.pagopa.receipt.pdf.datastore.client.BizEventCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.BizEventCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventBadRequestException;
-import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventNotFoundException;
+import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventUnprocessableEntityException;
+import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
-import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.model.ProblemJson;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
-import it.gov.pagopa.receipt.pdf.datastore.service.CartReceiptCosmosService;
+import it.gov.pagopa.receipt.pdf.datastore.service.HelpdeskService;
+import it.gov.pagopa.receipt.pdf.datastore.service.ReceiptCosmosService;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.BizEventToReceiptServiceImpl;
-import it.gov.pagopa.receipt.pdf.datastore.service.impl.CartReceiptCosmosServiceImpl;
-import it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils;
-import it.gov.pagopa.receipt.pdf.datastore.utils.TransactionEventToCartReceiptUtils;
+import it.gov.pagopa.receipt.pdf.datastore.service.impl.HelpdeskServiceImpl;
+import it.gov.pagopa.receipt.pdf.datastore.service.impl.ReceiptCosmosServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+
+import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.hasCartInvalidStatus;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.isCartStatusValid;
 
 /**
  * Azure Functions with Azure Http trigger.
@@ -34,17 +46,27 @@ public class CartRecoverFailedReceipt {
     private final Logger logger = LoggerFactory.getLogger(CartRecoverFailedReceipt.class);
 
     private final BizEventToReceiptService bizEventToReceiptService;
-    private final CartReceiptCosmosService cartReceiptCosmosService;
+    private final ReceiptCosmosService receiptCosmosService;
+    private final BizEventCosmosClient bizEventCosmosClient;
+    private final HelpdeskService helpdeskService;
 
-    public CartRecoverFailedReceipt(){
-        this.cartReceiptCosmosService = new CartReceiptCosmosServiceImpl();
+    public CartRecoverFailedReceipt() {
+        this.receiptCosmosService = new ReceiptCosmosServiceImpl();
         this.bizEventToReceiptService = new BizEventToReceiptServiceImpl();
+        this.bizEventCosmosClient = BizEventCosmosClientImpl.getInstance();
+        this.helpdeskService = new HelpdeskServiceImpl();
     }
 
-    CartRecoverFailedReceipt(BizEventToReceiptService bizEventToReceiptService,
-                             CartReceiptCosmosService cartReceiptCosmosService){
+    CartRecoverFailedReceipt(
+            BizEventToReceiptService bizEventToReceiptService,
+            ReceiptCosmosService receiptCosmosService,
+            BizEventCosmosClient bizEventCosmosClient,
+            HelpdeskService helpdeskService
+    ) {
         this.bizEventToReceiptService = bizEventToReceiptService;
-        this.cartReceiptCosmosService = cartReceiptCosmosService;
+        this.receiptCosmosService = receiptCosmosService;
+        this.bizEventCosmosClient = bizEventCosmosClient;
+        this.helpdeskService = helpdeskService;
     }
 
     /**
@@ -72,7 +94,7 @@ public class CartRecoverFailedReceipt {
      * @return response with {@link HttpStatus#OK} if the operation succeeded
      */
     @FunctionName("CartRecoverFailedReceipt")
-    public HttpResponseMessage run (
+    public HttpResponseMessage run(
             @HttpTrigger(name = "CartRecoverFailedReceiptTrigger",
                     methods = {HttpMethod.POST},
                     route = "cart-receipts/{cart-id}/recover-failed",
@@ -85,7 +107,8 @@ public class CartRecoverFailedReceipt {
                     containerName = "cart-for-receipts",
                     connection = "COSMOS_RECEIPTS_CONN_STRING")
             OutputBinding<CartForReceipt> documentdb,
-            final ExecutionContext context) {
+            final ExecutionContext context
+    ) {
         logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
 
         // TODO
@@ -95,99 +118,79 @@ public class CartRecoverFailedReceipt {
         // se i biz sono validi procedere con la ricreazione della cart e l'invio in coda
         // vedere regenerate sul recupero dell'id e sovrascrittura
 
+        CartForReceipt existingCart;
         try {
-            // retrieve biz-event with the specified cartId
-            List<BizEvent> bizEvents = bizEventToReceiptService.getCartBizEventsById(cartId);
-            for(BizEvent bizEvent : bizEvents) {
-                // biz-event validation
-                if (BizEventToReceiptUtils.isBizEventInvalid(bizEvent, context, logger)) {
-                    String errMsg = String.format("Biz-event with id %s is invalid", bizEvent.getId());
-                    throw new BizEventBadRequestException(errMsg);
-                }
+            existingCart = this.receiptCosmosService.getCart(cartId);
+        } catch (CartNotFoundException e) {
+            String errMsg = "Cart receipt not found with the provided cart id";
+            logger.error(errMsg, e);
+            return buildErrorResponse(request, HttpStatus.NOT_FOUND, errMsg);
+        }
 
-                // total notice check
-                Integer totalNotice = BizEventToReceiptUtils.getTotalNotice(bizEvent, context, logger);
-                if (totalNotice != bizEvents.size()) {
-                    String errMsg = String.format("Failed to regenerate cart, the expected total notice %s does not match the number of biz events %s",
-                            totalNotice, bizEvents.size());
-                    logger.error(errMsg);
-                    return request
-                            .createResponseBuilder(HttpStatus.UNPROCESSABLE_ENTITY)
-                            .body(ProblemJson.builder()
-                                    .title(HttpStatus.UNPROCESSABLE_ENTITY.name())
-                                    .detail(errMsg)
-                                    .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
-                                    .build())
-                            .build();
-                }
-            }
+        if (!hasCartInvalidStatus(existingCart.getStatus())) {
+            String errMsg = String.format(
+                    "The provided cart is in status %s, which is not among the processable " +
+                            "statuses (INSERTED, NOT_QUEUE_SENT, FAILED).",
+                    existingCart.getStatus()
+            );
+            logger.error(errMsg);
+            return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, errMsg);
+        }
 
-            // all ok, proceed with the cart recovery
-            return null;
+        // retrieve biz-event with the specified cartId
+        List<BizEvent> bizEvents = this.bizEventCosmosClient.getAllCartBizEventDocument(cartId);
+        try {
+            this.helpdeskService.validateCartBizEvents(bizEvents);
+        } catch (BizEventBadRequestException e) {
+            return buildErrorResponse(request, HttpStatus.BAD_REQUEST, e.getMessage());
+        } catch (BizEventUnprocessableEntityException e) {
+            return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, e.getMessage());
+        }
 
-//            CartForReceipt receipt = TransactionEventToCartReceiptUtils.retrieveCartAndSendReceipt(
-//                    cartId, context, this.cartReceiptCosmosService,
-//                    this.bizEventCosmosClient,  null, logger);
-//
-//            documentdb.setValue(receipt);
-//            if (BizEventToReceiptUtils.isReceiptStatusValid(receipt)) {
-//                String responseMsg = String.format("Receipt with cartId %s recovered", cartId);
-//                return request.createResponseBuilder(HttpStatus.OK)
-//                        .body(responseMsg)
-//                        .build();
-//            } else {
-//                return request
-//                        .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
-//                        .body(ProblemJson.builder()
-//                                .title(HttpStatus.INTERNAL_SERVER_ERROR.name())
-//                                .detail(receipt.getReasonErr().getMessage())
-//                                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-//                                .build())
-//                        .build();
-//            }
-        } catch (BizEventBadRequestException ex) {
-            String msg = String.format("Problem with the biz-events related to cartId %s", cartId);
-            logger.error(msg, ex);
-            return request
-                    .createResponseBuilder(ex.getHttpStatus())
-                    .body(ProblemJson.builder()
-                            .title(ex.getHttpStatus().name())
-                            .detail(msg)
-                            .status(ex.getHttpStatus().value())
-                            .build())
-                    .build();
-
-        } catch (BizEventNotFoundException | BizEventBadRequestException exception) {
-            String msg = String.format("Unable to retrieve the biz-event with id %s", cartId);
-            logger.error(msg, exception);
-            return request
-                    .createResponseBuilder(exception.getHttpStatus())
-                    .body(ProblemJson.builder()
-                            .title(exception.getHttpStatus().name())
-                            .detail(msg)
-                            .status(exception.getHttpStatus().value())
-                            .build())
-                    .build();
+        CartForReceipt cartForReceipt;
+        try {
+            cartForReceipt = this.bizEventToReceiptService.buildCartFromBizEventList(bizEvents);
+            cartForReceipt.set_etag(existingCart.get_etag());
         } catch (PDVTokenizerException | JsonProcessingException e) {
             logger.error(e.getMessage(), e);
-            return request
-                    .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ProblemJson.builder()
-                            .title(HttpStatus.INTERNAL_SERVER_ERROR.name())
-                            .detail(e.getMessage())
-                            .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                            .build())
-                    .build();
-        } catch (ReceiptNotFoundException e) {
-            logger.error(e.getMessage(), e);
-            return request
-                    .createResponseBuilder(HttpStatus.BAD_REQUEST)
-                    .body(ProblemJson.builder()
-                            .title(HttpStatus.BAD_REQUEST.name())
-                            .detail(e.getMessage())
-                            .status(HttpStatus.BAD_REQUEST.value())
-                            .build())
-                    .build();
+            return buildErrorResponse(request, HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
         }
+
+        if (isCartStatusValid(cartForReceipt)) {
+            // saved on CosmosDB
+            cartForReceipt = this.bizEventToReceiptService.saveCartForReceiptWithoutRetry(cartForReceipt);
+        }
+
+        if (isCartStatusValid(cartForReceipt)) {
+            this.bizEventToReceiptService.handleSendCartMessageToQueue(bizEvents, cartForReceipt);
+        }
+
+        if (!isCartStatusValid(cartForReceipt)) {
+            String errMsg = String.format("Recover failed for cart with id %s. Reason: %s",
+                    cartId, cartForReceipt.getReasonErr().getMessage());
+            logger.error(errMsg);
+            documentdb.setValue(cartForReceipt);
+            return buildErrorResponse(request, HttpStatus.INTERNAL_SERVER_ERROR, errMsg);
+        }
+
+        String responseMsg = String.format("Receipt with eventId %s recovered", cartId);
+        return request.createResponseBuilder(HttpStatus.OK)
+                .body(responseMsg)
+                .build();
+    }
+
+    private HttpResponseMessage buildErrorResponse(
+            HttpRequestMessage<Optional<String>> request,
+            HttpStatus httpStatus,
+            String errMsg
+    ) {
+        return request
+                .createResponseBuilder(httpStatus)
+                .body(ProblemJson.builder()
+                        .title(httpStatus.name())
+                        .detail(errMsg)
+                        .status(httpStatus.value())
+                        .build())
+                .build();
     }
 }
