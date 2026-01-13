@@ -341,12 +341,6 @@ public class BizEventToReceiptUtils {
         return cartForReceipt.getStatus() != CartStatusType.FAILED && cartForReceipt.getStatus() != CartStatusType.NOT_QUEUE_SENT;
     }
 
-    public static boolean hasCartInvalidStatus(CartStatusType status) {
-        return CartStatusType.INSERTED.equals(status)
-                || CartStatusType.NOT_QUEUE_SENT.equals(status)
-                || CartStatusType.FAILED.equals(status);
-    }
-
     public static boolean isValidFiscalCode(String fiscalCode) {
         if (fiscalCode != null && !fiscalCode.isEmpty()) {
             Pattern patternCF = Pattern.compile("^[A-Z]{6}[0-9LMNPQRSTUV]{2}[ABCDEHLMPRST][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]$");

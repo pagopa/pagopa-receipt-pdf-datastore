@@ -106,9 +106,7 @@ public class HelpdeskServiceImpl implements HelpdeskService {
 
     private void validateCartBizEvents(List<BizEvent> bizEvents) throws BizEventBadRequestException, BizEventUnprocessableEntityException {
         if (bizEvents.isEmpty()) {
-            String errMsg = "BizEvents for the specified cart not found";
-            logger.error(errMsg);
-            throw new BizEventBadRequestException(errMsg);
+            throw new BizEventBadRequestException("BizEvents for the specified cart not found");
         }
 
         for (BizEvent bizEvent : bizEvents) {
@@ -124,7 +122,6 @@ public class HelpdeskServiceImpl implements HelpdeskService {
             if (totalNotice != bizEvents.size()) {
                 String errMsg = String.format("The expected total notice %s does not match the number of biz events %s",
                         totalNotice, bizEvents.size());
-                logger.error(errMsg);
                 throw new BizEventUnprocessableEntityException(errMsg);
             }
         }
