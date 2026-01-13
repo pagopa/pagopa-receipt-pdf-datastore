@@ -114,7 +114,7 @@ public class RecoverFailedReceipt {
 
         Receipt receipt;
         try {
-            receipt = this.helpdeskService.recoverReceipt(existingReceipt);
+            receipt = this.helpdeskService.recoverFailedReceipt(existingReceipt);
         } catch (BizEventUnprocessableEntityException e) {
             logger.error(e.getMessage(), e);
             return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, e.getMessage());

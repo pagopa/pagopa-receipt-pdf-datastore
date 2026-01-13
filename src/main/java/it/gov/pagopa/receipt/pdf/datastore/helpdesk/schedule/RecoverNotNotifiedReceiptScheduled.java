@@ -5,19 +5,16 @@ import com.microsoft.azure.functions.OutputBinding;
 import com.microsoft.azure.functions.annotation.CosmosDBOutput;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.TimerTrigger;
-
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
-import it.gov.pagopa.receipt.pdf.datastore.service.ReceiptCosmosService;
-import it.gov.pagopa.receipt.pdf.datastore.service.impl.ReceiptCosmosServiceImpl;
+import it.gov.pagopa.receipt.pdf.datastore.service.HelpdeskService;
+import it.gov.pagopa.receipt.pdf.datastore.service.impl.HelpdeskServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-
-import static it.gov.pagopa.receipt.pdf.datastore.utils.RecoverNotNotifiedReceiptUtils.receiptMassiveRestore;
 
 
 public class RecoverNotNotifiedReceiptScheduled {
@@ -26,14 +23,14 @@ public class RecoverNotNotifiedReceiptScheduled {
 
     private final Logger logger = LoggerFactory.getLogger(RecoverNotNotifiedReceiptScheduled.class);
 
-    private final ReceiptCosmosService receiptCosmosService;
+    private final HelpdeskService helpdeskService;
 
     public RecoverNotNotifiedReceiptScheduled() {
-        this.receiptCosmosService = new ReceiptCosmosServiceImpl();
+        this.helpdeskService = new HelpdeskServiceImpl();
     }
 
-    RecoverNotNotifiedReceiptScheduled(ReceiptCosmosService receiptCosmosService) {
-        this.receiptCosmosService = receiptCosmosService;
+    RecoverNotNotifiedReceiptScheduled(HelpdeskService helpdeskService) {
+        this.helpdeskService = helpdeskService;
     }
 
     /**
@@ -44,7 +41,6 @@ public class RecoverNotNotifiedReceiptScheduled {
      * It recovers the receipt with failed notification ({@link ReceiptStatusType#IO_ERROR_TO_NOTIFY}) or notification
      * not triggered ({@link ReceiptStatusType#GENERATED} by clearing the errors and update the status to the
      * previous step ({@link ReceiptStatusType#GENERATED}).
-     *
      */
     @FunctionName("RecoverNotNotifiedTimerTriggerProcessor")
     public void processRecoverNotNotifiedScheduledTrigger(
@@ -59,10 +55,9 @@ public class RecoverNotNotifiedReceiptScheduled {
                     containerName = "receipts",
                     connection = "COSMOS_RECEIPTS_CONN_STRING")
             OutputBinding<List<Receipt>> documentReceipts,
-            final ExecutionContext context) {
-
+            final ExecutionContext context
+    ) {
         if (isEnabled) {
-
             logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
 
             List<Receipt> receiptList = new ArrayList<>();
@@ -74,12 +69,11 @@ public class RecoverNotNotifiedReceiptScheduled {
     }
 
     private List<Receipt> process(ExecutionContext context, ReceiptStatusType statusType) {
-        List<Receipt> receiptList = receiptMassiveRestore(statusType, receiptCosmosService);
+        List<Receipt> receiptList = this.helpdeskService.massiveRecoverNoNotified(statusType);
 
         List<String> idList = receiptList.parallelStream().map(Receipt::getId).toList();
         logger.info("[{}] Recovered {} receipts for status {} with ids: {}",
                 context.getFunctionName(), receiptList.size(), statusType, idList);
         return receiptList;
     }
-
 }

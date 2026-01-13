@@ -55,7 +55,7 @@ public class HelpdeskServiceImpl implements HelpdeskService {
     }
 
     @Override
-    public Receipt recoverReceipt(Receipt existingReceipt)
+    public Receipt recoverFailedReceipt(Receipt existingReceipt)
             throws BizEventUnprocessableEntityException, BizEventBadRequestException, BizEventNotFoundException {
         // retrieve biz-event with the specified cartId
 
@@ -75,7 +75,7 @@ public class HelpdeskServiceImpl implements HelpdeskService {
     }
 
     @Override
-    public CartForReceipt recoverCart(CartForReceipt existingCart)
+    public CartForReceipt recoverFailedCart(CartForReceipt existingCart)
             throws BizEventUnprocessableEntityException, BizEventBadRequestException, PDVTokenizerException, JsonProcessingException {
         // retrieve biz-event with the specified cartId
         List<BizEvent> bizEvents = this.bizEventCosmosClient.getAllCartBizEventDocument(existingCart.getEventId());
@@ -96,6 +96,18 @@ public class HelpdeskServiceImpl implements HelpdeskService {
     }
 
     @Override
+    public Receipt recoverNoNotifiedReceipt(Receipt receipt) {
+        receipt.setStatus(ReceiptStatusType.GENERATED);
+        receipt.setNotificationNumRetry(0);
+        receipt.setNotified_at(0);
+
+        receipt.setReasonErr(null);
+        receipt.setReasonErrPayer(null);
+
+        return receipt;
+    }
+
+    @Override
     public MassiveRecoverResult massiveRecoverByStatus(ReceiptStatusType status) {
         List<Receipt> failedReceipts = new ArrayList<>();
         int successCounter = 0;
@@ -108,7 +120,7 @@ public class HelpdeskServiceImpl implements HelpdeskService {
             for (FeedResponse<Receipt> page : feedResponseIterator) {
                 for (Receipt receipt : page.getResults()) {
                     try {
-                        Receipt restored = recoverReceipt(receipt);
+                        Receipt restored = recoverFailedReceipt(receipt);
 
                         if (isReceiptStatusValid(restored)) {
                             successCounter++;
@@ -145,7 +157,7 @@ public class HelpdeskServiceImpl implements HelpdeskService {
             for (FeedResponse<CartForReceipt> page : feedResponseIterator) {
                 for (CartForReceipt cart : page.getResults()) {
                     try {
-                        CartForReceipt recoverCart = recoverCart(cart);
+                        CartForReceipt recoverCart = recoverFailedCart(cart);
 
                         if (isCartStatusValid(recoverCart)) {
                             successCounter++;
@@ -167,6 +179,27 @@ public class HelpdeskServiceImpl implements HelpdeskService {
                 .successCounter(successCounter)
                 .errorCounter(errorCounter)
                 .build();
+    }
+
+    @Override
+    public List<Receipt> massiveRecoverNoNotified(ReceiptStatusType status) {
+        List<Receipt> receiptList = new ArrayList<>();
+        String continuationToken = null;
+        do {
+            Iterable<FeedResponse<Receipt>> feedResponseIterator =
+                    this.receiptCosmosService.getNotNotifiedReceiptByStatus(continuationToken, 100, status);
+
+            for (FeedResponse<Receipt> page : feedResponseIterator) {
+                for (Receipt receipt : page.getResults()) {
+                    Receipt restoredReceipt = recoverNoNotifiedReceipt(receipt);
+                    receiptList.add(restoredReceipt);
+                }
+                continuationToken = page.getContinuationToken();
+
+            }
+        } while (continuationToken != null);
+
+        return receiptList;
     }
 
     private void validateCartBizEvents(List<BizEvent> bizEvents) throws BizEventBadRequestException, BizEventUnprocessableEntityException {

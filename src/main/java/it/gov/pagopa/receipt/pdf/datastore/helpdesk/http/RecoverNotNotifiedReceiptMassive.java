@@ -1,24 +1,27 @@
 package it.gov.pagopa.receipt.pdf.datastore.helpdesk.http;
 
-import com.microsoft.azure.functions.*;
+import com.microsoft.azure.functions.ExecutionContext;
+import com.microsoft.azure.functions.HttpMethod;
+import com.microsoft.azure.functions.HttpRequestMessage;
+import com.microsoft.azure.functions.HttpResponseMessage;
+import com.microsoft.azure.functions.HttpStatus;
+import com.microsoft.azure.functions.OutputBinding;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.CosmosDBOutput;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
-
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.exception.InvalidParameterException;
 import it.gov.pagopa.receipt.pdf.datastore.model.ProblemJson;
-import it.gov.pagopa.receipt.pdf.datastore.service.ReceiptCosmosService;
-import it.gov.pagopa.receipt.pdf.datastore.service.impl.ReceiptCosmosServiceImpl;
+import it.gov.pagopa.receipt.pdf.datastore.service.HelpdeskService;
+import it.gov.pagopa.receipt.pdf.datastore.service.impl.HelpdeskServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-
-import static it.gov.pagopa.receipt.pdf.datastore.utils.RecoverNotNotifiedReceiptUtils.receiptMassiveRestore;
 
 
 /**
@@ -28,14 +31,14 @@ public class RecoverNotNotifiedReceiptMassive {
 
     private final Logger logger = LoggerFactory.getLogger(RecoverNotNotifiedReceiptMassive.class);
 
-    private final ReceiptCosmosService receiptCosmosService;
+    private final HelpdeskService helpdeskService;
 
     public RecoverNotNotifiedReceiptMassive() {
-        this.receiptCosmosService = new ReceiptCosmosServiceImpl();
+        this.helpdeskService = new HelpdeskServiceImpl();
     }
 
-    RecoverNotNotifiedReceiptMassive(ReceiptCosmosService receiptCosmosService) {
-        this.receiptCosmosService = receiptCosmosService;
+    RecoverNotNotifiedReceiptMassive(HelpdeskService helpdeskService) {
+        this.helpdeskService = helpdeskService;
     }
 
     /**
@@ -62,56 +65,53 @@ public class RecoverNotNotifiedReceiptMassive {
                     containerName = "receipts",
                     connection = "COSMOS_RECEIPTS_CONN_STRING")
             OutputBinding<List<Receipt>> documentReceipts,
-            final ExecutionContext context) {
+            final ExecutionContext context
+    ) {
         logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
 
         // Get named parameter
-        String status = request.getQueryParameters().get("status");
-        if (status == null) {
-            return request
-                    .createResponseBuilder(HttpStatus.BAD_REQUEST)
-                    .body(ProblemJson.builder()
-                            .title(HttpStatus.BAD_REQUEST.name())
-                            .detail("Please pass a status to recover")
-                            .status(HttpStatus.BAD_REQUEST.value())
-                            .build())
-                    .build();
-        }
-
-        ReceiptStatusType statusType;
+        String statusParam = request.getQueryParameters().get("status");
+        ReceiptStatusType status;
         try {
-            statusType = ReceiptStatusType.valueOf(status);
-        } catch (IllegalArgumentException e) {
+            status = validateStatusParam(statusParam);
+        } catch (InvalidParameterException e) {
             return request
                     .createResponseBuilder(HttpStatus.BAD_REQUEST)
                     .body(ProblemJson.builder()
                             .title(HttpStatus.BAD_REQUEST.name())
-                            .detail("Please pass a valid status to recover")
+                            .detail(e.getMessage())
                             .status(HttpStatus.BAD_REQUEST.value())
                             .build())
                     .build();
         }
 
-        if (!statusType.equals(ReceiptStatusType.IO_ERROR_TO_NOTIFY) && !statusType.equals(ReceiptStatusType.GENERATED)) {
-            String responseMsg = String.format("The requested status to recover %s is not one of the expected status", statusType);
-            return request
-                    .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ProblemJson.builder()
-                            .title(HttpStatus.INTERNAL_SERVER_ERROR.name())
-                            .detail(responseMsg)
-                            .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                            .build())
-                    .build();
-        }
-
-        List<Receipt> receiptList = receiptMassiveRestore(statusType, receiptCosmosService);
+        List<Receipt> receiptList = this.helpdeskService.massiveRecoverNoNotified(status);
         if (receiptList.isEmpty()) {
-            return request.createResponseBuilder(HttpStatus.OK).body("No receipts restored").build();
+            return request.createResponseBuilder(HttpStatus.OK).body("No receipts to be recovered").build();
         }
 
         documentReceipts.setValue(receiptList);
-        String msg = String.format("Restored %s receipt with success", receiptList.size());
+        String msg = String.format("Recovered %s receipt with success", receiptList.size());
         return request.createResponseBuilder(HttpStatus.OK).body(msg).build();
     }
 
+    private ReceiptStatusType validateStatusParam(String statusParam) throws InvalidParameterException {
+        if (statusParam == null) {
+            throw new InvalidParameterException("Please pass a status to recover");
+        }
+
+        ReceiptStatusType status;
+        try {
+            status = ReceiptStatusType.valueOf(statusParam);
+        } catch (IllegalArgumentException e) {
+            throw new InvalidParameterException("Please pass a valid status to recover", e);
+        }
+
+        if (!status.isANotificationFailedStatus()) {
+            String message = String.format("The provided status %s is not among the processable" +
+                    "statuses (GENERATED, IO_ERROR_TO_NOTIFY).", status);
+            throw new InvalidParameterException(message);
+        }
+        return status;
+    }
 }

@@ -1,12 +1,22 @@
 package it.gov.pagopa.receipt.pdf.datastore.helpdesk.http;
 
-import com.microsoft.azure.functions.*;
-import com.microsoft.azure.functions.annotation.*;
+import com.microsoft.azure.functions.ExecutionContext;
+import com.microsoft.azure.functions.HttpMethod;
+import com.microsoft.azure.functions.HttpRequestMessage;
+import com.microsoft.azure.functions.HttpResponseMessage;
+import com.microsoft.azure.functions.HttpStatus;
+import com.microsoft.azure.functions.OutputBinding;
+import com.microsoft.azure.functions.annotation.AuthorizationLevel;
+import com.microsoft.azure.functions.annotation.BindingName;
+import com.microsoft.azure.functions.annotation.CosmosDBOutput;
+import com.microsoft.azure.functions.annotation.FunctionName;
+import com.microsoft.azure.functions.annotation.HttpTrigger;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
-import it.gov.pagopa.receipt.pdf.datastore.model.ProblemJson;
+import it.gov.pagopa.receipt.pdf.datastore.service.HelpdeskService;
 import it.gov.pagopa.receipt.pdf.datastore.service.ReceiptCosmosService;
+import it.gov.pagopa.receipt.pdf.datastore.service.impl.HelpdeskServiceImpl;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.ReceiptCosmosServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,8 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static it.gov.pagopa.receipt.pdf.datastore.utils.RecoverNotNotifiedReceiptUtils.restoreReceipt;
-
+import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.buildErrorResponse;
 
 /**
  * Azure Functions with HTTP Trigger.
@@ -27,13 +36,16 @@ public class RecoverNotNotifiedReceipt {
     private final Logger logger = LoggerFactory.getLogger(RecoverNotNotifiedReceipt.class);
 
     private final ReceiptCosmosService receiptCosmosService;
+    private final HelpdeskService helpdeskService;
 
     public RecoverNotNotifiedReceipt() {
         this.receiptCosmosService = new ReceiptCosmosServiceImpl();
+        this.helpdeskService = new HelpdeskServiceImpl();
     }
 
-    RecoverNotNotifiedReceipt(ReceiptCosmosService receiptCosmosService) {
+    RecoverNotNotifiedReceipt(ReceiptCosmosService receiptCosmosService, HelpdeskService helpdeskService) {
         this.receiptCosmosService = receiptCosmosService;
+        this.helpdeskService = helpdeskService;
     }
 
     /**
@@ -61,50 +73,29 @@ public class RecoverNotNotifiedReceipt {
                     containerName = "receipts",
                     connection = "COSMOS_RECEIPTS_CONN_STRING")
             OutputBinding<List<Receipt>> documentReceipts,
-            final ExecutionContext context) {
+            final ExecutionContext context
+    ) {
         logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
-
-        if (eventId == null || eventId.isBlank()) {
-            return request
-                    .createResponseBuilder(HttpStatus.BAD_REQUEST)
-                    .body(ProblemJson.builder()
-                            .title(HttpStatus.BAD_REQUEST.name())
-                            .detail("Please pass a valid biz-event id")
-                            .status(HttpStatus.BAD_REQUEST.value())
-                            .build())
-                    .build();
-        }
 
         Receipt receipt;
         try {
             receipt = this.receiptCosmosService.getReceipt(eventId);
         } catch (ReceiptNotFoundException e) {
-            String responseMsg = String.format("Unable to retrieve the receipt with eventId %s", eventId);
-            logger.error("[{}] {}", context.getFunctionName(), responseMsg, e);
-            return request
-                    .createResponseBuilder(HttpStatus.NOT_FOUND)
-                    .body(ProblemJson.builder()
-                            .title(HttpStatus.NOT_FOUND.name())
-                            .detail(responseMsg)
-                            .status(HttpStatus.NOT_FOUND.value())
-                            .build())
-                    .build();
+            String errMsg = String.format("Unable to retrieve the receipt with eventId %s", eventId);
+            logger.error("[{}] {}", context.getFunctionName(), errMsg, e);
+            return buildErrorResponse(request, HttpStatus.NOT_FOUND, errMsg);
         }
 
-        if (receipt != null && !receipt.getStatus().equals(ReceiptStatusType.IO_ERROR_TO_NOTIFY) && !receipt.getStatus().equals(ReceiptStatusType.GENERATED)) {
-            String responseMsg = String.format("The requested receipt with eventId %s is not in the expected status",
+        if (!receipt.getStatus().equals(ReceiptStatusType.IO_ERROR_TO_NOTIFY)
+                && !receipt.getStatus().equals(ReceiptStatusType.GENERATED)
+        ) {
+            String errMsg = String.format("The requested receipt with eventId %s is not in the expected status",
                     receipt.getEventId());
-            return request
-                    .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ProblemJson.builder()
-                            .title(HttpStatus.INTERNAL_SERVER_ERROR.name())
-                            .detail(responseMsg)
-                            .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                            .build())
-                    .build();
+            logger.error(errMsg);
+            return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, errMsg);
         }
 
-        Receipt restoredReceipt = restoreReceipt(receipt);
+        Receipt restoredReceipt = this.helpdeskService.recoverNoNotifiedReceipt(receipt);
 
         documentReceipts.setValue(Collections.singletonList(restoredReceipt));
         String responseMsg = String.format("Receipt with id %s and eventId %s restored in status %s with success",

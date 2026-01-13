@@ -12,6 +12,8 @@ import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.datastore.model.MassiveCartRecoverResult;
 import it.gov.pagopa.receipt.pdf.datastore.model.MassiveRecoverResult;
 
+import java.util.List;
+
 /**
  * Service that hold receipt helpdesk logic
  */
@@ -30,7 +32,7 @@ public interface HelpdeskService {
      * @throws BizEventBadRequestException          in case the biz event is invalid for receipt generation
      * @throws BizEventNotFoundException            in case no biz event is found for the specified receipt
      */
-    Receipt recoverReceipt(Receipt existingReceipt)
+    Receipt recoverFailedReceipt(Receipt existingReceipt)
             throws BizEventUnprocessableEntityException, BizEventBadRequestException, BizEventNotFoundException;
 
     /**
@@ -47,11 +49,20 @@ public interface HelpdeskService {
      * @throws PDVTokenizerException                in case an error occur while tokenizing PII data
      * @throws JsonProcessingException              in case an error occur while parsing tokenizer response
      */
-    CartForReceipt recoverCart(CartForReceipt existingCart)
+    CartForReceipt recoverFailedCart(CartForReceipt existingCart)
             throws BizEventUnprocessableEntityException, BizEventBadRequestException, PDVTokenizerException, JsonProcessingException;
 
     /**
-     * Massive recover all receipt with the specified status {@link ReceiptStatusType}
+     * Reset notification info and set status to {@link ReceiptStatusType#GENERATED} in order to trigger notification
+     * process
+     *
+     * @param receipt the receipt to reset
+     * @return the updated receipt
+     */
+    Receipt recoverNoNotifiedReceipt(Receipt receipt);
+
+    /**
+     * Massive recover all failed receipt with the specified status {@link ReceiptStatusType}
      *
      * @param status the status to be recovered
      * @return the recover result
@@ -59,10 +70,18 @@ public interface HelpdeskService {
     MassiveRecoverResult massiveRecoverByStatus(ReceiptStatusType status);
 
     /**
-     * Massive recover all cart with the specified status {@link CartStatusType}
+     * Massive recover all failed cart with the specified status {@link CartStatusType}
      *
      * @param status the status to be recovered
      * @return the recover result
      */
     MassiveCartRecoverResult massiveRecoverByStatus(CartStatusType status);
+
+    /**
+     * Massive recover all not notified receipt with the specified status {@link ReceiptStatusType}
+     *
+     * @param status the status to be recovered
+     * @return the recover result
+     */
+    List<Receipt> massiveRecoverNoNotified(ReceiptStatusType status);
 }
