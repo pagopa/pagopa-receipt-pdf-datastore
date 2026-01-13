@@ -5,14 +5,16 @@ import com.azure.cosmos.implementation.PreconditionFailedException;
 import com.azure.cosmos.models.CosmosItemRequestOptions;
 import com.azure.cosmos.models.CosmosItemResponse;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
-import com.azure.cosmos.util.CosmosPagedIterable;
+import com.azure.cosmos.models.FeedResponse;
 import it.gov.pagopa.receipt.pdf.datastore.client.CartReceiptsCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.CartReceiptError;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
+import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.CartConcurrentUpdateException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
 
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
 public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
@@ -23,6 +25,9 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
     private final String cartReceiptsMessageErrorsContainerName = System.getenv("CART_RECEIPTS_MESSAGE_ERRORS_CONTAINER_NAME");
 
     private static final String DOCUMENT_NOT_FOUND_ERR_MSG = "Document not found in the defined container";
+
+    private final String millisDiff = System.getenv("MAX_DATE_DIFF_MILLIS");
+    private final String numDaysRecoverFailed = System.getenv().getOrDefault("RECOVER_FAILED_MASSIVE_MAX_DAYS", "0");
 
     private final CosmosClient cosmosClient;
 
@@ -112,6 +117,30 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
                 .orElseThrow(() -> new CartNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG));
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Iterable<FeedResponse<CartForReceipt>> getFailedCartReceiptDocuments(String continuationToken, Integer pageSize) {
+        String query = "SELECT * FROM c WHERE c.status = 'FAILED'";
+        return executePagedQuery(cartForReceiptContainerName, query, continuationToken, pageSize);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Iterable<FeedResponse<CartForReceipt>> getInsertedCartReceiptDocuments(String continuationToken, Integer pageSize) {
+        OffsetDateTime currentDateTime = OffsetDateTime.now();
+        long now = currentDateTime.toInstant().toEpochMilli();
+        long daysAgo = currentDateTime.truncatedTo(ChronoUnit.DAYS).minusDays(Long.parseLong(numDaysRecoverFailed)).toInstant().toEpochMilli();
+
+        String query = String.format(
+                "SELECT * FROM c WHERE (c.status = '%s' AND c.inserted_at >= %s AND ( %s - c.inserted_at) >= %s)",
+                ReceiptStatusType.INSERTED, daysAgo, now, millisDiff);
+
+        return executePagedQuery(cartForReceiptContainerName, query, continuationToken, pageSize);
+    }
 
     /**
      * PRIVATE METHODS
@@ -128,5 +157,17 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
                 .queryItems(query, new CosmosQueryRequestOptions(), classType)
                 .stream()
                 .findFirst();
+    }
+
+    private Iterable<FeedResponse<CartForReceipt>> executePagedQuery(
+            String containerName,
+            String query,
+            String continuationToken,
+            Integer pageSize
+    ) {
+        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
+        return cosmosDatabase.getContainer(containerName)
+                .queryItems(query, new CosmosQueryRequestOptions(), CartForReceipt.class)
+                .iterableByPage(continuationToken, pageSize);
     }
 }

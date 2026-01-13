@@ -3,6 +3,7 @@ package it.gov.pagopa.receipt.pdf.datastore.service;
 import com.azure.cosmos.models.FeedResponse;
 import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.IOMessage;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReceiptError;
@@ -63,7 +64,20 @@ public interface ReceiptCosmosService {
     );
 
     /**
+     * Retrieve the failed cart receipt with the provided {@link CartStatusType} status
      *
+     * @param continuationToken Paged query continuation token
+     * @param pageSize          the page size
+     * @param statusType        the status of the receipts
+     * @return receipt documents
+     */
+    Iterable<FeedResponse<CartForReceipt>> getFailedCartReceiptByStatus(
+            String continuationToken,
+            Integer pageSize,
+            CartStatusType statusType
+    );
+
+    /**
      * @param messageId
      * @return
      */

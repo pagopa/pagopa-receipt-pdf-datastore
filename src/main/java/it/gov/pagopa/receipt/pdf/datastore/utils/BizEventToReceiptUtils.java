@@ -21,6 +21,7 @@ import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.model.MassiveRecoverResult;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.datastore.service.ReceiptCosmosService;
+import lombok.Builder;
 import org.slf4j.Logger;
 
 import java.math.BigDecimal;
@@ -136,27 +137,29 @@ public class BizEventToReceiptUtils {
      * in the receipt generation
      *
      * @param bizEvent BizEvent to validate
-     * @param context  Function context
-     * @param logger   Function logger
      * @return boolean to determine if the proposed event is invalid
      */
-    public static boolean isBizEventInvalid(BizEvent bizEvent, ExecutionContext context, Logger logger) {
+    public static BizEventValidityCheck isBizEventInvalid(BizEvent bizEvent) {
 
         if (bizEvent == null) {
-            logger.debug("[{}] event is null", context.getFunctionName());
-            return true;
+            return BizEventValidityCheck.builder()
+                    .invalid(true)
+                    .error("Biz event is null")
+                    .build();
         }
 
         if (!BizEventStatusType.DONE.equals(bizEvent.getEventStatus())) {
-            logger.debug("[{}] event with id {} discarded because in status {}",
-                    context.getFunctionName(), bizEvent.getId(), bizEvent.getEventStatus());
-            return true;
+            return BizEventValidityCheck.builder()
+                    .invalid(true)
+                    .error(String.format("Biz event is in invalid status %s", bizEvent.getEventStatus()))
+                    .build();
         }
 
         if (!hasValidFiscalCode(bizEvent)) {
-            logger.debug("[{}] event with id {} discarded because debtor's and payer's identifiers are missing or not valid",
-                    context.getFunctionName(), bizEvent.getId());
-            return true;
+            return BizEventValidityCheck.builder()
+                    .invalid(true)
+                    .error("Biz event is in invalid because debtor's and payer's identifiers are missing or not valid")
+                    .build();
         }
 
         if (Boolean.TRUE.equals(ECOMMERCE_FILTER_ENABLED)
@@ -164,19 +167,24 @@ public class BizEventToReceiptUtils {
                 && bizEvent.getTransactionDetails().getInfo() != null
                 && ECOMMERCE.equals(bizEvent.getTransactionDetails().getInfo().getClientId())
         ) {
-            logger.debug("[{}] event with id {} discarded because from e-commerce {}",
-                    context.getFunctionName(), bizEvent.getId(), bizEvent.getTransactionDetails().getInfo().getClientId());
-            return true;
+            return BizEventValidityCheck.builder()
+                    .invalid(true)
+                    .error("Biz event is in invalid because it is from e-commerce and e-commerce filter is enabled")
+                    .build();
         }
 
         if (!isCartMod1(bizEvent)) {
-            logger.debug("[{}] event with id {} contain either an invalid amount value," +
-                            " or it is a legacy cart element",
-                    context.getFunctionName(), bizEvent.getId());
-            return true;
+            return BizEventValidityCheck.builder()
+                    .invalid(true)
+                    .error("Biz event is in invalid because contain either an invalid amount value or it is a legacy cart element")
+                    .build();
         }
 
-        return false;
+        return new BizEventValidityCheck(false, null);
+    }
+
+    @Builder
+    public record BizEventValidityCheck(boolean invalid, String error) {
     }
 
     private static boolean hasValidTotalNotice(BizEvent bizEvent, ExecutionContext context, Logger logger) {
@@ -226,7 +234,7 @@ public class BizEventToReceiptUtils {
         return isValidDebtor || isValidPayer;
     }
 
-    public static Integer getTotalNotice(BizEvent bizEvent, ExecutionContext context, Logger logger) {
+    public static Integer getTotalNotice(BizEvent bizEvent, Logger logger) {
         if (bizEvent.getPaymentInfo() != null) {
             String totalNotice = bizEvent.getPaymentInfo().getTotalNotice();
 
@@ -236,8 +244,8 @@ public class BizEventToReceiptUtils {
                 try {
                     intTotalNotice = Integer.parseInt(totalNotice);
                 } catch (NumberFormatException e) {
-                    logger.error("[{}] event with id {} discarded because has an invalid total notice value: {}",
-                            context.getFunctionName(), bizEvent.getId(),
+                    logger.error("Event with id {} discarded because has an invalid total notice value: {}",
+                            bizEvent.getId(),
                             totalNotice,
                             e);
                     throw e;

@@ -6,6 +6,7 @@ import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.CartReceiptsCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.IOMessage;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReceiptError;
@@ -105,6 +106,28 @@ public class ReceiptCosmosServiceImpl implements ReceiptCosmosService {
         }
         if (statusType.equals(ReceiptStatusType.INSERTED)) {
             return this.receiptCosmosClient.getInsertedReceiptDocuments(continuationToken, pageSize);
+        }
+        String errMsg = String.format("Unexpected status for retrieving failed receipt: %s", statusType);
+        throw new IllegalStateException(errMsg);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Iterable<FeedResponse<CartForReceipt>> getFailedCartReceiptByStatus(
+            String continuationToken,
+            Integer pageSize,
+            CartStatusType statusType
+    ) {
+        if (statusType == null) {
+            throw new IllegalArgumentException("at least one status must be specified");
+        }
+        if (statusType.equals(CartStatusType.FAILED) || statusType.equals(CartStatusType.NOT_QUEUE_SENT)) {
+            return this.cartReceiptsCosmosClient.getFailedCartReceiptDocuments(continuationToken, pageSize);
+        }
+        if (statusType.equals(CartStatusType.INSERTED)) {
+            return this.cartReceiptsCosmosClient.getInsertedCartReceiptDocuments(continuationToken, pageSize);
         }
         String errMsg = String.format("Unexpected status for retrieving failed receipt: %s", statusType);
         throw new IllegalStateException(errMsg);

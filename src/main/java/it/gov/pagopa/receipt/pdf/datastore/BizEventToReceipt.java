@@ -14,6 +14,7 @@ import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.BizEventToReceiptServiceImpl;
+import it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,7 +113,7 @@ public class BizEventToReceipt {
               - legacy cart
               - already processed
              */
-            if (isBizEventInvalid(bizEvent, context, logger) || isBizEventAlreadyProcessed(context, bizEvent)) {
+            if (isInvalid(bizEvent) || isBizEventAlreadyProcessed(context, bizEvent)) {
                 discarder++;
                 continue;
             }
@@ -120,7 +121,7 @@ public class BizEventToReceipt {
             logger.debug("[{}] function called at {} for event with id {} and status {}",
                     context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
 
-            Integer totalNotice = getTotalNotice(bizEvent, context, logger);
+            Integer totalNotice = getTotalNotice(bizEvent, logger);
             if (totalNotice == 1) {
 
                 Receipt receipt = createReceipt(bizEvent, this.bizEventToReceiptService, logger);
@@ -190,8 +191,16 @@ public class BizEventToReceipt {
         }
     }
 
+    private boolean isInvalid(BizEvent bizEvent) {
+        BizEventToReceiptUtils.BizEventValidityCheck bizEventValidityCheck = isBizEventInvalid(bizEvent);
+        if (bizEventValidityCheck.invalid()) {
+            logger.debug(bizEventValidityCheck.error());
+        }
+        return bizEventValidityCheck.invalid();
+    }
+
     private boolean isBizEventAlreadyProcessed(ExecutionContext context, BizEvent bizEvent) {
-        Integer totalNotice = getTotalNotice(bizEvent, context, logger);
+        Integer totalNotice = getTotalNotice(bizEvent, logger);
         if (totalNotice == 1) {
             try {
                 Receipt receipt = this.bizEventToReceiptService.getReceipt(bizEvent.getId());
