@@ -321,19 +321,4 @@ public class BizEventToReceiptUtils {
 
         return originMatches || clientIdMatches;
     }
-
-    public static HttpResponseMessage buildErrorResponse(
-            HttpRequestMessage<Optional<String>> request,
-            HttpStatus httpStatus,
-            String errMsg
-    ) {
-        return request
-                .createResponseBuilder(httpStatus)
-                .body(ProblemJson.builder()
-                        .title(httpStatus.name())
-                        .detail(errMsg)
-                        .status(httpStatus.value())
-                        .build())
-                .build();
-    }
 }

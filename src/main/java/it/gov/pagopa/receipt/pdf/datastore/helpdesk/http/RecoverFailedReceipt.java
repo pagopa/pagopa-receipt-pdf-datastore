@@ -27,8 +27,8 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.buildErrorResponse;
 import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.isReceiptStatusValid;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.HelpdeskUtils.buildErrorResponse;
 
 /**
  * Azure Functions with Azure Http trigger.

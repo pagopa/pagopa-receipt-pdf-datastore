@@ -24,6 +24,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import static it.gov.pagopa.receipt.pdf.datastore.utils.HelpdeskUtils.buildErrorResponse;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.HelpdeskUtils.validateReceiptStatusParam;
+
 
 /**
  * Azure Functions with Azure Http trigger.
@@ -77,16 +80,15 @@ public class RecoverFailedReceiptMassive {
         String statusParam = request.getQueryParameters().get("status");
         ReceiptStatusType status;
         try {
-            status = validateStatusParam(statusParam);
+            status = validateReceiptStatusParam(statusParam);
         } catch (InvalidParameterException e) {
-            return request
-                    .createResponseBuilder(HttpStatus.BAD_REQUEST)
-                    .body(ProblemJson.builder()
-                            .title(HttpStatus.BAD_REQUEST.name())
-                            .detail(e.getMessage())
-                            .status(HttpStatus.BAD_REQUEST.value())
-                            .build())
-                    .build();
+            return buildErrorResponse(request, HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+
+        if (!status.isAFailedDatastoreStatus()) {
+            String message = String.format("The provided status %s is not among the processable" +
+                    "statuses (INSERTED, NOT_QUEUE_SENT, FAILED).", status);
+            return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, message);
         }
 
         MassiveRecoverResult recoverResult = this.helpdeskService.massiveRecoverByStatus(status);

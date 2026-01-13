@@ -22,7 +22,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.buildErrorResponse;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.HelpdeskUtils.buildErrorResponse;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.HelpdeskUtils.validateReceiptStatusParam;
 
 
 /**
@@ -74,9 +75,15 @@ public class RecoverNotNotifiedReceiptMassive {
         String statusParam = request.getQueryParameters().get("status");
         ReceiptStatusType status;
         try {
-            status = validateStatusParam(statusParam);
+            status = validateReceiptStatusParam(statusParam);
         } catch (InvalidParameterException e) {
             return buildErrorResponse(request, HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+
+        if (!status.isANotificationFailedStatus()) {
+            String message = String.format("The provided status %s is not among the processable" +
+                    "statuses (GENERATED, IO_ERROR_TO_NOTIFY).", status);
+            return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, message);
         }
 
         List<Receipt> receiptList = this.helpdeskService.massiveRecoverNoNotified(status);
@@ -87,25 +94,5 @@ public class RecoverNotNotifiedReceiptMassive {
         documentReceipts.setValue(receiptList);
         String msg = String.format("Recovered %s receipt with success", receiptList.size());
         return request.createResponseBuilder(HttpStatus.OK).body(msg).build();
-    }
-
-    private ReceiptStatusType validateStatusParam(String statusParam) throws InvalidParameterException {
-        if (statusParam == null) {
-            throw new InvalidParameterException("Please pass a status to recover");
-        }
-
-        ReceiptStatusType status;
-        try {
-            status = ReceiptStatusType.valueOf(statusParam);
-        } catch (IllegalArgumentException e) {
-            throw new InvalidParameterException("Please pass a valid status to recover", e);
-        }
-
-        if (!status.isANotificationFailedStatus()) {
-            String message = String.format("The provided status %s is not among the processable" +
-                    "statuses (GENERATED, IO_ERROR_TO_NOTIFY).", status);
-            throw new InvalidParameterException(message);
-        }
-        return status;
     }
 }

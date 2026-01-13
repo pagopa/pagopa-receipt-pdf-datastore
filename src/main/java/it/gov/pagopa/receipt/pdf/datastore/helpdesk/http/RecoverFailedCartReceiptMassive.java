@@ -24,6 +24,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import static it.gov.pagopa.receipt.pdf.datastore.utils.HelpdeskUtils.buildErrorResponse;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.HelpdeskUtils.validateCartStatusParam;
+
 
 /**
  * Azure Functions with Azure Http trigger.
@@ -78,16 +81,15 @@ public class RecoverFailedCartReceiptMassive {
         String statusParam = request.getQueryParameters().get("status");
         CartStatusType status;
         try {
-            status = validateStatusParam(statusParam);
+            status = validateCartStatusParam(statusParam);
         } catch (InvalidParameterException e) {
-            return request
-                    .createResponseBuilder(HttpStatus.BAD_REQUEST)
-                    .body(ProblemJson.builder()
-                            .title(HttpStatus.BAD_REQUEST.name())
-                            .detail(e.getMessage())
-                            .status(HttpStatus.BAD_REQUEST.value())
-                            .build())
-                    .build();
+            return buildErrorResponse(request, HttpStatus.BAD_REQUEST, e.getMessage());
+        }
+
+        if (!status.isAFailedDatastoreStatus()) {
+            String message = String.format("The provided status %s is not among the processable" +
+                    "statuses (INSERTED, NOT_QUEUE_SENT, FAILED).", status);
+            return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, message);
         }
 
         MassiveCartRecoverResult recoverResult = this.helpdeskService.massiveRecoverByStatus(status);
@@ -112,25 +114,5 @@ public class RecoverFailedCartReceiptMassive {
         return request.createResponseBuilder(HttpStatus.OK)
                 .body(responseMsg)
                 .build();
-    }
-
-    private CartStatusType validateStatusParam(String statusParam) throws InvalidParameterException {
-        if (statusParam == null) {
-            throw new InvalidParameterException("Please pass a status to recover");
-        }
-
-        CartStatusType status;
-        try {
-            status = CartStatusType.valueOf(statusParam);
-        } catch (IllegalArgumentException e) {
-            throw new InvalidParameterException("Please pass a valid status to recover", e);
-        }
-
-        if (!status.isAFailedDatastoreStatus()) {
-            String message = String.format("The provided status %s is not among the processable" +
-                    "statuses (INSERTED, NOT_QUEUE_SENT, FAILED).", status);
-            throw new InvalidParameterException(message);
-        }
-        return status;
     }
 }

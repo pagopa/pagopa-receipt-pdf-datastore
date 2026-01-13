@@ -42,9 +42,11 @@ public class RecoverFailedReceiptScheduled {
      * This function will be invoked periodically according to the specified schedule.
      * <p>
      * It recovers all the receipts with the following status:
-     * - ({@link ReceiptStatusType#INSERTED})
-     * - ({@link ReceiptStatusType#FAILED})
-     * - ({@link ReceiptStatusType#NOT_QUEUE_SENT})
+     * <ul>
+     *     <li>{@link ReceiptStatusType#INSERTED}</li>
+     *     <li>{@link ReceiptStatusType#FAILED}</li>
+     *     <li>{@link ReceiptStatusType#NOT_QUEUE_SENT}</li>
+     * </ul>
      * <p>
      * It creates the receipts if not exist and send on queue the event in order to proceed with the receipt generation.
      */
