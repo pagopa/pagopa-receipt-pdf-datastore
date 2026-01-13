@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.buildErrorResponse;
 import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.isCartStatusValid;
 
 /**
@@ -137,30 +138,15 @@ public class RecoverFailedCartReceipt {
             return buildErrorResponse(request, HttpStatus.INTERNAL_SERVER_ERROR, errMsg);
         }
 
-        String responseMsg = String.format("Receipt with eventId %s recovered", cartId);
+        String responseMsg = String.format("Cart receipt with id %s recovered", cartId);
         return request.createResponseBuilder(HttpStatus.OK)
                 .body(responseMsg)
                 .build();
     }
 
-    public boolean isCartStatusNotProcessable(CartStatusType status) {
+    private boolean isCartStatusNotProcessable(CartStatusType status) {
         return !CartStatusType.INSERTED.equals(status)
                 && !CartStatusType.NOT_QUEUE_SENT.equals(status)
                 && !CartStatusType.FAILED.equals(status);
-    }
-
-    private HttpResponseMessage buildErrorResponse(
-            HttpRequestMessage<Optional<String>> request,
-            HttpStatus httpStatus,
-            String errMsg
-    ) {
-        return request
-                .createResponseBuilder(httpStatus)
-                .body(ProblemJson.builder()
-                        .title(httpStatus.name())
-                        .detail(errMsg)
-                        .status(httpStatus.value())
-                        .build())
-                .build();
     }
 }

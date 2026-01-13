@@ -10,7 +10,7 @@ import java.util.List;
 @Builder
 public class MassiveRecoverResult {
 
-    private List<Receipt> receiptList;
+    private List<Receipt> failedReceiptList;
     private int errorCounter;
     private int successCounter;
 }

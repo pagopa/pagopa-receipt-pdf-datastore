@@ -1,30 +1,28 @@
 package it.gov.pagopa.receipt.pdf.datastore.helpdesk.http;
 
-import com.microsoft.azure.functions.*;
+import com.microsoft.azure.functions.ExecutionContext;
+import com.microsoft.azure.functions.HttpMethod;
+import com.microsoft.azure.functions.HttpRequestMessage;
+import com.microsoft.azure.functions.HttpResponseMessage;
+import com.microsoft.azure.functions.HttpStatus;
+import com.microsoft.azure.functions.OutputBinding;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.CosmosDBOutput;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
-
-import it.gov.pagopa.receipt.pdf.datastore.client.BizEventCosmosClient;
-import it.gov.pagopa.receipt.pdf.datastore.client.impl.BizEventCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.exception.InvalidParameterException;
 import it.gov.pagopa.receipt.pdf.datastore.model.MassiveRecoverResult;
 import it.gov.pagopa.receipt.pdf.datastore.model.ProblemJson;
-import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
-import it.gov.pagopa.receipt.pdf.datastore.service.ReceiptCosmosService;
-import it.gov.pagopa.receipt.pdf.datastore.service.impl.BizEventToReceiptServiceImpl;
-import it.gov.pagopa.receipt.pdf.datastore.service.impl.ReceiptCosmosServiceImpl;
+import it.gov.pagopa.receipt.pdf.datastore.service.HelpdeskService;
+import it.gov.pagopa.receipt.pdf.datastore.service.impl.HelpdeskServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Optional;
-
-import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.massiveRecoverByStatus;
 
 
 /**
@@ -34,31 +32,25 @@ public class RecoverFailedReceiptMassive {
 
     private final Logger logger = LoggerFactory.getLogger(RecoverFailedReceiptMassive.class);
 
-    private final BizEventToReceiptService bizEventToReceiptService;
-    private final BizEventCosmosClient bizEventCosmosClient;
-    private final ReceiptCosmosService receiptCosmosService;
+    private final HelpdeskService helpdeskService;
 
     public RecoverFailedReceiptMassive() {
-        this.bizEventToReceiptService = new BizEventToReceiptServiceImpl();
-        this.receiptCosmosService = new ReceiptCosmosServiceImpl();
-        this.bizEventCosmosClient = BizEventCosmosClientImpl.getInstance();
+        this.helpdeskService = new HelpdeskServiceImpl();
     }
 
-    RecoverFailedReceiptMassive(BizEventToReceiptService bizEventToReceiptService,
-                                BizEventCosmosClient bizEventCosmosClient,
-                                ReceiptCosmosService receiptCosmosService) {
-        this.bizEventToReceiptService = bizEventToReceiptService;
-        this.bizEventCosmosClient = bizEventCosmosClient;
-        this.receiptCosmosService = receiptCosmosService;
+    RecoverFailedReceiptMassive(HelpdeskService helpdeskService) {
+        this.helpdeskService = helpdeskService;
     }
 
     /**
      * This function will be invoked when an Http Trigger occurs.
      * <p>
      * It recovers all the receipts with the specified status that has to be one of:
-     * - ({@link ReceiptStatusType#INSERTED})
-     * - ({@link ReceiptStatusType#FAILED})
-     * - ({@link ReceiptStatusType#NOT_QUEUE_SENT})
+     * <ul>
+     *     <li>{@link ReceiptStatusType#INSERTED}</li>
+     *     <li>{@link ReceiptStatusType#FAILED}</li>
+     *     <li>{@link ReceiptStatusType#NOT_QUEUE_SENT}</li>
+     * </ul>
      * <p>
      * It creates the receipts if not exist and send on queue the event in order to proceed with the receipt generation.
      *
@@ -77,56 +69,34 @@ public class RecoverFailedReceiptMassive {
                     containerName = "receipts",
                     connection = "COSMOS_RECEIPTS_CONN_STRING")
             OutputBinding<List<Receipt>> documentdb,
-            final ExecutionContext context) {
+            final ExecutionContext context
+    ) {
         logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
 
         // Get named parameter
-        String status = request.getQueryParameters().get("status");
-        if (status == null) {
+        String statusParam = request.getQueryParameters().get("status");
+        ReceiptStatusType status;
+        try {
+            status = validateStatusParam(statusParam);
+        } catch (InvalidParameterException e) {
             return request
                     .createResponseBuilder(HttpStatus.BAD_REQUEST)
                     .body(ProblemJson.builder()
                             .title(HttpStatus.BAD_REQUEST.name())
-                            .detail("Please pass a status to recover")
-                            .status(HttpStatus.BAD_REQUEST.value())
-                            .build())
-                    .build();
-        }
-
-        ReceiptStatusType statusType;
-        try {
-            statusType = ReceiptStatusType.valueOf(status);
-        } catch (IllegalArgumentException e) {
-            return request
-                    .createResponseBuilder(HttpStatus.BAD_REQUEST)
-                    .body(ProblemJson.builder()
-                            .title(HttpStatus.BAD_REQUEST.name())
-                            .detail("Please pass a valid status to recover")
-                            .status(HttpStatus.BAD_REQUEST.value())
-                            .build())
-                    .build();
-        }
-
-        MassiveRecoverResult recoverResult;
-        try {
-            recoverResult = massiveRecoverByStatus(
-                    context, bizEventToReceiptService, bizEventCosmosClient, receiptCosmosService, logger, statusType);
-        } catch (NoSuchElementException e) {
-            logger.error("[{}] Unexpected error during recover of failed receipt", context.getFunctionName(), e);
-            return request
-                    .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ProblemJson.builder()
-                            .title(HttpStatus.INTERNAL_SERVER_ERROR.name())
                             .detail(e.getMessage())
-                            .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                            .status(HttpStatus.BAD_REQUEST.value())
                             .build())
                     .build();
         }
+
+        MassiveRecoverResult recoverResult = this.helpdeskService.massiveRecoverByStatus(status);
 
         int successCounter = recoverResult.getSuccessCounter();
         int errorCounter = recoverResult.getErrorCounter();
 
         if (errorCounter > 0) {
+            documentdb.setValue(recoverResult.getFailedReceiptList());
+
             String msg = String.format("Recovered %s receipts but %s encountered an error.", successCounter, errorCounter);
             return request
                     .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -141,5 +111,25 @@ public class RecoverFailedReceiptMassive {
         return request.createResponseBuilder(HttpStatus.OK)
                 .body(responseMsg)
                 .build();
+    }
+
+    private ReceiptStatusType validateStatusParam(String statusParam) throws InvalidParameterException {
+        if (statusParam == null) {
+            throw new InvalidParameterException("Please pass a status to recover");
+        }
+
+        ReceiptStatusType status;
+        try {
+            status = ReceiptStatusType.valueOf(statusParam);
+        } catch (IllegalArgumentException e) {
+            throw new InvalidParameterException("Please pass a valid status to recover", e);
+        }
+
+        if (!status.isAFailedDatastoreStatus()) {
+            String message = String.format("The provided status %s is not among the processable" +
+                    "statuses (INSERTED, NOT_QUEUE_SENT, FAILED).", status);
+            throw new InvalidParameterException(message);
+        }
+        return status;
     }
 }

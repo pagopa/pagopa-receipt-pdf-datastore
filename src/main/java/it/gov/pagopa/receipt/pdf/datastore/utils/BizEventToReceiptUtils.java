@@ -1,9 +1,8 @@
 package it.gov.pagopa.receipt.pdf.datastore.utils;
 
-import com.azure.cosmos.models.FeedResponse;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.microsoft.azure.functions.ExecutionContext;
-import it.gov.pagopa.receipt.pdf.datastore.client.BizEventCosmosClient;
+import com.microsoft.azure.functions.HttpRequestMessage;
+import com.microsoft.azure.functions.HttpResponseMessage;
+import com.microsoft.azure.functions.HttpStatus;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
@@ -14,20 +13,20 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.CartItem;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
-import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventBadRequestException;
-import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventNotFoundException;
-import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
-import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
-import it.gov.pagopa.receipt.pdf.datastore.model.MassiveRecoverResult;
+import it.gov.pagopa.receipt.pdf.datastore.model.ProblemJson;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
-import it.gov.pagopa.receipt.pdf.datastore.service.ReceiptCosmosService;
 import lombok.Builder;
 import org.slf4j.Logger;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.NumberFormat;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -44,51 +43,6 @@ public class BizEventToReceiptUtils {
 
 
     private BizEventToReceiptUtils() {
-    }
-
-    public static Receipt retrieveBizAndSendReceipt(
-            String eventId,
-            ExecutionContext context,
-            BizEventToReceiptService bizEventToReceiptService,
-            BizEventCosmosClient bizEventCosmosClient,
-            ReceiptCosmosService receiptCosmosService,
-            Receipt receipt,
-            Logger logger
-    ) throws BizEventNotFoundException, BizEventBadRequestException, ReceiptNotFoundException, PDVTokenizerException, JsonProcessingException {
-
-        BizEvent bizEvent = bizEventCosmosClient.getBizEventDocument(eventId);
-
-        if (isBizEventInvalid(bizEvent, context, logger)) {
-            throw new BizEventBadRequestException("BizEvent not valid");
-        }
-
-        if (!hasValidTotalNotice(bizEvent, context, logger)) {
-            throw new BizEventBadRequestException("BizEvent has not a valid total notice");
-        }
-
-        if (receipt == null) {
-            receipt = receiptCosmosService.getReceipt(eventId);
-        }
-
-        // check that the receipt is in one of the 3 manageable states: FAILED, INSERTED, and NOT_QUEUE_SENT -> if not, error
-        if (receipt != null && (
-                receipt.getStatus().equals(ReceiptStatusType.FAILED) ||
-                receipt.getStatus().equals(ReceiptStatusType.INSERTED) ||
-                receipt.getStatus().equals(ReceiptStatusType.NOT_QUEUE_SENT)
-        )) {
-            // recreate the receipt from the biz
-            receipt = createReceipt(bizEvent, bizEventToReceiptService, logger);
-            if (isReceiptStatusValid(receipt)) {
-                bizEventToReceiptService.handleSaveReceipt(receipt);
-
-                if (isReceiptStatusValid(receipt)) {
-                    bizEventToReceiptService.handleSendMessageToQueue(Collections.singletonList(bizEvent), receipt);
-
-                    return receipt;
-                }
-            }
-        }
-        return receipt;
     }
 
     /**
@@ -185,35 +139,6 @@ public class BizEventToReceiptUtils {
 
     @Builder
     public record BizEventValidityCheck(boolean invalid, String error) {
-    }
-
-    private static boolean hasValidTotalNotice(BizEvent bizEvent, ExecutionContext context, Logger logger) {
-        if (bizEvent.getPaymentInfo() != null) {
-            String totalNotice = bizEvent.getPaymentInfo().getTotalNotice();
-
-            if (totalNotice != null) {
-                int intTotalNotice;
-
-                try {
-                    intTotalNotice = Integer.parseInt(totalNotice);
-
-                } catch (NumberFormatException e) {
-                    logger.error("[{}] event with id {} discarded because has an invalid total notice value: {}",
-                            context.getFunctionName(), bizEvent.getId(),
-                            totalNotice,
-                            e);
-                    return false;
-                }
-
-                if (intTotalNotice > 1) {
-                    logger.error("[{}] event with id {} discarded because is part of a payment cart ({} total notice)",
-                            context.getFunctionName(), bizEvent.getId(),
-                            intTotalNotice);
-                    return false;
-                }
-            }
-        }
-        return true;
     }
 
     private static boolean hasValidFiscalCode(BizEvent bizEvent) {
@@ -344,7 +269,7 @@ public class BizEventToReceiptUtils {
     public static boolean isValidFiscalCode(String fiscalCode) {
         if (fiscalCode != null && !fiscalCode.isEmpty()) {
             Pattern patternCF = Pattern.compile("^[A-Z]{6}[0-9LMNPQRSTUV]{2}[ABCDEHLMPRST][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]$");
-            Pattern patternPIVA = Pattern.compile("/^[0-9]{11}$/");
+            Pattern patternPIVA = Pattern.compile("^[0-9]{11}$");
 
             return patternCF.matcher(fiscalCode).find() || patternPIVA.matcher(fiscalCode).find();
         }
@@ -397,45 +322,18 @@ public class BizEventToReceiptUtils {
         return originMatches || clientIdMatches;
     }
 
-    public static MassiveRecoverResult massiveRecoverByStatus(
-            ExecutionContext context,
-            BizEventToReceiptService bizEventToReceiptService,
-            BizEventCosmosClient bizEventCosmosClient,
-            ReceiptCosmosService receiptCosmosService,
-            Logger logger,
-            ReceiptStatusType statusType) {
-        List<Receipt> receiptList = new ArrayList<>();
-        int successCounter = 0;
-        int errorCounter = 0;
-        String continuationToken = null;
-        do {
-            Iterable<FeedResponse<Receipt>> feedResponseIterator =
-                    receiptCosmosService.getFailedReceiptByStatus(continuationToken, 100, statusType);
-
-            for (FeedResponse<Receipt> page : feedResponseIterator) {
-                for (Receipt receipt : page.getResults()) {
-                    try {
-                        Receipt restored = retrieveBizAndSendReceipt(receipt.getEventId(), context, bizEventToReceiptService,
-                                bizEventCosmosClient, receiptCosmosService, receipt, logger);
-                        if (isReceiptStatusValid(restored)) {
-                            receiptList.add(restored);
-                            successCounter++;
-                        } else {
-                            errorCounter++;
-                        }
-                    } catch (Exception e) {
-                        logger.error(e.getMessage(), e);
-                        errorCounter++;
-                    }
-                }
-                continuationToken = page.getContinuationToken();
-            }
-        } while (continuationToken != null);
-
-        return MassiveRecoverResult.builder()
-                .receiptList(receiptList)
-                .successCounter(successCounter)
-                .errorCounter(errorCounter)
+    public static HttpResponseMessage buildErrorResponse(
+            HttpRequestMessage<Optional<String>> request,
+            HttpStatus httpStatus,
+            String errMsg
+    ) {
+        return request
+                .createResponseBuilder(httpStatus)
+                .body(ProblemJson.builder()
+                        .title(httpStatus.name())
+                        .detail(errMsg)
+                        .status(httpStatus.value())
+                        .build())
                 .build();
     }
 }
