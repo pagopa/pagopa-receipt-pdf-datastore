@@ -62,6 +62,15 @@ public interface HelpdeskService {
     Receipt recoverNoNotifiedReceipt(Receipt receipt);
 
     /**
+     * Reset notification info and set status to {@link CartStatusType#GENERATED} in order to trigger notification
+     * process
+     *
+     * @param cart the cart to reset
+     * @return the updated cart
+     */
+    CartForReceipt recoverNoNotifiedCart(CartForReceipt cart);
+
+    /**
      * Massive recover all failed receipt with the specified status {@link ReceiptStatusType}
      *
      * @param status the status to be recovered
@@ -84,4 +93,12 @@ public interface HelpdeskService {
      * @return the recover result
      */
     List<Receipt> massiveRecoverNoNotified(ReceiptStatusType status);
+
+    /**
+     * Massive recover all not notified cart receipt with the specified status {@link CartStatusType}
+     *
+     * @param status the status to be recovered
+     * @return the recover result
+     */
+    List<CartForReceipt> massiveRecoverNoNotified(CartStatusType status);
 }

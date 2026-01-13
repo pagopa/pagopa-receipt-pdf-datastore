@@ -60,4 +60,22 @@ public interface CartReceiptsCosmosClient {
      * @return receipt documents
      */
     Iterable<FeedResponse<CartForReceipt>> getInsertedCartReceiptDocuments(String continuationToken, Integer pageSize);
+
+    /**
+     * Retrieve the not notified cart receipt documents with {@link CartStatusType#IO_ERROR_TO_NOTIFY}
+     *
+     * @param continuationToken Paged query continuation token
+     * @param pageSize the page size
+     * @return cart receipt documents
+     */
+    Iterable<FeedResponse<CartForReceipt>> getIOErrorToNotifyCartReceiptDocuments(String continuationToken, Integer pageSize);
+
+    /**
+     * Retrieve the not notified cart receipt documents with {@link CartStatusType#GENERATED}
+     *
+     * @param continuationToken Paged query continuation token
+     * @param pageSize the page size
+     * @return cart receipt documents
+     */
+    Iterable<FeedResponse<CartForReceipt>> getGeneratedCartReceiptDocuments(String continuationToken, Integer pageSize);
 }

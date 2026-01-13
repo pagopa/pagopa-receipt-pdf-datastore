@@ -50,6 +50,20 @@ public interface ReceiptCosmosService {
     );
 
     /**
+     * Retrieve the not notified cart receipt with the provided {@link CartStatusType} status
+     *
+     * @param continuationToken Paged query continuation token
+     * @param pageSize the page size
+     * @param statusType the status of the cart receipts
+     * @return cart receipt documents
+     */
+    Iterable<FeedResponse<CartForReceipt>> getNotNotifiedCartReceiptByStatus(
+            String continuationToken,
+            Integer pageSize,
+            CartStatusType statusType
+    );
+
+    /**
      * Retrieve the failed receipt with the provided {@link ReceiptStatusType} status
      *
      * @param continuationToken Paged query continuation token

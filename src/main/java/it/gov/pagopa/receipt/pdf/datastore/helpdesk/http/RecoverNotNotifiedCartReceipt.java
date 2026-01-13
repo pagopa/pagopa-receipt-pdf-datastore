@@ -11,9 +11,10 @@ import com.microsoft.azure.functions.annotation.BindingName;
 import com.microsoft.azure.functions.annotation.CosmosDBOutput;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
-import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
+import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.service.HelpdeskService;
 import it.gov.pagopa.receipt.pdf.datastore.service.ReceiptCosmosService;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.HelpdeskServiceImpl;
@@ -22,8 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 
 import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.buildErrorResponse;
@@ -31,19 +30,19 @@ import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.b
 /**
  * Azure Functions with HTTP Trigger.
  */
-public class RecoverNotNotifiedReceipt {
+public class RecoverNotNotifiedCartReceipt {
 
-    private final Logger logger = LoggerFactory.getLogger(RecoverNotNotifiedReceipt.class);
+    private final Logger logger = LoggerFactory.getLogger(RecoverNotNotifiedCartReceipt.class);
 
     private final ReceiptCosmosService receiptCosmosService;
     private final HelpdeskService helpdeskService;
 
-    public RecoverNotNotifiedReceipt() {
+    public RecoverNotNotifiedCartReceipt() {
         this.receiptCosmosService = new ReceiptCosmosServiceImpl();
         this.helpdeskService = new HelpdeskServiceImpl();
     }
 
-    RecoverNotNotifiedReceipt(ReceiptCosmosService receiptCosmosService, HelpdeskService helpdeskService) {
+    RecoverNotNotifiedCartReceipt(ReceiptCosmosService receiptCosmosService, HelpdeskService helpdeskService) {
         this.receiptCosmosService = receiptCosmosService;
         this.helpdeskService = helpdeskService;
     }
@@ -53,51 +52,51 @@ public class RecoverNotNotifiedReceipt {
      * <p>
      * It recovers the receipt with the specified biz event id
      * <p>
-     * It recovers the receipt with failed notification ({@link ReceiptStatusType#IO_ERROR_TO_NOTIFY}) or notification
-     * not triggered ({@link ReceiptStatusType#GENERATED} by clearing the errors and update the status to the
-     * previous step ({@link ReceiptStatusType#GENERATED}).
+     * It recovers the receipt with failed notification ({@link CartStatusType#IO_ERROR_TO_NOTIFY}) or notification
+     * not triggered ({@link CartStatusType#GENERATED} by clearing the errors and update the status to the
+     * previous step ({@link CartStatusType#GENERATED}).
      *
      * @return response with {@link HttpStatus#OK} if the operation succeeded
      */
-    @FunctionName("RecoverNotNotifiedReceipt")
+    @FunctionName("RecoverNotNotifiedCartReceipt")
     public HttpResponseMessage run(
-            @HttpTrigger(name = "RecoverNotNotifiedTrigger",
+            @HttpTrigger(name = "RecoverNotNotifiedCartTrigger",
                     methods = {HttpMethod.POST},
-                    route = "receipts/{event-id}/recover-not-notified",
+                    route = "cart-receipts/{cart-id}/recover-not-notified",
                     authLevel = AuthorizationLevel.ANONYMOUS)
             HttpRequestMessage<Optional<String>> request,
-            @BindingName("event-id") String eventId,
+            @BindingName("cart-id") String cartId,
             @CosmosDBOutput(
-                    name = "ReceiptDatastore",
+                    name = "CartReceiptDatastore",
                     databaseName = "db",
-                    containerName = "receipts",
+                    containerName = "cart-for-receipts",
                     connection = "COSMOS_RECEIPTS_CONN_STRING")
-            OutputBinding<Receipt> documentReceipts,
+            OutputBinding<CartForReceipt> documentdb,
             final ExecutionContext context
     ) {
         logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
 
-        Receipt receipt;
+        CartForReceipt cart;
         try {
-            receipt = this.receiptCosmosService.getReceipt(eventId);
-        } catch (ReceiptNotFoundException e) {
-            String errMsg = String.format("Unable to retrieve the receipt with eventId %s", eventId);
+            cart = this.receiptCosmosService.getCart(cartId);
+        } catch (CartNotFoundException e) {
+            String errMsg = String.format("Unable to retrieve the cart receipt with id %s", cartId);
             logger.error("[{}] {}", context.getFunctionName(), errMsg, e);
             return buildErrorResponse(request, HttpStatus.NOT_FOUND, errMsg);
         }
 
-        if (!receipt.getStatus().isANotificationFailedStatus()) {
-            String errMsg = String.format("The requested receipt with eventId %s is not in the expected status",
-                    receipt.getEventId());
+        if (!cart.getStatus().isANotificationFailedStatus()) {
+            String errMsg = String.format("The requested cart receipt with id %s is not in the expected status",
+                    cart.getEventId());
             logger.error(errMsg);
             return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, errMsg);
         }
 
-        Receipt restoredReceipt = this.helpdeskService.recoverNoNotifiedReceipt(receipt);
+        CartForReceipt restoredCart = this.helpdeskService.recoverNoNotifiedCart(cart);
 
-        documentReceipts.setValue(restoredReceipt);
-        String responseMsg = String.format("Receipt with id %s and eventId %s restored in status %s with success",
-                receipt.getId(), receipt.getEventId(), ReceiptStatusType.GENERATED);
+        documentdb.setValue(restoredCart);
+        String responseMsg = String.format("Cart receipt with id %s restored in status %s with success",
+                cart.getEventId(), ReceiptStatusType.GENERATED);
         return request.createResponseBuilder(HttpStatus.OK).body(responseMsg).build();
     }
 }

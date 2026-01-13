@@ -108,6 +108,22 @@ public class HelpdeskServiceImpl implements HelpdeskService {
     }
 
     @Override
+    public CartForReceipt recoverNoNotifiedCart(CartForReceipt cart) {
+        cart.setStatus(CartStatusType.GENERATED);
+        cart.setNotificationNumRetry(0);
+        cart.setNotified_at(0);
+
+        cart.setReasonErr(null);
+        if (cart.getPayload() != null
+                && cart.getPayload().getCart() != null
+        ) {
+            cart.getPayload().getCart().forEach(cartPayment -> cartPayment.setReasonErrDebtor(null));
+        }
+
+        return cart;
+    }
+
+    @Override
     public MassiveRecoverResult massiveRecoverByStatus(ReceiptStatusType status) {
         List<Receipt> failedReceipts = new ArrayList<>();
         int successCounter = 0;
@@ -200,6 +216,27 @@ public class HelpdeskServiceImpl implements HelpdeskService {
         } while (continuationToken != null);
 
         return receiptList;
+    }
+
+    @Override
+    public List<CartForReceipt> massiveRecoverNoNotified(CartStatusType status) {
+        List<CartForReceipt> carttList = new ArrayList<>();
+        String continuationToken = null;
+        do {
+            Iterable<FeedResponse<CartForReceipt>> feedResponseIterator =
+                    this.receiptCosmosService.getNotNotifiedCartReceiptByStatus(continuationToken, 100, status);
+
+            for (FeedResponse<CartForReceipt> page : feedResponseIterator) {
+                for (CartForReceipt cart : page.getResults()) {
+                    CartForReceipt restoredReceipt = recoverNoNotifiedCart(cart);
+                    carttList.add(restoredReceipt);
+                }
+                continuationToken = page.getContinuationToken();
+
+            }
+        } while (continuationToken != null);
+
+        return carttList;
     }
 
     private void validateCartBizEvents(List<BizEvent> bizEvents) throws BizEventBadRequestException, BizEventUnprocessableEntityException {

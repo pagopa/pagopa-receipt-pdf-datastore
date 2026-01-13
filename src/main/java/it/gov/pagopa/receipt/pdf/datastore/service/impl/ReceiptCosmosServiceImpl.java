@@ -93,6 +93,28 @@ public class ReceiptCosmosServiceImpl implements ReceiptCosmosService {
      * {@inheritDoc}
      */
     @Override
+    public Iterable<FeedResponse<CartForReceipt>> getNotNotifiedCartReceiptByStatus(
+            String continuationToken,
+            Integer pageSize,
+            CartStatusType statusType
+    ) {
+        if (statusType == null) {
+            throw new IllegalArgumentException("at least one status must be specified");
+        }
+        if (statusType.equals(CartStatusType.IO_ERROR_TO_NOTIFY)) {
+            return this.cartReceiptsCosmosClient.getIOErrorToNotifyCartReceiptDocuments(continuationToken, pageSize);
+        }
+        if (statusType.equals(CartStatusType.GENERATED)) {
+            return this.cartReceiptsCosmosClient.getGeneratedCartReceiptDocuments(continuationToken, pageSize);
+        }
+        String errMsg = String.format("Unexpected status for retrieving not notified receipt: %s", statusType);
+        throw new IllegalStateException(errMsg);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Iterable<FeedResponse<Receipt>> getFailedReceiptByStatus(
             String continuationToken,
             Integer pageSize,

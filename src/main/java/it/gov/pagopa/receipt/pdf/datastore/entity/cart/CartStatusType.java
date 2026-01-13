@@ -24,7 +24,16 @@ public enum CartStatusType {
             FAILED
     );
 
+    private static final Set<CartStatusType> NOTIFICATION_FAILED_STATUS = Set.of(
+            GENERATED,
+            IO_ERROR_TO_NOTIFY
+    );
+
     public boolean isAFailedDatastoreStatus() {
         return DATASTORE_FAILED_STATUS.contains(this);
+    }
+
+    public boolean isANotificationFailedStatus() {
+        return NOTIFICATION_FAILED_STATUS.contains(this);
     }
 }

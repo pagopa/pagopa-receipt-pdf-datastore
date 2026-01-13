@@ -10,8 +10,8 @@ import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.CosmosDBOutput;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.InvalidParameterException;
 import it.gov.pagopa.receipt.pdf.datastore.service.HelpdeskService;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.HelpdeskServiceImpl;
@@ -28,17 +28,17 @@ import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.b
 /**
  * Azure Functions with HTTP Trigger.
  */
-public class RecoverNotNotifiedReceiptMassive {
+public class RecoverNotNotifiedCartReceiptMassive {
 
-    private final Logger logger = LoggerFactory.getLogger(RecoverNotNotifiedReceiptMassive.class);
+    private final Logger logger = LoggerFactory.getLogger(RecoverNotNotifiedCartReceiptMassive.class);
 
     private final HelpdeskService helpdeskService;
 
-    public RecoverNotNotifiedReceiptMassive() {
+    public RecoverNotNotifiedCartReceiptMassive() {
         this.helpdeskService = new HelpdeskServiceImpl();
     }
 
-    RecoverNotNotifiedReceiptMassive(HelpdeskService helpdeskService) {
+    RecoverNotNotifiedCartReceiptMassive(HelpdeskService helpdeskService) {
         this.helpdeskService = helpdeskService;
     }
 
@@ -47,56 +47,56 @@ public class RecoverNotNotifiedReceiptMassive {
      * <p>
      * It recovers all receipt with the provided status.
      * <p>
-     * It recovers the receipt with failed notification ({@link ReceiptStatusType#IO_ERROR_TO_NOTIFY}) or notification
-     * not triggered ({@link ReceiptStatusType#GENERATED} by clearing the errors and update the status to the
-     * previous step ({@link ReceiptStatusType#GENERATED}).
+     * It recovers the receipt with failed notification ({@link CartStatusType#IO_ERROR_TO_NOTIFY}) or notification
+     * not triggered ({@link CartStatusType#GENERATED} by clearing the errors and update the status to the
+     * previous step ({@link CartStatusType#GENERATED}).
      *
      * @return response with {@link HttpStatus#OK} if the operation succeeded
      */
-    @FunctionName("RecoverNotNotifiedReceiptMassive")
+    @FunctionName("RecoverNotNotifiedCartReceiptMassive")
     public HttpResponseMessage run(
-            @HttpTrigger(name = "RecoverNotNotifiedMassiveTrigger",
+            @HttpTrigger(name = "RecoverNotNotifiedCartMassiveTrigger",
                     methods = {HttpMethod.POST},
-                    route = "receipts/recover-not-notified",
+                    route = "cart-receipts/recover-not-notified",
                     authLevel = AuthorizationLevel.ANONYMOUS)
             HttpRequestMessage<Optional<String>> request,
             @CosmosDBOutput(
-                    name = "ReceiptDatastore",
+                    name = "CartReceiptDatastore",
                     databaseName = "db",
-                    containerName = "receipts",
+                    containerName = "cart-for-receipts",
                     connection = "COSMOS_RECEIPTS_CONN_STRING")
-            OutputBinding<List<Receipt>> documentReceipts,
+            OutputBinding<List<CartForReceipt>> documentdb,
             final ExecutionContext context
     ) {
         logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
 
         // Get named parameter
         String statusParam = request.getQueryParameters().get("status");
-        ReceiptStatusType status;
+        CartStatusType status;
         try {
             status = validateStatusParam(statusParam);
         } catch (InvalidParameterException e) {
             return buildErrorResponse(request, HttpStatus.BAD_REQUEST, e.getMessage());
         }
 
-        List<Receipt> receiptList = this.helpdeskService.massiveRecoverNoNotified(status);
+        List<CartForReceipt> receiptList = this.helpdeskService.massiveRecoverNoNotified(status);
         if (receiptList.isEmpty()) {
             return request.createResponseBuilder(HttpStatus.OK).body("No receipts to be recovered").build();
         }
 
-        documentReceipts.setValue(receiptList);
+        documentdb.setValue(receiptList);
         String msg = String.format("Recovered %s receipt with success", receiptList.size());
         return request.createResponseBuilder(HttpStatus.OK).body(msg).build();
     }
 
-    private ReceiptStatusType validateStatusParam(String statusParam) throws InvalidParameterException {
+    private CartStatusType validateStatusParam(String statusParam) throws InvalidParameterException {
         if (statusParam == null) {
             throw new InvalidParameterException("Please pass a status to recover");
         }
 
-        ReceiptStatusType status;
+        CartStatusType status;
         try {
-            status = ReceiptStatusType.valueOf(statusParam);
+            status = CartStatusType.valueOf(statusParam);
         } catch (IllegalArgumentException e) {
             throw new InvalidParameterException("Please pass a valid status to recover", e);
         }
