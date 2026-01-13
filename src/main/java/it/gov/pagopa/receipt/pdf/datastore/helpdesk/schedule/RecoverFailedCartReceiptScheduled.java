@@ -42,9 +42,11 @@ public class RecoverFailedCartReceiptScheduled {
      * This function will be invoked periodically according to the specified schedule.
      * <p>
      * It recovers all the receipts with the following status:
-     * - ({@link CartStatusType#INSERTED})
-     * - ({@link CartStatusType#FAILED})
-     * - ({@link CartStatusType#NOT_QUEUE_SENT})
+     * <ul>
+     *  <li>{@link CartStatusType#INSERTED}</li>
+     *  <li>{@link CartStatusType#FAILED}</li>
+     *  <li>{@link CartStatusType#NOT_QUEUE_SENT}</li>
+     * </ul>
      * <p>
      * It recovers cart receipts and send on queue the event in order to proceed with the receipt generation.
      */

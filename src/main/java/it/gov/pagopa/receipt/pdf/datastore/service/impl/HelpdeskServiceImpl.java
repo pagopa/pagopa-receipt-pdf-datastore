@@ -55,9 +55,10 @@ public class HelpdeskServiceImpl implements HelpdeskService {
         validateCartBizEvents(bizEvents);
 
         CartForReceipt cart = this.bizEventToReceiptService.buildCartFromBizEventList(bizEvents);
-        cart.set_etag(existingCart.get_etag());
 
         if (isCartStatusValid(cart)) {
+            // set _etag field with existing cart value in order to avoid error on document overwrite
+            cart.set_etag(existingCart.get_etag());
             cart = this.bizEventToReceiptService.saveCartForReceiptWithoutRetry(cart);
         }
 

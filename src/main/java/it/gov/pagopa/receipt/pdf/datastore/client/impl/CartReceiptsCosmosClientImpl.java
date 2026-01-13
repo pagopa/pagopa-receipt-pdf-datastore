@@ -54,29 +54,6 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
         return instance;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-//    @Override
-//    public CartForReceipt getCartItem(String eventId) throws CartNotFoundException {
-//        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
-//
-//        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(cartForReceiptContainerName);
-//
-//        //Build query
-//        String query = "SELECT * FROM c WHERE c.eventId = '%s'".formatted(eventId);
-//
-//        //Query the container
-//        CosmosPagedIterable<CartForReceipt> queryResponse = cosmosContainer
-//                .queryItems(query, new CosmosQueryRequestOptions(), CartForReceipt.class);
-//
-//        if (queryResponse.iterator().hasNext()) {
-//            return queryResponse.iterator().next();
-//        } else {
-//            throw new CartNotFoundException("Document not found in the defined container");
-//        }
-//    }
-
     @Override
     public CartForReceipt getCartItem(String eventId) throws CartNotFoundException {
         return getDocumentByFilter(cartForReceiptContainerName, "eventId", eventId, CartForReceipt.class)

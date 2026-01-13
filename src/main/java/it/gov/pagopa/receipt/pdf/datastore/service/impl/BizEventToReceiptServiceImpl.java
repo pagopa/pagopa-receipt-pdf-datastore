@@ -263,19 +263,12 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
 
         BizEvent bizEvent = bizEventList.get(0);
         String transactionId = bizEvent.getTransactionDetails().getTransaction().getTransactionId();
-        BigDecimal amount = getCartAmount(bizEvent);
-        return CartForReceipt.builder()
-                .id(transactionId)
-                .eventId(transactionId)
-                .version("1") // this is the first version of this document
-                .payload(Payload.builder()
-                        .payerFiscalCode(tokenizerPayerFiscalCode(bizEvent))
-                        .totalNotice(Integer.parseInt(bizEvent.getPaymentInfo().getTotalNotice()))
-                        .totalAmount(!amount.equals(BigDecimal.ZERO) ? formatAmount(amount.toString()) : null)
-                        .transactionCreationDate(getTransactionCreationDate(bizEvent))
-                        .cart(cartItems)
-                        .build())
-                .build();
+
+        CartForReceipt cartForReceipt = buildCart(bizEvent, transactionId, cartItems);
+        cartForReceipt.setStatus(CartStatusType.INSERTED);
+        cartForReceipt.setInserted_at(System.currentTimeMillis());
+
+        return cartForReceipt;
     }
 
     @Override

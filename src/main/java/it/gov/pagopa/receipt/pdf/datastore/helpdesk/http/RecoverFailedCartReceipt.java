@@ -57,23 +57,22 @@ public class RecoverFailedCartReceipt {
 
     /**
      * This function will be invoked when an Http Trigger occurs.
-     * The function is responsible for retrieving receipts that are in a FAILED, INSERTED and NOT_QUEUE_SENT state.
-     * TODO collection cart-for-receipts
-     * TODO https://github.com/pagopa/pagopa-receipt-pdf-generator/pull/170/changes#diff-5809f1fa1db9b483c00c90153ca5dc50b57437d89bb6f96b50f9447430ecd440
-     * TODO vedere impl https://github.com/pagopa/pagopa-receipt-pdf-datastore/blob/b0403d8b614a97e02e2af713737b1054fa693a19/src/main/java/it/gov/pagopa/receipt/pdf/datastore/BizEventToReceipt.java#L143
+     * The function is responsible for retrieving cart receipts that are in a FAILED, INSERTED and NOT_QUEUE_SENT state.
      * For a cart receipt, the function should:
-     *  - try to retrieve the biz event -> if it doesn't find it, error
-     *  - check that it's a valid biz: BizEventToReceiptUtils.isBizEventInvalid() -> if invalid, error
-     *  - check that it's not a cart biz: BizEventToReceiptUtils.getTotalNotice() == 1 -> if cart, error
-     *  - check that the receipt is in one of the 3 manageable states: FAILED, INSERTED, and NOT_QUEUE_SENT -> if not, error
-     *  - recreate the receipt from the biz: BizEventToReceiptUtils.createReceipt()
-     *  - if everything is OK, it updates the receipt on the cosmos. BizEventToReceiptService.handleSaveReceipt()
-     *  - if everything is OK, send it to the queue BizEventToReceiptService.handleSendMessageToQueue()
-     * <p>
+     * <ul>
+     *     <li> try to retrieve cart receipt -> if it doesn't find it, error</li>
+     *     <li> check cart receipt {@link CartStatusType}-> if it is no among the processable ones, error</li>
+     *     <li> try to retrieve the list of biz events -> if it doesn't find it, error</li>
+     *     <li> check that the biz events are valid: BizEventToReceiptUtils.isBizEventInvalid() -> if invalid, error</li>
+     *     <li> check that the biz events are valid: BizEventToReceiptUtils.getTotalNotice() == biz event list size -> if not, error</li>
+     *     <li> recreate the receipt from the biz</li>
+     *     <li> if everything is OK, it updates the receipt on the cosmos</li>
+     *     <li> if everything is OK, send it to the queue</li>
+     * </ul>
      * It recovers the receipt with the specified biz event id that has the following status:
-     * - ({@link ReceiptStatusType#INSERTED})
-     * - ({@link ReceiptStatusType#FAILED})
-     * - ({@link ReceiptStatusType#NOT_QUEUE_SENT})
+     * - ({@link CartStatusType#INSERTED})
+     * - ({@link CartStatusType#FAILED})
+     * - ({@link CartStatusType#NOT_QUEUE_SENT})
      * <p>
      * It creates the receipts if not exist and send on queue the event in order to proceed with the receipt generation.
      *
@@ -96,13 +95,6 @@ public class RecoverFailedCartReceipt {
             final ExecutionContext context
     ) {
         logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
-
-        // TODO
-        // a partire dal cartId recuperare i biz-event
-        //  validazione dei biz-event
-        // controllare che il numero di biz-event con il total notice presente nei biz
-        // se i biz sono validi procedere con la ricreazione della cart e l'invio in coda
-        // vedere regenerate sul recupero dell'id e sovrascrittura
 
         CartForReceipt existingCart;
         try {
@@ -128,10 +120,10 @@ public class RecoverFailedCartReceipt {
             cartForReceipt = this.helpdeskService.recoverCart(existingCart);
         } catch (BizEventUnprocessableEntityException e) {
             logger.error(e.getMessage(), e);
-            return buildErrorResponse(request, HttpStatus.BAD_REQUEST, e.getMessage());
+            return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, e.getMessage());
         } catch (BizEventBadRequestException e) {
             logger.error(e.getMessage(), e);
-            return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, e.getMessage());
+            return buildErrorResponse(request, HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (PDVTokenizerException | JsonProcessingException e) {
             logger.error(e.getMessage(), e);
             return buildErrorResponse(request, HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
