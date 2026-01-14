@@ -2,9 +2,9 @@ package it.gov.pagopa.receipt.pdf.datastore.helpdesk.schedule;
 
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.OutputBinding;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
-import it.gov.pagopa.receipt.pdf.datastore.model.MassiveRecoverResult;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.model.MassiveCartRecoverResult;
 import it.gov.pagopa.receipt.pdf.datastore.service.HelpdeskService;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
@@ -29,7 +29,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith({MockitoExtension.class, SystemStubsExtension.class})
-class RecoverFailedReceiptScheduledTest {
+class RecoverFailedCartReceiptScheduledTest {
 
     @Mock
     private ExecutionContext contextMock;
@@ -37,24 +37,24 @@ class RecoverFailedReceiptScheduledTest {
     private HelpdeskService helpdeskServiceMock;
 
     @Captor
-    private ArgumentCaptor<List<Receipt>> receiptCaptor;
+    private ArgumentCaptor<List<CartForReceipt>> receiptCaptor;
 
     @Spy
-    private OutputBinding<List<Receipt>> documentdb;
+    private OutputBinding<List<CartForReceipt>> documentdb;
 
     @SystemStub
     private EnvironmentVariables environment;
 
-    private RecoverFailedReceiptScheduled sut;
+    private RecoverFailedCartReceiptScheduled sut;
 
     @Test
     @SneakyThrows
-    void recoverFailedReceiptScheduledSuccess() {
-        sut = new RecoverFailedReceiptScheduled(helpdeskServiceMock);
+    void recoverFailedCartReceiptScheduledSuccess() {
+        sut = new RecoverFailedCartReceiptScheduled(helpdeskServiceMock);
 
-        doReturn(createMassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverByStatus(ReceiptStatusType.FAILED);
-        doReturn(createMassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverByStatus(ReceiptStatusType.INSERTED);
-        doReturn(createMassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverByStatus(ReceiptStatusType.NOT_QUEUE_SENT);
+        doReturn(createMassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverByStatus(CartStatusType.FAILED);
+        doReturn(createMassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverByStatus(CartStatusType.INSERTED);
+        doReturn(createMassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverByStatus(CartStatusType.NOT_QUEUE_SENT);
 
         // test execution
         assertDoesNotThrow(() -> sut.run("info", documentdb, contextMock));
@@ -66,12 +66,12 @@ class RecoverFailedReceiptScheduledTest {
 
     @Test
     @SneakyThrows
-    void recoverFailedReceiptScheduledSuccessWithoutAction() {
-        sut = new RecoverFailedReceiptScheduled(helpdeskServiceMock);
+    void recoverFailedCartReceiptScheduledSuccessWithoutAction() {
+        sut = new RecoverFailedCartReceiptScheduled(helpdeskServiceMock);
 
-        doReturn(new MassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverByStatus(ReceiptStatusType.FAILED);
-        doReturn(new MassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverByStatus(ReceiptStatusType.INSERTED);
-        doReturn(new MassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverByStatus(ReceiptStatusType.NOT_QUEUE_SENT);
+        doReturn(new MassiveCartRecoverResult()).when(helpdeskServiceMock).massiveRecoverByStatus(CartStatusType.FAILED);
+        doReturn(new MassiveCartRecoverResult()).when(helpdeskServiceMock).massiveRecoverByStatus(CartStatusType.INSERTED);
+        doReturn(new MassiveCartRecoverResult()).when(helpdeskServiceMock).massiveRecoverByStatus(CartStatusType.NOT_QUEUE_SENT);
 
         // test execution
         assertDoesNotThrow(() -> sut.run("info", documentdb, contextMock));
@@ -83,9 +83,9 @@ class RecoverFailedReceiptScheduledTest {
 
     @Test
     @SneakyThrows
-    void recoverFailedReceiptScheduledDisabled() {
+    void recoverFailedCartReceiptScheduledDisabled() {
         environment.set("FAILED_AUTORECOVER_ENABLED", "false");
-        sut = new RecoverFailedReceiptScheduled(helpdeskServiceMock);
+        sut = new RecoverFailedCartReceiptScheduled(helpdeskServiceMock);
 
         assertEquals("false", System.getenv("FAILED_AUTORECOVER_ENABLED"));
 
@@ -93,14 +93,14 @@ class RecoverFailedReceiptScheduledTest {
         assertDoesNotThrow(() -> sut.run("info", documentdb, contextMock));
 
         verify(documentdb, never()).setValue(any());
-        verify(helpdeskServiceMock, never()).massiveRecoverByStatus(any(ReceiptStatusType.class));
+        verify(helpdeskServiceMock, never()).massiveRecoverByStatus(any(CartStatusType.class));
     }
 
-    private MassiveRecoverResult createMassiveRecoverResult() {
-        return MassiveRecoverResult.builder()
+    private MassiveCartRecoverResult createMassiveRecoverResult() {
+        return MassiveCartRecoverResult.builder()
                 .successCounter(1)
                 .errorCounter(1)
-                .failedReceiptList(List.of(new Receipt()))
+                .failedCartList(List.of(new CartForReceipt()))
                 .build();
     }
 }

@@ -5,8 +5,8 @@ import com.microsoft.azure.functions.HttpRequestMessage;
 import com.microsoft.azure.functions.HttpResponseMessage;
 import com.microsoft.azure.functions.HttpStatus;
 import com.microsoft.azure.functions.OutputBinding;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.service.HelpdeskService;
 import it.gov.pagopa.receipt.pdf.datastore.utils.HttpResponseMessageMock;
 import lombok.SneakyThrows;
@@ -36,7 +36,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class RecoverNotNotifiedReceiptMassiveTest {
+class RecoverNotNotifiedCartReceiptMassiveTest {
 
     @Mock
     private ExecutionContext executionContextMock;
@@ -46,13 +46,13 @@ class RecoverNotNotifiedReceiptMassiveTest {
     private HttpRequestMessage<Optional<String>> requestMock;
 
     @Spy
-    private OutputBinding<List<Receipt>> documentReceipts;
+    private OutputBinding<List<CartForReceipt>> documentdb;
 
     @Captor
-    private ArgumentCaptor<List<Receipt>> receiptCaptor;
+    private ArgumentCaptor<List<CartForReceipt>> cartCaptor;
 
     @InjectMocks
-    private RecoverNotNotifiedReceiptMassive sut;
+    private RecoverNotNotifiedCartReceiptMassive sut;
 
     @BeforeEach
     void openMocks() {
@@ -63,87 +63,87 @@ class RecoverNotNotifiedReceiptMassiveTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = ReceiptStatusType.class, names = {"GENERATED", "IO_ERROR_TO_NOTIFY"}, mode = EnumSource.Mode.INCLUDE)
+    @EnumSource(value = CartStatusType.class, names = {"GENERATED", "IO_ERROR_TO_NOTIFY"}, mode = EnumSource.Mode.INCLUDE)
     @SneakyThrows
-    void recoverNotNotifiedReceiptMassiveSuccess(ReceiptStatusType status) {
+    void recoverNotNotifiedCartReceiptMassiveSuccess(CartStatusType status) {
         doReturn(Collections.singletonMap("status", status.name())).when(requestMock).getQueryParameters();
-        doReturn(List.of(new Receipt())).when(helpdeskServiceMock).massiveRecoverNoNotified(status);
+        doReturn(List.of(new CartForReceipt())).when(helpdeskServiceMock).massiveRecoverNoNotified(status);
 
         // test execution
-        HttpResponseMessage response = sut.run(requestMock, documentReceipts, executionContextMock);
+        HttpResponseMessage response = sut.run(requestMock, documentdb, executionContextMock);
 
         // test assertion
         assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatus());
         assertNotNull(response.getBody());
 
-        verify(documentReceipts).setValue(receiptCaptor.capture());
+        verify(documentdb).setValue(cartCaptor.capture());
 
-        assertEquals(1, receiptCaptor.getValue().size());
+        assertEquals(1, cartCaptor.getValue().size());
     }
 
     @ParameterizedTest
-    @EnumSource(value = ReceiptStatusType.class, names = {"GENERATED", "IO_ERROR_TO_NOTIFY"}, mode = EnumSource.Mode.INCLUDE)
+    @EnumSource(value = CartStatusType.class, names = {"GENERATED", "IO_ERROR_TO_NOTIFY"}, mode = EnumSource.Mode.INCLUDE)
     @SneakyThrows
-    void recoverNotNotifiedReceiptMassiveSuccessWithoutAction(ReceiptStatusType status) {
+    void recoverNotNotifiedCartReceiptMassiveSuccessWithoutAction(CartStatusType status) {
         doReturn(Collections.singletonMap("status", status.name())).when(requestMock).getQueryParameters();
         doReturn(Collections.emptyList()).when(helpdeskServiceMock).massiveRecoverNoNotified(status);
 
         // test execution
-        HttpResponseMessage response = sut.run(requestMock, documentReceipts, executionContextMock);
+        HttpResponseMessage response = sut.run(requestMock, documentdb, executionContextMock);
 
         // test assertion
         assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatus());
         assertNotNull(response.getBody());
 
-        verify(documentReceipts, never()).setValue(receiptCaptor.capture());
+        verify(documentdb, never()).setValue(cartCaptor.capture());
     }
 
     @Test
     @SneakyThrows
-    void recoverNotNotifiedReceiptMassiveFailParamNull() {
+    void recoverNotNotifiedCartReceiptMassiveFailParamNull() {
         // test execution
-        HttpResponseMessage response = sut.run(requestMock, documentReceipts, executionContextMock);
+        HttpResponseMessage response = sut.run(requestMock, documentdb, executionContextMock);
 
         // test assertion
         assertNotNull(response);
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatus());
         assertNotNull(response.getBody());
 
-        verify(documentReceipts, never()).setValue(receiptCaptor.capture());
+        verify(documentdb, never()).setValue(cartCaptor.capture());
     }
 
     @Test
     @SneakyThrows
-    void recoverNotNotifiedReceiptMassiveFailParamNotAStatus() {
+    void recoverNotNotifiedCartReceiptMassiveFailParamNotAStatus() {
         doReturn(Collections.singletonMap("status", "random")).when(requestMock).getQueryParameters();
 
         // test execution
-        HttpResponseMessage response = sut.run(requestMock, documentReceipts, executionContextMock);
+        HttpResponseMessage response = sut.run(requestMock, documentdb, executionContextMock);
 
         // test assertion
         assertNotNull(response);
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatus());
         assertNotNull(response.getBody());
 
-        verify(documentReceipts, never()).setValue(receiptCaptor.capture());
+        verify(documentdb, never()).setValue(cartCaptor.capture());
     }
 
     @ParameterizedTest
-    @EnumSource(value = ReceiptStatusType.class, names = {"GENERATED", "IO_ERROR_TO_NOTIFY"}, mode = EnumSource.Mode.EXCLUDE)
+    @EnumSource(value = CartStatusType.class, names = {"GENERATED", "IO_ERROR_TO_NOTIFY"}, mode = EnumSource.Mode.EXCLUDE)
     @SneakyThrows
-    void recoverNotNotifiedReceiptMassiveFailParamNotAProcessableStatus(ReceiptStatusType status) {
+    void recoverNotNotifiedReceiptMassiveFailParamNotAProcessableStatus(CartStatusType status) {
         doReturn(Collections.singletonMap("status", status.name())).when(requestMock).getQueryParameters();
 
         // test execution
-        HttpResponseMessage response = sut.run(requestMock, documentReceipts, executionContextMock);
+        HttpResponseMessage response = sut.run(requestMock, documentdb, executionContextMock);
 
         // test assertion
         assertNotNull(response);
         assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, response.getStatus());
         assertNotNull(response.getBody());
 
-        verify(documentReceipts, never()).setValue(receiptCaptor.capture());
+        verify(documentdb, never()).setValue(cartCaptor.capture());
     }
 }

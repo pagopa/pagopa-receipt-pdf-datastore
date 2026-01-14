@@ -1,71 +1,83 @@
 package it.gov.pagopa.receipt.pdf.datastore.helpdesk.http;
 
-import com.microsoft.azure.functions.*;
+import com.microsoft.azure.functions.ExecutionContext;
+import com.microsoft.azure.functions.HttpRequestMessage;
+import com.microsoft.azure.functions.HttpResponseMessage;
+import com.microsoft.azure.functions.HttpStatus;
+import com.microsoft.azure.functions.OutputBinding;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReasonError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
-import it.gov.pagopa.receipt.pdf.datastore.model.ProblemJson;
+import it.gov.pagopa.receipt.pdf.datastore.service.HelpdeskService;
 import it.gov.pagopa.receipt.pdf.datastore.service.ReceiptCosmosService;
 import it.gov.pagopa.receipt.pdf.datastore.utils.HttpResponseMessageMock;
-import org.junit.jupiter.api.AfterEach;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
-import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class RecoverNotNotifiedReceiptTest {
 
     private static final String EVENT_ID = "eventId";
 
-    private final ExecutionContext executionContextMock = mock(ExecutionContext.class);
-
+    @Mock
+    private ExecutionContext executionContextMock;
     @Mock
     private ReceiptCosmosService receiptCosmosServiceMock;
+    @Mock
+    private HelpdeskService helpdeskServiceMock;
 
     @Mock
     private HttpRequestMessage<Optional<String>> requestMock;
 
     @Spy
-    private OutputBinding<List<Receipt>> documentReceipts;
+    private OutputBinding<Receipt> documentReceipts;
 
     @Captor
-    private ArgumentCaptor<List<Receipt>> receiptCaptor;
+    private ArgumentCaptor<Receipt> receiptCaptor;
 
+    @InjectMocks
     private RecoverNotNotifiedReceipt sut;
 
-    private AutoCloseable closeable;
 
     @BeforeEach
-    void openMocks() {
-        closeable = MockitoAnnotations.openMocks(this);
-        sut = spy(new RecoverNotNotifiedReceipt(receiptCosmosServiceMock));
-    }
-
-    @AfterEach
-    void releaseMocks() throws Exception {
-        closeable.close();
-    }
-
-    @Test
-    void recoverNotNotifiedReceiptSuccess() throws ReceiptNotFoundException {
-        Receipt receipt = buildReceipt();
-        when(receiptCosmosServiceMock.getReceipt(EVENT_ID)).thenReturn(receipt);
-
+    void setUp() {
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];
             return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
         }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ReceiptStatusType.class, names = {"GENERATED", "IO_ERROR_TO_NOTIFY"}, mode = EnumSource.Mode.INCLUDE)
+    @SneakyThrows
+    void recoverNotNotifiedReceiptSuccess(ReceiptStatusType status) {
+        Receipt receipt = buildReceipt();
+        receipt.setStatus(status);
+        doReturn(receipt).when(receiptCosmosServiceMock).getReceipt(EVENT_ID);
+        doReturn(new Receipt()).when(helpdeskServiceMock).recoverNoNotifiedReceipt(receipt);
 
         // test execution
         HttpResponseMessage response = sut.run(requestMock, EVENT_ID, documentReceipts, executionContextMock);
@@ -77,46 +89,13 @@ class RecoverNotNotifiedReceiptTest {
 
         verify(documentReceipts).setValue(receiptCaptor.capture());
 
-        assertEquals(1, receiptCaptor.getValue().size());
-        Receipt captured = receiptCaptor.getValue().get(0);
-        assertEquals(ReceiptStatusType.GENERATED, captured.getStatus());
-        assertEquals(EVENT_ID, captured.getEventId());
-        assertEquals(0, captured.getNotificationNumRetry());
-        assertNull(captured.getReasonErr());
-        assertNull(captured.getReasonErrPayer());
+        assertNotNull(receiptCaptor.getValue());
     }
 
     @Test
-    void recoverReceiptFailForMissingEventId() {
-        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
-            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
-            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
-        }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
-
-        // test execution
-        HttpResponseMessage response = sut.run(requestMock, "", documentReceipts, executionContextMock);
-
-        // test assertion
-        assertNotNull(response);
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatus());
-
-        ProblemJson problemJson = (ProblemJson) response.getBody();
-        assertNotNull(problemJson);
-        assertEquals(HttpStatus.BAD_REQUEST.value(), problemJson.getStatus());
-        assertEquals(HttpStatus.BAD_REQUEST.name(), problemJson.getTitle());
-        assertNotNull(problemJson.getDetail());
-
-        verify(documentReceipts, never()).setValue(receiptCaptor.capture());
-    }
-
-    @Test
-    void recoverReceiptFailReceiptNotFound() throws ReceiptNotFoundException {
-        when(receiptCosmosServiceMock.getReceipt(EVENT_ID)).thenThrow(ReceiptNotFoundException.class);
-
-        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
-            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
-            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
-        }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
+    @SneakyThrows
+    void recoverNotNotifiedReceiptFailReceiptNotFound() {
+        doThrow(ReceiptNotFoundException.class).when(receiptCosmosServiceMock).getReceipt(EVENT_ID);
 
         // test execution
         HttpResponseMessage response = sut.run(requestMock, EVENT_ID, documentReceipts, executionContextMock);
@@ -127,60 +106,27 @@ class RecoverNotNotifiedReceiptTest {
         assertNotNull(response.getBody());
 
         verify(documentReceipts, never()).setValue(receiptCaptor.capture());
+        verify(helpdeskServiceMock, never()).recoverNoNotifiedReceipt(any());
     }
 
-    @Test
-    void recoverReceiptFailReceiptInInsertedButOnlyGenerated() throws ReceiptNotFoundException {
-        Receipt receipt = new Receipt();
-        receipt.setStatus(ReceiptStatusType.INSERTED);
-        when(receiptCosmosServiceMock.getReceipt(EVENT_ID)).thenReturn(receipt);
-
-        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
-            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
-            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
-        }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
+    @ParameterizedTest
+    @EnumSource(value = ReceiptStatusType.class, names = {"GENERATED", "IO_ERROR_TO_NOTIFY"}, mode = EnumSource.Mode.EXCLUDE)
+    @SneakyThrows
+    void recoverNotNotifiedReceiptFailReceiptWithUnexpectedStatus(ReceiptStatusType status) {
+        Receipt receipt = buildReceipt();
+        receipt.setStatus(status);
+        doReturn(receipt).when(receiptCosmosServiceMock).getReceipt(EVENT_ID);
 
         // test execution
         HttpResponseMessage response = sut.run(requestMock, EVENT_ID, documentReceipts, executionContextMock);
 
         // test assertion
         assertNotNull(response);
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatus());
-
-        ProblemJson problemJson = (ProblemJson) response.getBody();
-        assertNotNull(problemJson);
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), problemJson.getStatus());
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.name(), problemJson.getTitle());
-        assertNotNull(problemJson.getDetail());
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, response.getStatus());
+        assertNotNull(response.getBody());
 
         verify(documentReceipts, never()).setValue(receiptCaptor.capture());
-    }
-
-    @Test
-    void recoverReceiptFailReceiptInInsertedButOnlyIOErrorToNotify() throws ReceiptNotFoundException {
-        Receipt receipt = new Receipt();
-        receipt.setStatus(ReceiptStatusType.INSERTED);
-        when(receiptCosmosServiceMock.getReceipt(EVENT_ID)).thenReturn(receipt);
-
-        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
-            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
-            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
-        }).when(requestMock).createResponseBuilder(any(HttpStatus.class));
-
-        // test execution
-        HttpResponseMessage response = sut.run(requestMock, EVENT_ID, documentReceipts, executionContextMock);
-
-        // test assertion
-        assertNotNull(response);
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatus());
-
-        ProblemJson problemJson = (ProblemJson) response.getBody();
-        assertNotNull(problemJson);
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), problemJson.getStatus());
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.name(), problemJson.getTitle());
-        assertNotNull(problemJson.getDetail());
-
-        verify(documentReceipts, never()).setValue(receiptCaptor.capture());
+        verify(helpdeskServiceMock, never()).recoverNoNotifiedReceipt(any());
     }
 
     private Receipt buildReceipt() {

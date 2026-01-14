@@ -2,8 +2,8 @@ package it.gov.pagopa.receipt.pdf.datastore.helpdesk.schedule;
 
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.OutputBinding;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.service.HelpdeskService;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
@@ -29,7 +29,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith({MockitoExtension.class, SystemStubsExtension.class})
-class RecoverNotNotifiedReceiptScheduledTest {
+class RecoverNotNotifiedCartReceiptScheduledTest {
 
     @Mock
     private ExecutionContext contextMock;
@@ -38,23 +38,23 @@ class RecoverNotNotifiedReceiptScheduledTest {
     private HelpdeskService helpdeskServiceMock;
 
     @Spy
-    private OutputBinding<List<Receipt>> documentdb;
+    private OutputBinding<List<CartForReceipt>> documentdb;
 
     @Captor
-    private ArgumentCaptor<List<Receipt>> receiptCaptor;
+    private ArgumentCaptor<List<CartForReceipt>> receiptCaptor;
 
     @SystemStub
     private EnvironmentVariables environment;
 
-    private RecoverNotNotifiedReceiptScheduled sut;
+    private RecoverNotNotifiedCartReceiptScheduled sut;
 
     @Test
     @SneakyThrows
     void recoverFailedReceiptScheduledSuccess() {
-        sut = new RecoverNotNotifiedReceiptScheduled(helpdeskServiceMock);
+        sut = new RecoverNotNotifiedCartReceiptScheduled(helpdeskServiceMock);
 
-        doReturn(List.of(new Receipt())).when(helpdeskServiceMock).massiveRecoverNoNotified(ReceiptStatusType.IO_ERROR_TO_NOTIFY);
-        doReturn(List.of(new Receipt())).when(helpdeskServiceMock).massiveRecoverNoNotified(ReceiptStatusType.GENERATED);
+        doReturn(List.of(new CartForReceipt())).when(helpdeskServiceMock).massiveRecoverNoNotified(CartStatusType.IO_ERROR_TO_NOTIFY);
+        doReturn(List.of(new CartForReceipt())).when(helpdeskServiceMock).massiveRecoverNoNotified(CartStatusType.GENERATED);
 
         // test execution
         assertDoesNotThrow(() -> sut.processRecoverNotNotifiedScheduledTrigger("info", documentdb, contextMock));
@@ -67,10 +67,10 @@ class RecoverNotNotifiedReceiptScheduledTest {
     @Test
     @SneakyThrows
     void recoverFailedReceiptScheduledSuccessWithoutAction() {
-        sut = new RecoverNotNotifiedReceiptScheduled(helpdeskServiceMock);
+        sut = new RecoverNotNotifiedCartReceiptScheduled(helpdeskServiceMock);
 
-        doReturn(Collections.emptyList()).when(helpdeskServiceMock).massiveRecoverNoNotified(ReceiptStatusType.IO_ERROR_TO_NOTIFY);
-        doReturn(Collections.emptyList()).when(helpdeskServiceMock).massiveRecoverNoNotified(ReceiptStatusType.GENERATED);
+        doReturn(Collections.emptyList()).when(helpdeskServiceMock).massiveRecoverNoNotified(CartStatusType.IO_ERROR_TO_NOTIFY);
+        doReturn(Collections.emptyList()).when(helpdeskServiceMock).massiveRecoverNoNotified(CartStatusType.GENERATED);
 
         // test execution
         assertDoesNotThrow(() -> sut.processRecoverNotNotifiedScheduledTrigger("info", documentdb, contextMock));
@@ -84,7 +84,7 @@ class RecoverNotNotifiedReceiptScheduledTest {
     @SneakyThrows
     void recoverFailedReceiptScheduledDisabled() {
         environment.set("NOT_NOTIFIED_AUTORECOVER_ENABLED", "false");
-        sut = new RecoverNotNotifiedReceiptScheduled(helpdeskServiceMock);
+        sut = new RecoverNotNotifiedCartReceiptScheduled(helpdeskServiceMock);
 
         assertEquals("false", System.getenv("NOT_NOTIFIED_AUTORECOVER_ENABLED"));
 
@@ -92,6 +92,6 @@ class RecoverNotNotifiedReceiptScheduledTest {
         assertDoesNotThrow(() -> sut.processRecoverNotNotifiedScheduledTrigger("info", documentdb, contextMock));
 
         verify(documentdb, never()).setValue(any());
-        verify(helpdeskServiceMock, never()).massiveRecoverByStatus(any(ReceiptStatusType.class));
+        verify(helpdeskServiceMock, never()).massiveRecoverByStatus(any(CartStatusType.class));
     }
 }

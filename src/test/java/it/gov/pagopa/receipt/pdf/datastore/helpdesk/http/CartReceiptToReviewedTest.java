@@ -5,11 +5,12 @@ import com.microsoft.azure.functions.HttpRequestMessage;
 import com.microsoft.azure.functions.HttpResponseMessage;
 import com.microsoft.azure.functions.HttpStatus;
 import com.microsoft.azure.functions.OutputBinding;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReceiptError;
+import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.CartReceiptError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptErrorStatusType;
-import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
-import it.gov.pagopa.receipt.pdf.datastore.service.impl.ReceiptCosmosServiceImpl;
+import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
+import it.gov.pagopa.receipt.pdf.datastore.service.CartReceiptCosmosService;
 import it.gov.pagopa.receipt.pdf.datastore.utils.HttpResponseMessageMock;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,30 +26,30 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class ReceiptToReviewedTest {
+class CartReceiptToReviewedTest {
 
-    private static final String BIZ_EVENT_ID = "valid_biz_event_id";
+    private static final String CART_ID = "cart_id";
 
     @Mock
     private ExecutionContext executionContextMock;
     @Mock
-    private ReceiptCosmosServiceImpl receiptCosmosService;
+    private CartReceiptCosmosService cartReceiptCosmosServiceMock;
     @Captor
-    private ArgumentCaptor<ReceiptError> receiptErrorCaptor;
+    private ArgumentCaptor<CartReceiptError> cartErrorCaptor;
     @Mock
     private HttpRequestMessage<Optional<String>> request;
     @Spy
-    private OutputBinding<ReceiptError> documentdb;
+    private OutputBinding<CartReceiptError> documentdb;
 
     @InjectMocks
-    private ReceiptToReviewed function;
+    private CartReceiptToReviewed function;
 
     @BeforeEach
     void setUp() {
@@ -59,43 +60,46 @@ class ReceiptToReviewedTest {
     }
 
     @Test
-    void requestWithValidBizEventSaveReceiptErrorInReviewed() throws ReceiptNotFoundException {
-        ReceiptError receiptError = ReceiptError.builder()
-                .bizEventId(BIZ_EVENT_ID)
+    @SneakyThrows
+    void requestWithValidBizEventSaveReceiptErrorInReviewed() {
+        CartReceiptError receiptError = CartReceiptError.builder()
+                .id(CART_ID)
                 .status(ReceiptErrorStatusType.TO_REVIEW)
                 .build();
-        when(receiptCosmosService.getReceiptError(BIZ_EVENT_ID)).thenReturn(receiptError);
+        when(cartReceiptCosmosServiceMock.getCartReceiptError(CART_ID)).thenReturn(receiptError);
 
         // test execution
-        HttpResponseMessage response = assertDoesNotThrow(() -> function.run(request, BIZ_EVENT_ID, documentdb, executionContextMock));
+        HttpResponseMessage response = assertDoesNotThrow(() -> function.run(request, CART_ID, documentdb, executionContextMock));
         assertEquals(HttpStatus.OK, response.getStatus());
 
-        verify(documentdb).setValue(receiptErrorCaptor.capture());
-        ReceiptError captured = receiptErrorCaptor.getValue();
-        assertEquals(BIZ_EVENT_ID, captured.getBizEventId());
+        verify(documentdb).setValue(cartErrorCaptor.capture());
+        CartReceiptError captured = cartErrorCaptor.getValue();
+        assertEquals(CART_ID, captured.getId());
         assertEquals(ReceiptErrorStatusType.REVIEWED, captured.getStatus());
     }
 
     @Test
-    void requestWithValidBizEventIdButReceiptNotFound() throws ReceiptNotFoundException {
-        when(receiptCosmosService.getReceiptError(BIZ_EVENT_ID)).thenThrow(ReceiptNotFoundException.class);
+    @SneakyThrows
+    void requestWithValidBizEventIdButReceiptNotFound() {
+        when(cartReceiptCosmosServiceMock.getCartReceiptError(CART_ID)).thenThrow(CartNotFoundException.class);
 
         // test execution
-        HttpResponseMessage response = assertDoesNotThrow(() -> function.run(request, BIZ_EVENT_ID, documentdb, executionContextMock));
+        HttpResponseMessage response = assertDoesNotThrow(() -> function.run(request, CART_ID, documentdb, executionContextMock));
         assertEquals(HttpStatus.NOT_FOUND, response.getStatus());
 
         verifyNoInteractions(documentdb);
     }
 
     @Test
-    void requestWithValidBizEventIdButReceiptWrongStatusReturnsInternalServerError() throws ReceiptNotFoundException {
-        when(receiptCosmosService.getReceiptError(BIZ_EVENT_ID)).thenReturn(ReceiptError.builder()
-                .bizEventId(BIZ_EVENT_ID)
+    @SneakyThrows
+    void requestWithValidBizEventIdButReceiptWrongStatusReturnsInternalServerError() {
+        when(cartReceiptCosmosServiceMock.getCartReceiptError(CART_ID)).thenReturn(CartReceiptError.builder()
+                .id(CART_ID)
                 .status(ReceiptErrorStatusType.REQUEUED)
                 .build());
 
         // test execution
-        HttpResponseMessage response = assertDoesNotThrow(() -> function.run(request, BIZ_EVENT_ID, documentdb, executionContextMock));
+        HttpResponseMessage response = assertDoesNotThrow(() -> function.run(request, CART_ID, documentdb, executionContextMock));
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatus());
 
         verifyNoInteractions(documentdb);

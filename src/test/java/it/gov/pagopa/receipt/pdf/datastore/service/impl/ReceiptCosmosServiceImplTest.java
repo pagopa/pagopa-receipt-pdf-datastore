@@ -1,15 +1,10 @@
 package it.gov.pagopa.receipt.pdf.datastore.service.impl;
 
 import com.azure.cosmos.models.FeedResponse;
-import it.gov.pagopa.receipt.pdf.datastore.client.CartReceiptsCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
-import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.IOMessage;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReceiptError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
-import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
-import it.gov.pagopa.receipt.pdf.datastore.exception.IoMessageNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,10 +13,18 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith({MockitoExtension.class, SystemStubsExtension.class})
 class ReceiptCosmosServiceImplTest {
@@ -31,8 +34,6 @@ class ReceiptCosmosServiceImplTest {
 
     @Mock
     private ReceiptCosmosClientImpl receiptCosmosClient;
-    @Mock
-    private CartReceiptsCosmosClient cartReceiptsCosmosClient;
 
     @InjectMocks
     private ReceiptCosmosServiceImpl sut;
@@ -163,51 +164,5 @@ class ReceiptCosmosServiceImplTest {
         assertEquals(expectedIterable, actualIterable);
         verify(receiptCosmosClient).getInsertedReceiptDocuments(CONTINUATION_TOKEN, PAGE_SIZE);
         verify(receiptCosmosClient, never()).getFailedReceiptDocuments(any(), any());
-    }
-
-    @Test
-    void getReceiptMessage_OK() throws IoMessageNotFoundException {
-        doReturn(new IOMessage()).when(receiptCosmosClient).getIoMessage(anyString());
-
-        assertDoesNotThrow(() -> sut.getReceiptMessage(anyString()));
-    }
-
-    @Test
-    void getReceiptMessage_KO_NotFound() throws IoMessageNotFoundException {
-        doThrow(IoMessageNotFoundException.class).when(receiptCosmosClient).getIoMessage(anyString());
-        IoMessageNotFoundException e = assertThrows(IoMessageNotFoundException.class, () -> sut.getReceiptMessage(anyString()));
-
-        assertNotNull(e);
-    }
-
-    @Test
-    void getReceiptMessage_KO_Null() throws IoMessageNotFoundException {
-        doReturn(null).when(receiptCosmosClient).getIoMessage(anyString());
-        IoMessageNotFoundException e = assertThrows(IoMessageNotFoundException.class, () -> sut.getReceiptMessage(anyString()));
-
-        assertNotNull(e);
-    }
-
-    @Test
-    void getCart_OK() throws CartNotFoundException {
-        doReturn(new CartForReceipt()).when(cartReceiptsCosmosClient).getCartItem(anyString());
-
-        assertDoesNotThrow(() -> sut.getCart(anyString()));
-    }
-
-    @Test
-    void getCart_KO_NotFound() throws CartNotFoundException {
-        doThrow(CartNotFoundException.class).when(cartReceiptsCosmosClient).getCartItem(anyString());
-        CartNotFoundException e = assertThrows(CartNotFoundException.class, () -> sut.getCart(anyString()));
-
-        assertNotNull(e);
-    }
-
-    @Test
-    void getCart_KO_Null() throws CartNotFoundException {
-        doReturn(null).when(cartReceiptsCosmosClient).getCartItem(anyString());
-        CartNotFoundException e = assertThrows(CartNotFoundException.class, () -> sut.getCart(anyString()));
-
-        assertNotNull(e);
     }
 }

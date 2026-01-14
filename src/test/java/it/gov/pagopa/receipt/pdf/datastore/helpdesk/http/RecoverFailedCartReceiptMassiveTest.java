@@ -5,9 +5,9 @@ import com.microsoft.azure.functions.HttpRequestMessage;
 import com.microsoft.azure.functions.HttpResponseMessage;
 import com.microsoft.azure.functions.HttpStatus;
 import com.microsoft.azure.functions.OutputBinding;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
-import it.gov.pagopa.receipt.pdf.datastore.model.MassiveRecoverResult;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.model.MassiveCartRecoverResult;
 import it.gov.pagopa.receipt.pdf.datastore.service.HelpdeskService;
 import it.gov.pagopa.receipt.pdf.datastore.utils.HttpResponseMessageMock;
 import lombok.SneakyThrows;
@@ -31,14 +31,14 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.Mockito.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class RecoverFailedReceiptMassiveTest {
+class RecoverFailedCartReceiptMassiveTest {
 
     @Mock
     private ExecutionContext contextMock;
@@ -49,13 +49,13 @@ class RecoverFailedReceiptMassiveTest {
     private HttpRequestMessage<Optional<String>> requestMock;
 
     @Captor
-    private ArgumentCaptor<List<Receipt>> receiptCaptor;
+    private ArgumentCaptor<List<CartForReceipt>> cartCaptor;
 
     @Spy
-    private OutputBinding<List<Receipt>> documentdb;
+    private OutputBinding<List<CartForReceipt>> documentdb;
 
     @InjectMocks
-    private RecoverFailedReceiptMassive sut;
+    private RecoverFailedCartReceiptMassive sut;
 
     @BeforeEach
     void openMocks() {
@@ -66,11 +66,11 @@ class RecoverFailedReceiptMassiveTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = ReceiptStatusType.class, names = {"INSERTED", "NOT_QUEUE_SENT", "FAILED"}, mode = EnumSource.Mode.INCLUDE)
+    @EnumSource(value = CartStatusType.class, names = {"INSERTED", "NOT_QUEUE_SENT", "FAILED"}, mode = EnumSource.Mode.INCLUDE)
     @SneakyThrows
-    void recoverFailedReceiptMassiveSuccess(ReceiptStatusType status) {
+    void recoverFailedCartReceiptMassiveSuccess(CartStatusType status) {
         doReturn(Collections.singletonMap("status", status.name())).when(requestMock).getQueryParameters();
-        doReturn(new MassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverByStatus(any(ReceiptStatusType.class));
+        doReturn(new MassiveCartRecoverResult()).when(helpdeskServiceMock).massiveRecoverByStatus(any(CartStatusType.class));
 
         // test execution
         HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, documentdb, contextMock));
@@ -80,12 +80,12 @@ class RecoverFailedReceiptMassiveTest {
         assertEquals(HttpStatus.OK, response.getStatus());
         assertNotNull(response.getBody());
 
-        verify(documentdb, never()).setValue(receiptCaptor.capture());
+        verify(documentdb, never()).setValue(cartCaptor.capture());
     }
 
     @Test
     @SneakyThrows
-    void recoverFailedReceiptMassiveFailParamNull() {
+    void recoverFailedCartReceiptMassiveFailParamNull() {
         // test execution
         HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, documentdb, contextMock));
 
@@ -94,13 +94,13 @@ class RecoverFailedReceiptMassiveTest {
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatus());
         assertNotNull(response.getBody());
 
-        verify(helpdeskServiceMock, never()).massiveRecoverByStatus(any(ReceiptStatusType.class));
-        verify(documentdb, never()).setValue(receiptCaptor.capture());
+        verify(helpdeskServiceMock, never()).massiveRecoverByStatus(any(CartStatusType.class));
+        verify(documentdb, never()).setValue(cartCaptor.capture());
     }
 
     @Test
     @SneakyThrows
-    void recoverFailedReceiptMassiveFailParamNotAStatus() {
+    void recoverFailedCartReceiptMassiveFailParamNotAStatus() {
         doReturn(Collections.singletonMap("status", "random")).when(requestMock).getQueryParameters();
 
         // test execution
@@ -111,14 +111,14 @@ class RecoverFailedReceiptMassiveTest {
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatus());
         assertNotNull(response.getBody());
 
-        verify(helpdeskServiceMock, never()).massiveRecoverByStatus(any(ReceiptStatusType.class));
-        verify(documentdb, never()).setValue(receiptCaptor.capture());
+        verify(helpdeskServiceMock, never()).massiveRecoverByStatus(any(CartStatusType.class));
+        verify(documentdb, never()).setValue(cartCaptor.capture());
     }
 
     @ParameterizedTest
-    @EnumSource(value = ReceiptStatusType.class, names = {"INSERTED", "NOT_QUEUE_SENT", "FAILED"}, mode = EnumSource.Mode.EXCLUDE)
+    @EnumSource(value = CartStatusType.class, names = {"INSERTED", "NOT_QUEUE_SENT", "FAILED"}, mode = EnumSource.Mode.EXCLUDE)
     @SneakyThrows
-    void recoverFailedReceiptMassiveFailStatusParamUnprocessable(ReceiptStatusType status) {
+    void recoverFailedCartReceiptMassiveFailStatusParamUnprocessable(CartStatusType status) {
         doReturn(Collections.singletonMap("status", status.name())).when(requestMock).getQueryParameters();
 
         // test execution
@@ -129,21 +129,21 @@ class RecoverFailedReceiptMassiveTest {
         assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, response.getStatus());
         assertNotNull(response.getBody());
 
-        verify(helpdeskServiceMock, never()).massiveRecoverByStatus(any(ReceiptStatusType.class));
-        verify(documentdb, never()).setValue(receiptCaptor.capture());
+        verify(helpdeskServiceMock, never()).massiveRecoverByStatus(any(CartStatusType.class));
+        verify(documentdb, never()).setValue(cartCaptor.capture());
     }
 
     @Test
     @SneakyThrows
-    void recoverFailedReceiptMassiveFailRecoverError() {
-        MassiveRecoverResult recoverResult = MassiveRecoverResult.builder()
+    void recoverFailedCartReceiptMassiveFailRecoverError() {
+        MassiveCartRecoverResult recoverResult = MassiveCartRecoverResult.builder()
                 .successCounter(1)
                 .errorCounter(1)
-                .failedReceiptList(List.of(new Receipt()))
+                .failedCartList(List.of(new CartForReceipt()))
                 .build();
 
-        doReturn(Collections.singletonMap("status", ReceiptStatusType.FAILED.name())).when(requestMock).getQueryParameters();
-        doReturn(recoverResult).when(helpdeskServiceMock).massiveRecoverByStatus(any(ReceiptStatusType.class));
+        doReturn(Collections.singletonMap("status", CartStatusType.FAILED.name())).when(requestMock).getQueryParameters();
+        doReturn(recoverResult).when(helpdeskServiceMock).massiveRecoverByStatus(any(CartStatusType.class));
 
         // test execution
         HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, documentdb, contextMock));
@@ -153,7 +153,7 @@ class RecoverFailedReceiptMassiveTest {
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatus());
         assertNotNull(response.getBody());
 
-        verify(documentdb).setValue(receiptCaptor.capture());
-        assertNotNull(receiptCaptor.getValue());
+        verify(documentdb).setValue(cartCaptor.capture());
+        assertNotNull(cartCaptor.getValue());
     }
 }
