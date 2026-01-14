@@ -19,6 +19,7 @@ import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
 
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 
 public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
@@ -40,11 +41,13 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
     private CartReceiptsCosmosClientImpl() {
         String azureKey = System.getenv("COSMOS_RECEIPT_KEY");
         String serviceEndpoint = System.getenv("COSMOS_RECEIPT_SERVICE_ENDPOINT");
+        String readRegion = System.getenv("COSMOS_RECEIPT_READ_REGION");
 
         this.cosmosClient = new CosmosClientBuilder()
                 .endpoint(serviceEndpoint)
                 .key(azureKey)
                 .consistencyLevel(ConsistencyLevel.BOUNDED_STALENESS)
+                .preferredRegions(List.of(readRegion))
                 .buildClient();
     }
 
@@ -64,17 +67,6 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
     public CartForReceipt getCartItem(String eventId) throws CartNotFoundException {
         return getDocumentByFilter(cartForReceiptContainerName, "eventId", eventId, CartForReceipt.class)
                 .orElseThrow(() -> new CartNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG));
-    }
-
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public CosmosItemResponse<CartForReceipt> saveCart(CartForReceipt receipt) {
-        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
-        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(cartForReceiptContainerName);
-        return cosmosContainer.createItem(receipt);
     }
 
     /**

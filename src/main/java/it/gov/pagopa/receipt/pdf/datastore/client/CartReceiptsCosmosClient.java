@@ -20,14 +20,6 @@ public interface CartReceiptsCosmosClient {
     CartForReceipt getCartItem(String eventId) throws CartNotFoundException;
 
     /**
-     * Save Cart For Receipt on CosmosDB database
-     *
-     * @param receipt Cart Data to save
-     * @return the saved cart-for-receipts document
-     */
-    CosmosItemResponse<CartForReceipt> saveCart(CartForReceipt receipt);
-
-    /**
      * Update Cart For Receipt on CosmosDB database
      *
      * @param receipt Cart Data to save

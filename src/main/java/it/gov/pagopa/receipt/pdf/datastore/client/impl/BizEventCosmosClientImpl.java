@@ -27,10 +27,12 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
     private BizEventCosmosClientImpl() {
         String azureKey = System.getenv("COSMOS_BIZ_EVENT_KEY");
         String serviceEndpoint = System.getenv("COSMOS_BIZ_EVENT_SERVICE_ENDPOINT");
+        String readRegion = System.getenv("COSMOS_BIZ_EVENT_READ_REGION");
 
         this.cosmosClient = new CosmosClientBuilder()
                 .endpoint(serviceEndpoint)
                 .key(azureKey)
+                .preferredRegions(List.of(readRegion))
                 .buildClient();
     }
 
