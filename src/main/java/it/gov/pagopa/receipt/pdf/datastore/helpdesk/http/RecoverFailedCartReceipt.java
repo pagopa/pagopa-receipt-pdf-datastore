@@ -18,10 +18,10 @@ import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventBadRequestException
 import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventUnprocessableEntityException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
+import it.gov.pagopa.receipt.pdf.datastore.service.CartReceiptCosmosService;
 import it.gov.pagopa.receipt.pdf.datastore.service.HelpdeskService;
-import it.gov.pagopa.receipt.pdf.datastore.service.ReceiptCosmosService;
+import it.gov.pagopa.receipt.pdf.datastore.service.impl.CartReceiptCosmosServiceImpl;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.HelpdeskServiceImpl;
-import it.gov.pagopa.receipt.pdf.datastore.service.impl.ReceiptCosmosServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,19 +38,19 @@ public class RecoverFailedCartReceipt {
 
     private final Logger logger = LoggerFactory.getLogger(RecoverFailedCartReceipt.class);
 
-    private final ReceiptCosmosService receiptCosmosService;
+    private final CartReceiptCosmosService cartReceiptCosmosService;
     private final HelpdeskService helpdeskService;
 
     public RecoverFailedCartReceipt() {
-        this.receiptCosmosService = new ReceiptCosmosServiceImpl();
+        this.cartReceiptCosmosService = new CartReceiptCosmosServiceImpl();
         this.helpdeskService = new HelpdeskServiceImpl();
     }
 
     RecoverFailedCartReceipt(
-            ReceiptCosmosService receiptCosmosService,
+            CartReceiptCosmosService cartReceiptCosmosService,
             HelpdeskService helpdeskService
     ) {
-        this.receiptCosmosService = receiptCosmosService;
+        this.cartReceiptCosmosService = cartReceiptCosmosService;
         this.helpdeskService = helpdeskService;
     }
 
@@ -97,7 +97,7 @@ public class RecoverFailedCartReceipt {
 
         CartForReceipt existingCart;
         try {
-            existingCart = this.receiptCosmosService.getCart(cartId);
+            existingCart = this.cartReceiptCosmosService.getCart(cartId);
         } catch (CartNotFoundException e) {
             String errMsg = "Cart receipt not found with the provided cart id";
             logger.error(errMsg, e);
@@ -114,9 +114,9 @@ public class RecoverFailedCartReceipt {
             return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, errMsg);
         }
 
-        CartForReceipt cartForReceipt;
+        CartForReceipt cart;
         try {
-            cartForReceipt = this.helpdeskService.recoverFailedCart(existingCart);
+            cart = this.helpdeskService.recoverFailedCart(existingCart);
         } catch (BizEventUnprocessableEntityException e) {
             logger.error(e.getMessage(), e);
             return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, e.getMessage());
@@ -128,11 +128,11 @@ public class RecoverFailedCartReceipt {
             return buildErrorResponse(request, HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
         }
 
-        if (!isCartStatusValid(cartForReceipt)) {
+        if (!isCartStatusValid(cart)) {
             String errMsg = String.format("Recover failed for cart with id %s. Reason: %s",
-                    cartId, cartForReceipt.getReasonErr().getMessage());
+                    cartId, cart.getReasonErr() != null ? cart.getReasonErr().getMessage() : "Detail unavailable");
             logger.error(errMsg);
-            documentdb.setValue(cartForReceipt);
+            documentdb.setValue(cart);
             return buildErrorResponse(request, HttpStatus.INTERNAL_SERVER_ERROR, errMsg);
         }
 

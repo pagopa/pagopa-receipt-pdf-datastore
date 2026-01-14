@@ -15,10 +15,10 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
+import it.gov.pagopa.receipt.pdf.datastore.service.CartReceiptCosmosService;
 import it.gov.pagopa.receipt.pdf.datastore.service.HelpdeskService;
-import it.gov.pagopa.receipt.pdf.datastore.service.ReceiptCosmosService;
+import it.gov.pagopa.receipt.pdf.datastore.service.impl.CartReceiptCosmosServiceImpl;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.HelpdeskServiceImpl;
-import it.gov.pagopa.receipt.pdf.datastore.service.impl.ReceiptCosmosServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,16 +34,16 @@ public class RecoverNotNotifiedCartReceipt {
 
     private final Logger logger = LoggerFactory.getLogger(RecoverNotNotifiedCartReceipt.class);
 
-    private final ReceiptCosmosService receiptCosmosService;
+    private final CartReceiptCosmosService cartReceiptCosmosService;
     private final HelpdeskService helpdeskService;
 
     public RecoverNotNotifiedCartReceipt() {
-        this.receiptCosmosService = new ReceiptCosmosServiceImpl();
+        this.cartReceiptCosmosService = new CartReceiptCosmosServiceImpl();
         this.helpdeskService = new HelpdeskServiceImpl();
     }
 
-    RecoverNotNotifiedCartReceipt(ReceiptCosmosService receiptCosmosService, HelpdeskService helpdeskService) {
-        this.receiptCosmosService = receiptCosmosService;
+    RecoverNotNotifiedCartReceipt(CartReceiptCosmosService cartReceiptCosmosService, HelpdeskService helpdeskService) {
+        this.cartReceiptCosmosService = cartReceiptCosmosService;
         this.helpdeskService = helpdeskService;
     }
 
@@ -78,7 +78,7 @@ public class RecoverNotNotifiedCartReceipt {
 
         CartForReceipt cart;
         try {
-            cart = this.receiptCosmosService.getCart(cartId);
+            cart = this.cartReceiptCosmosService.getCart(cartId);
         } catch (CartNotFoundException e) {
             String errMsg = String.format("Unable to retrieve the cart receipt with id %s", cartId);
             logger.error("[{}] {}", context.getFunctionName(), errMsg, e);

@@ -16,6 +16,7 @@ import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.datastore.model.MassiveCartRecoverResult;
 import it.gov.pagopa.receipt.pdf.datastore.model.MassiveRecoverResult;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
+import it.gov.pagopa.receipt.pdf.datastore.service.CartReceiptCosmosService;
 import it.gov.pagopa.receipt.pdf.datastore.service.HelpdeskService;
 import it.gov.pagopa.receipt.pdf.datastore.service.ReceiptCosmosService;
 import it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils;
@@ -35,21 +36,24 @@ public class HelpdeskServiceImpl implements HelpdeskService {
     private final Logger logger = LoggerFactory.getLogger(HelpdeskServiceImpl.class);
 
     private final ReceiptCosmosService receiptCosmosService;
+    private final CartReceiptCosmosService cartReceiptCosmosService;
     private final BizEventToReceiptService bizEventToReceiptService;
     private final BizEventCosmosClient bizEventCosmosClient;
 
     public HelpdeskServiceImpl() {
-        this.bizEventToReceiptService = new BizEventToReceiptServiceImpl();
         this.receiptCosmosService = new ReceiptCosmosServiceImpl();
+        this.cartReceiptCosmosService = new CartReceiptCosmosServiceImpl();
+        this.bizEventToReceiptService = new BizEventToReceiptServiceImpl();
         this.bizEventCosmosClient = BizEventCosmosClientImpl.getInstance();
     }
 
     public HelpdeskServiceImpl(
-            ReceiptCosmosService receiptCosmosService,
+            ReceiptCosmosService receiptCosmosService, CartReceiptCosmosService cartReceiptCosmosService,
             BizEventToReceiptService bizEventToReceiptService,
             BizEventCosmosClient bizEventCosmosClient
     ) {
         this.receiptCosmosService = receiptCosmosService;
+        this.cartReceiptCosmosService = cartReceiptCosmosService;
         this.bizEventToReceiptService = bizEventToReceiptService;
         this.bizEventCosmosClient = bizEventCosmosClient;
     }
@@ -168,7 +172,7 @@ public class HelpdeskServiceImpl implements HelpdeskService {
         String continuationToken = null;
         do {
             Iterable<FeedResponse<CartForReceipt>> feedResponseIterator =
-                    this.receiptCosmosService.getFailedCartReceiptByStatus(continuationToken, 100, status);
+                    this.cartReceiptCosmosService.getFailedCartReceiptByStatus(continuationToken, 100, status);
 
             for (FeedResponse<CartForReceipt> page : feedResponseIterator) {
                 for (CartForReceipt cart : page.getResults()) {
@@ -224,7 +228,7 @@ public class HelpdeskServiceImpl implements HelpdeskService {
         String continuationToken = null;
         do {
             Iterable<FeedResponse<CartForReceipt>> feedResponseIterator =
-                    this.receiptCosmosService.getNotNotifiedCartReceiptByStatus(continuationToken, 100, status);
+                    this.cartReceiptCosmosService.getNotNotifiedCartReceiptByStatus(continuationToken, 100, status);
 
             for (FeedResponse<CartForReceipt> page : feedResponseIterator) {
                 for (CartForReceipt cart : page.getResults()) {

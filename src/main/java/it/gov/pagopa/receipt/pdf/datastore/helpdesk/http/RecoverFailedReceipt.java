@@ -125,7 +125,7 @@ public class RecoverFailedReceipt {
 
         if (!isReceiptStatusValid(receipt)) {
             String errMsg = String.format("Recover failed for receipt with id %s. Reason: %s",
-                    eventId, receipt.getReasonErr().getMessage());
+                    eventId, receipt.getReasonErr() != null ? receipt.getReasonErr().getMessage() : "Detail unavailable");
             logger.error(errMsg);
             documentdb.setValue(receipt);
             return buildErrorResponse(request, HttpStatus.INTERNAL_SERVER_ERROR, errMsg);

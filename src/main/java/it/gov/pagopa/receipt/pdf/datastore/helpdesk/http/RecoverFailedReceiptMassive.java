@@ -114,24 +114,4 @@ public class RecoverFailedReceiptMassive {
                 .body(responseMsg)
                 .build();
     }
-
-    private ReceiptStatusType validateStatusParam(String statusParam) throws InvalidParameterException {
-        if (statusParam == null) {
-            throw new InvalidParameterException("Please pass a status to recover");
-        }
-
-        ReceiptStatusType status;
-        try {
-            status = ReceiptStatusType.valueOf(statusParam);
-        } catch (IllegalArgumentException e) {
-            throw new InvalidParameterException("Please pass a valid status to recover", e);
-        }
-
-        if (!status.isAFailedDatastoreStatus()) {
-            String message = String.format("The provided status %s is not among the processable" +
-                    "statuses (INSERTED, NOT_QUEUE_SENT, FAILED).", status);
-            throw new InvalidParameterException(message);
-        }
-        return status;
-    }
 }
