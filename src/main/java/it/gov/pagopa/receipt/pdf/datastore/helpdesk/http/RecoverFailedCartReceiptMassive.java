@@ -92,7 +92,7 @@ public class RecoverFailedCartReceiptMassive {
             return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, message);
         }
 
-        MassiveCartRecoverResult recoverResult = this.helpdeskService.massiveRecoverByStatus(status);
+        MassiveCartRecoverResult recoverResult = this.helpdeskService.massiveRecoverFailedCart(status);
 
         int successCounter = recoverResult.getSuccessCounter();
         int errorCounter = recoverResult.getErrorCounter();

@@ -74,7 +74,7 @@ public class RecoverFailedCartReceiptScheduled {
     }
 
     private List<CartForReceipt> recover(CartStatusType status) {
-        MassiveCartRecoverResult recoverResult = this.helpdeskService.massiveRecoverByStatus(status);
+        MassiveCartRecoverResult recoverResult = this.helpdeskService.massiveRecoverFailedCart(status);
 
         int successCounter = recoverResult.getSuccessCounter();
         int errorCounter = recoverResult.getErrorCounter();

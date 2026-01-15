@@ -1,34 +1,24 @@
 package it.gov.pagopa.receipt.pdf.datastore.service.impl;
 
 import com.azure.cosmos.models.FeedResponse;
-import it.gov.pagopa.receipt.pdf.datastore.client.CartReceiptsCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptCosmosClient;
-import it.gov.pagopa.receipt.pdf.datastore.client.impl.CartReceiptsCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
-import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
-import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.IOMessage;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReceiptError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
-import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
-import it.gov.pagopa.receipt.pdf.datastore.exception.IoMessageNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.service.ReceiptCosmosService;
 
 public class ReceiptCosmosServiceImpl implements ReceiptCosmosService {
 
     private final ReceiptCosmosClient receiptCosmosClient;
-    private final CartReceiptsCosmosClient cartReceiptsCosmosClient;
 
     public ReceiptCosmosServiceImpl() {
         this.receiptCosmosClient = ReceiptCosmosClientImpl.getInstance();
-        this.cartReceiptsCosmosClient = CartReceiptsCosmosClientImpl.getInstance();
     }
 
-    ReceiptCosmosServiceImpl(ReceiptCosmosClient receiptCosmosClient, CartReceiptsCosmosClient cartReceiptsCosmosClient) {
+    ReceiptCosmosServiceImpl(ReceiptCosmosClient receiptCosmosClient) {
         this.receiptCosmosClient = receiptCosmosClient;
-        this.cartReceiptsCosmosClient = cartReceiptsCosmosClient;
     }
 
     /**

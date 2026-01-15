@@ -53,8 +53,8 @@ class RecoverNotNotifiedCartReceiptScheduledTest {
     void recoverFailedReceiptScheduledSuccess() {
         sut = new RecoverNotNotifiedCartReceiptScheduled(helpdeskServiceMock);
 
-        doReturn(List.of(new CartForReceipt())).when(helpdeskServiceMock).massiveRecoverNoNotified(CartStatusType.IO_ERROR_TO_NOTIFY);
-        doReturn(List.of(new CartForReceipt())).when(helpdeskServiceMock).massiveRecoverNoNotified(CartStatusType.GENERATED);
+        doReturn(List.of(new CartForReceipt())).when(helpdeskServiceMock).massiveRecoverNoNotifiedCart(CartStatusType.IO_ERROR_TO_NOTIFY);
+        doReturn(List.of(new CartForReceipt())).when(helpdeskServiceMock).massiveRecoverNoNotifiedCart(CartStatusType.GENERATED);
 
         // test execution
         assertDoesNotThrow(() -> sut.processRecoverNotNotifiedScheduledTrigger("info", documentdb, contextMock));
@@ -69,8 +69,8 @@ class RecoverNotNotifiedCartReceiptScheduledTest {
     void recoverFailedReceiptScheduledSuccessWithoutAction() {
         sut = new RecoverNotNotifiedCartReceiptScheduled(helpdeskServiceMock);
 
-        doReturn(Collections.emptyList()).when(helpdeskServiceMock).massiveRecoverNoNotified(CartStatusType.IO_ERROR_TO_NOTIFY);
-        doReturn(Collections.emptyList()).when(helpdeskServiceMock).massiveRecoverNoNotified(CartStatusType.GENERATED);
+        doReturn(Collections.emptyList()).when(helpdeskServiceMock).massiveRecoverNoNotifiedCart(CartStatusType.IO_ERROR_TO_NOTIFY);
+        doReturn(Collections.emptyList()).when(helpdeskServiceMock).massiveRecoverNoNotifiedCart(CartStatusType.GENERATED);
 
         // test execution
         assertDoesNotThrow(() -> sut.processRecoverNotNotifiedScheduledTrigger("info", documentdb, contextMock));
@@ -92,6 +92,6 @@ class RecoverNotNotifiedCartReceiptScheduledTest {
         assertDoesNotThrow(() -> sut.processRecoverNotNotifiedScheduledTrigger("info", documentdb, contextMock));
 
         verify(documentdb, never()).setValue(any());
-        verify(helpdeskServiceMock, never()).massiveRecoverByStatus(any(CartStatusType.class));
+        verify(helpdeskServiceMock, never()).massiveRecoverFailedCart(any(CartStatusType.class));
     }
 }

@@ -67,7 +67,7 @@ class RecoverNotNotifiedReceiptMassiveTest {
     @SneakyThrows
     void recoverNotNotifiedReceiptMassiveSuccess(ReceiptStatusType status) {
         doReturn(Collections.singletonMap("status", status.name())).when(requestMock).getQueryParameters();
-        doReturn(List.of(new Receipt())).when(helpdeskServiceMock).massiveRecoverNoNotified(status);
+        doReturn(List.of(new Receipt())).when(helpdeskServiceMock).massiveRecoverNoNotifiedReceipt(status);
 
         // test execution
         HttpResponseMessage response = sut.run(requestMock, documentReceipts, executionContextMock);
@@ -87,7 +87,7 @@ class RecoverNotNotifiedReceiptMassiveTest {
     @SneakyThrows
     void recoverNotNotifiedReceiptMassiveSuccessWithoutAction(ReceiptStatusType status) {
         doReturn(Collections.singletonMap("status", status.name())).when(requestMock).getQueryParameters();
-        doReturn(Collections.emptyList()).when(helpdeskServiceMock).massiveRecoverNoNotified(status);
+        doReturn(Collections.emptyList()).when(helpdeskServiceMock).massiveRecoverNoNotifiedReceipt(status);
 
         // test execution
         HttpResponseMessage response = sut.run(requestMock, documentReceipts, executionContextMock);

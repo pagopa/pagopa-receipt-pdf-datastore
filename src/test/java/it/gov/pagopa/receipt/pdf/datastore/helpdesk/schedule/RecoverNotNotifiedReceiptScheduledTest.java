@@ -53,8 +53,8 @@ class RecoverNotNotifiedReceiptScheduledTest {
     void recoverFailedReceiptScheduledSuccess() {
         sut = new RecoverNotNotifiedReceiptScheduled(helpdeskServiceMock);
 
-        doReturn(List.of(new Receipt())).when(helpdeskServiceMock).massiveRecoverNoNotified(ReceiptStatusType.IO_ERROR_TO_NOTIFY);
-        doReturn(List.of(new Receipt())).when(helpdeskServiceMock).massiveRecoverNoNotified(ReceiptStatusType.GENERATED);
+        doReturn(List.of(new Receipt())).when(helpdeskServiceMock).massiveRecoverNoNotifiedReceipt(ReceiptStatusType.IO_ERROR_TO_NOTIFY);
+        doReturn(List.of(new Receipt())).when(helpdeskServiceMock).massiveRecoverNoNotifiedReceipt(ReceiptStatusType.GENERATED);
 
         // test execution
         assertDoesNotThrow(() -> sut.processRecoverNotNotifiedScheduledTrigger("info", documentdb, contextMock));
@@ -69,8 +69,8 @@ class RecoverNotNotifiedReceiptScheduledTest {
     void recoverFailedReceiptScheduledSuccessWithoutAction() {
         sut = new RecoverNotNotifiedReceiptScheduled(helpdeskServiceMock);
 
-        doReturn(Collections.emptyList()).when(helpdeskServiceMock).massiveRecoverNoNotified(ReceiptStatusType.IO_ERROR_TO_NOTIFY);
-        doReturn(Collections.emptyList()).when(helpdeskServiceMock).massiveRecoverNoNotified(ReceiptStatusType.GENERATED);
+        doReturn(Collections.emptyList()).when(helpdeskServiceMock).massiveRecoverNoNotifiedReceipt(ReceiptStatusType.IO_ERROR_TO_NOTIFY);
+        doReturn(Collections.emptyList()).when(helpdeskServiceMock).massiveRecoverNoNotifiedReceipt(ReceiptStatusType.GENERATED);
 
         // test execution
         assertDoesNotThrow(() -> sut.processRecoverNotNotifiedScheduledTrigger("info", documentdb, contextMock));
@@ -92,6 +92,6 @@ class RecoverNotNotifiedReceiptScheduledTest {
         assertDoesNotThrow(() -> sut.processRecoverNotNotifiedScheduledTrigger("info", documentdb, contextMock));
 
         verify(documentdb, never()).setValue(any());
-        verify(helpdeskServiceMock, never()).massiveRecoverByStatus(any(ReceiptStatusType.class));
+        verify(helpdeskServiceMock, never()).massiveRecoverFailedReceipt(any(ReceiptStatusType.class));
     }
 }

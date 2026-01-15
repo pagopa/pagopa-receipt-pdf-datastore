@@ -69,7 +69,7 @@ public class RecoverNotNotifiedReceiptScheduled {
     }
 
     private List<Receipt> process(ExecutionContext context, ReceiptStatusType statusType) {
-        List<Receipt> receiptList = this.helpdeskService.massiveRecoverNoNotified(statusType);
+        List<Receipt> receiptList = this.helpdeskService.massiveRecoverNoNotifiedReceipt(statusType);
 
         List<String> idList = receiptList.parallelStream().map(Receipt::getId).toList();
         logger.info("[{}] Recovered {} receipts for status {} with ids: {}",

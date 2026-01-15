@@ -70,7 +70,7 @@ class RecoverFailedReceiptMassiveTest {
     @SneakyThrows
     void recoverFailedReceiptMassiveSuccess(ReceiptStatusType status) {
         doReturn(Collections.singletonMap("status", status.name())).when(requestMock).getQueryParameters();
-        doReturn(new MassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverByStatus(any(ReceiptStatusType.class));
+        doReturn(new MassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverFailedReceipt(any(ReceiptStatusType.class));
 
         // test execution
         HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, documentdb, contextMock));
@@ -94,7 +94,7 @@ class RecoverFailedReceiptMassiveTest {
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatus());
         assertNotNull(response.getBody());
 
-        verify(helpdeskServiceMock, never()).massiveRecoverByStatus(any(ReceiptStatusType.class));
+        verify(helpdeskServiceMock, never()).massiveRecoverFailedReceipt(any(ReceiptStatusType.class));
         verify(documentdb, never()).setValue(receiptCaptor.capture());
     }
 
@@ -111,7 +111,7 @@ class RecoverFailedReceiptMassiveTest {
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatus());
         assertNotNull(response.getBody());
 
-        verify(helpdeskServiceMock, never()).massiveRecoverByStatus(any(ReceiptStatusType.class));
+        verify(helpdeskServiceMock, never()).massiveRecoverFailedReceipt(any(ReceiptStatusType.class));
         verify(documentdb, never()).setValue(receiptCaptor.capture());
     }
 
@@ -129,7 +129,7 @@ class RecoverFailedReceiptMassiveTest {
         assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, response.getStatus());
         assertNotNull(response.getBody());
 
-        verify(helpdeskServiceMock, never()).massiveRecoverByStatus(any(ReceiptStatusType.class));
+        verify(helpdeskServiceMock, never()).massiveRecoverFailedReceipt(any(ReceiptStatusType.class));
         verify(documentdb, never()).setValue(receiptCaptor.capture());
     }
 
@@ -143,7 +143,7 @@ class RecoverFailedReceiptMassiveTest {
                 .build();
 
         doReturn(Collections.singletonMap("status", ReceiptStatusType.FAILED.name())).when(requestMock).getQueryParameters();
-        doReturn(recoverResult).when(helpdeskServiceMock).massiveRecoverByStatus(any(ReceiptStatusType.class));
+        doReturn(recoverResult).when(helpdeskServiceMock).massiveRecoverFailedReceipt(any(ReceiptStatusType.class));
 
         // test execution
         HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, documentdb, contextMock));

@@ -86,7 +86,7 @@ public class RecoverNotNotifiedReceiptMassive {
             return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, message);
         }
 
-        List<Receipt> receiptList = this.helpdeskService.massiveRecoverNoNotified(status);
+        List<Receipt> receiptList = this.helpdeskService.massiveRecoverNoNotifiedReceipt(status);
         if (receiptList.isEmpty()) {
             return request.createResponseBuilder(HttpStatus.OK).body("No receipts to be recovered").build();
         }

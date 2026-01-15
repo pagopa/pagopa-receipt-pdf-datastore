@@ -70,7 +70,7 @@ class RecoverFailedCartReceiptMassiveTest {
     @SneakyThrows
     void recoverFailedCartReceiptMassiveSuccess(CartStatusType status) {
         doReturn(Collections.singletonMap("status", status.name())).when(requestMock).getQueryParameters();
-        doReturn(new MassiveCartRecoverResult()).when(helpdeskServiceMock).massiveRecoverByStatus(any(CartStatusType.class));
+        doReturn(new MassiveCartRecoverResult()).when(helpdeskServiceMock).massiveRecoverFailedCart(any(CartStatusType.class));
 
         // test execution
         HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, documentdb, contextMock));
@@ -94,7 +94,7 @@ class RecoverFailedCartReceiptMassiveTest {
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatus());
         assertNotNull(response.getBody());
 
-        verify(helpdeskServiceMock, never()).massiveRecoverByStatus(any(CartStatusType.class));
+        verify(helpdeskServiceMock, never()).massiveRecoverFailedCart(any(CartStatusType.class));
         verify(documentdb, never()).setValue(cartCaptor.capture());
     }
 
@@ -111,7 +111,7 @@ class RecoverFailedCartReceiptMassiveTest {
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatus());
         assertNotNull(response.getBody());
 
-        verify(helpdeskServiceMock, never()).massiveRecoverByStatus(any(CartStatusType.class));
+        verify(helpdeskServiceMock, never()).massiveRecoverFailedCart(any(CartStatusType.class));
         verify(documentdb, never()).setValue(cartCaptor.capture());
     }
 
@@ -129,7 +129,7 @@ class RecoverFailedCartReceiptMassiveTest {
         assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, response.getStatus());
         assertNotNull(response.getBody());
 
-        verify(helpdeskServiceMock, never()).massiveRecoverByStatus(any(CartStatusType.class));
+        verify(helpdeskServiceMock, never()).massiveRecoverFailedCart(any(CartStatusType.class));
         verify(documentdb, never()).setValue(cartCaptor.capture());
     }
 
@@ -143,7 +143,7 @@ class RecoverFailedCartReceiptMassiveTest {
                 .build();
 
         doReturn(Collections.singletonMap("status", CartStatusType.FAILED.name())).when(requestMock).getQueryParameters();
-        doReturn(recoverResult).when(helpdeskServiceMock).massiveRecoverByStatus(any(CartStatusType.class));
+        doReturn(recoverResult).when(helpdeskServiceMock).massiveRecoverFailedCart(any(CartStatusType.class));
 
         // test execution
         HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, documentdb, contextMock));

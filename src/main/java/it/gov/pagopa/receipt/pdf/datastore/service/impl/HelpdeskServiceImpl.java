@@ -61,8 +61,6 @@ public class HelpdeskServiceImpl implements HelpdeskService {
     @Override
     public Receipt recoverFailedReceipt(Receipt existingReceipt)
             throws BizEventUnprocessableEntityException, BizEventBadRequestException, BizEventNotFoundException {
-        // retrieve biz-event with the specified cartId
-
         BizEvent bizEvent = this.bizEventCosmosClient.getBizEventDocument(existingReceipt.getEventId());
         validateBizEvent(bizEvent, 1);
 
@@ -128,7 +126,7 @@ public class HelpdeskServiceImpl implements HelpdeskService {
     }
 
     @Override
-    public MassiveRecoverResult massiveRecoverByStatus(ReceiptStatusType status) {
+    public MassiveRecoverResult massiveRecoverFailedReceipt(ReceiptStatusType status) {
         List<Receipt> failedReceipts = new ArrayList<>();
         int successCounter = 0;
         int errorCounter = 0;
@@ -165,7 +163,7 @@ public class HelpdeskServiceImpl implements HelpdeskService {
     }
 
     @Override
-    public MassiveCartRecoverResult massiveRecoverByStatus(CartStatusType status) {
+    public MassiveCartRecoverResult massiveRecoverFailedCart(CartStatusType status) {
         List<CartForReceipt> failedCart = new ArrayList<>();
         int successCounter = 0;
         int errorCounter = 0;
@@ -202,7 +200,7 @@ public class HelpdeskServiceImpl implements HelpdeskService {
     }
 
     @Override
-    public List<Receipt> massiveRecoverNoNotified(ReceiptStatusType status) {
+    public List<Receipt> massiveRecoverNoNotifiedReceipt(ReceiptStatusType status) {
         List<Receipt> receiptList = new ArrayList<>();
         String continuationToken = null;
         do {
@@ -223,8 +221,8 @@ public class HelpdeskServiceImpl implements HelpdeskService {
     }
 
     @Override
-    public List<CartForReceipt> massiveRecoverNoNotified(CartStatusType status) {
-        List<CartForReceipt> carttList = new ArrayList<>();
+    public List<CartForReceipt> massiveRecoverNoNotifiedCart(CartStatusType status) {
+        List<CartForReceipt> cartList = new ArrayList<>();
         String continuationToken = null;
         do {
             Iterable<FeedResponse<CartForReceipt>> feedResponseIterator =
@@ -232,15 +230,15 @@ public class HelpdeskServiceImpl implements HelpdeskService {
 
             for (FeedResponse<CartForReceipt> page : feedResponseIterator) {
                 for (CartForReceipt cart : page.getResults()) {
-                    CartForReceipt restoredReceipt = recoverNoNotifiedCart(cart);
-                    carttList.add(restoredReceipt);
+                    CartForReceipt restoredCart = recoverNoNotifiedCart(cart);
+                    cartList.add(restoredCart);
                 }
                 continuationToken = page.getContinuationToken();
 
             }
         } while (continuationToken != null);
 
-        return carttList;
+        return cartList;
     }
 
     private void validateCartBizEvents(List<BizEvent> bizEvents) throws BizEventBadRequestException, BizEventUnprocessableEntityException {

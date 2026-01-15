@@ -52,9 +52,9 @@ class RecoverFailedCartReceiptScheduledTest {
     void recoverFailedCartReceiptScheduledSuccess() {
         sut = new RecoverFailedCartReceiptScheduled(helpdeskServiceMock);
 
-        doReturn(createMassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverByStatus(CartStatusType.FAILED);
-        doReturn(createMassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverByStatus(CartStatusType.INSERTED);
-        doReturn(createMassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverByStatus(CartStatusType.NOT_QUEUE_SENT);
+        doReturn(createMassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverFailedCart(CartStatusType.FAILED);
+        doReturn(createMassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverFailedCart(CartStatusType.INSERTED);
+        doReturn(createMassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverFailedCart(CartStatusType.NOT_QUEUE_SENT);
 
         // test execution
         assertDoesNotThrow(() -> sut.run("info", documentdb, contextMock));
@@ -69,9 +69,9 @@ class RecoverFailedCartReceiptScheduledTest {
     void recoverFailedCartReceiptScheduledSuccessWithoutAction() {
         sut = new RecoverFailedCartReceiptScheduled(helpdeskServiceMock);
 
-        doReturn(new MassiveCartRecoverResult()).when(helpdeskServiceMock).massiveRecoverByStatus(CartStatusType.FAILED);
-        doReturn(new MassiveCartRecoverResult()).when(helpdeskServiceMock).massiveRecoverByStatus(CartStatusType.INSERTED);
-        doReturn(new MassiveCartRecoverResult()).when(helpdeskServiceMock).massiveRecoverByStatus(CartStatusType.NOT_QUEUE_SENT);
+        doReturn(new MassiveCartRecoverResult()).when(helpdeskServiceMock).massiveRecoverFailedCart(CartStatusType.FAILED);
+        doReturn(new MassiveCartRecoverResult()).when(helpdeskServiceMock).massiveRecoverFailedCart(CartStatusType.INSERTED);
+        doReturn(new MassiveCartRecoverResult()).when(helpdeskServiceMock).massiveRecoverFailedCart(CartStatusType.NOT_QUEUE_SENT);
 
         // test execution
         assertDoesNotThrow(() -> sut.run("info", documentdb, contextMock));
@@ -93,7 +93,7 @@ class RecoverFailedCartReceiptScheduledTest {
         assertDoesNotThrow(() -> sut.run("info", documentdb, contextMock));
 
         verify(documentdb, never()).setValue(any());
-        verify(helpdeskServiceMock, never()).massiveRecoverByStatus(any(CartStatusType.class));
+        verify(helpdeskServiceMock, never()).massiveRecoverFailedCart(any(CartStatusType.class));
     }
 
     private MassiveCartRecoverResult createMassiveRecoverResult() {

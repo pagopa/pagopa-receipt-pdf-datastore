@@ -68,7 +68,7 @@ public class RecoverNotNotifiedCartReceiptScheduled {
     }
 
     private List<CartForReceipt> process(ExecutionContext context, CartStatusType statusType) {
-        List<CartForReceipt> receiptList = this.helpdeskService.massiveRecoverNoNotified(statusType);
+        List<CartForReceipt> receiptList = this.helpdeskService.massiveRecoverNoNotifiedCart(statusType);
 
         List<String> idList = receiptList.parallelStream().map(CartForReceipt::getId).toList();
         logger.info("[{}] Recovered {} cart receipts for status {} with ids: {}",
