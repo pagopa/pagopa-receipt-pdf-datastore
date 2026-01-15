@@ -149,7 +149,7 @@ public class HelpdeskServiceImpl implements HelpdeskService {
                             errorCounter++;
                         }
                     } catch (Exception e) {
-                        logger.error("Recover for receipt {} failed", receipt.getEventId(), e);
+                        logger.warn("Recover for receipt {} failed", receipt.getEventId(), e);
                         errorCounter++;
                     }
                 }
@@ -186,7 +186,7 @@ public class HelpdeskServiceImpl implements HelpdeskService {
                             errorCounter++;
                         }
                     } catch (Exception e) {
-                        logger.error("Recover for cart {} failed", cart.getEventId(), e);
+                        logger.warn("Recover for cart {} failed", cart.getEventId(), e);
                         errorCounter++;
                     }
                 }
