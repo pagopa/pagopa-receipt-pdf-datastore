@@ -46,7 +46,7 @@ public class RecoverNotNotifiedReceiptScheduled {
     public void processRecoverNotNotifiedScheduledTrigger(
             @TimerTrigger(
                     name = "timerInfoNotNotified",
-                    schedule = "%TRIGGER_NOTIFY_REC_SCHEDULE%"
+                    schedule = "%RECOVER_NOT_NOTIFY_SCHEDULE%"
             )
             String timerInfo,
             @CosmosDBOutput(

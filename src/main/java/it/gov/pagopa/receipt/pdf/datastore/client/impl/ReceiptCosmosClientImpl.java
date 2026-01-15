@@ -17,6 +17,7 @@ import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -43,10 +44,12 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
     private ReceiptCosmosClientImpl() {
         String azureKey = System.getenv("COSMOS_RECEIPT_KEY");
         String serviceEndpoint = System.getenv("COSMOS_RECEIPT_SERVICE_ENDPOINT");
+        String readRegion = System.getenv("COSMOS_RECEIPT_READ_REGION");
 
         this.cosmosClient = new CosmosClientBuilder()
                 .endpoint(serviceEndpoint)
                 .key(azureKey)
+                .preferredRegions(List.of(readRegion))
                 .buildClient();
     }
 
