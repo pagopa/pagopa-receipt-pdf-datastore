@@ -101,7 +101,6 @@ microservice-chart: &microservice-chart
     CART_FOR_RECEIPT_CONTAINER_NAME: "cart-for-receipts"
     CART_RECEIPTS_MESSAGE_ERRORS_CONTAINER_NAME: "cart-receipts-message-errors"
     COSMOS_RECEIPT_ERROR_CONTAINER_NAME: "receipts-message-errors"
-    COSMOS_RECEIPT_MESSAGE_CONTAINER_NAME: "receipts-io-messages-evt"
     COSMOS_RECEIPT_CART_CONTAINER_NAME: "cart-for-receipts"
     COSMOS_BIZ_EVENT_CONTAINER_NAME: "biz-events"
     PDV_TOKENIZER_BASE_PATH: "https://api.tokenizer.pdv.pagopa.it/tokenizer/v1"
