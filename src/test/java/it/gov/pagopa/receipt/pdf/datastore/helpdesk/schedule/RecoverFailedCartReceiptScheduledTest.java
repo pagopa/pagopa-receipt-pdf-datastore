@@ -84,10 +84,10 @@ class RecoverFailedCartReceiptScheduledTest {
     @Test
     @SneakyThrows
     void recoverFailedCartReceiptScheduledDisabled() {
-        environment.set("FAILED_AUTORECOVER_ENABLED", "false");
+        environment.set("FAILED_CART_AUTORECOVER_ENABLED", "false");
         sut = new RecoverFailedCartReceiptScheduled(helpdeskServiceMock);
 
-        assertEquals("false", System.getenv("FAILED_AUTORECOVER_ENABLED"));
+        assertEquals("false", System.getenv("FAILED_CART_AUTORECOVER_ENABLED"));
 
         // test execution
         assertDoesNotThrow(() -> sut.run("info", documentdb, contextMock));

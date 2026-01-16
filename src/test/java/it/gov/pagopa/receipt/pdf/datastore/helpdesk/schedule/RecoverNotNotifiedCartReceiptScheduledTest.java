@@ -83,10 +83,10 @@ class RecoverNotNotifiedCartReceiptScheduledTest {
     @Test
     @SneakyThrows
     void recoverFailedReceiptScheduledDisabled() {
-        environment.set("NOT_NOTIFIED_AUTORECOVER_ENABLED", "false");
+        environment.set("NOT_NOTIFIED_CART_AUTORECOVER_ENABLED", "false");
         sut = new RecoverNotNotifiedCartReceiptScheduled(helpdeskServiceMock);
 
-        assertEquals("false", System.getenv("NOT_NOTIFIED_AUTORECOVER_ENABLED"));
+        assertEquals("false", System.getenv("NOT_NOTIFIED_CART_AUTORECOVER_ENABLED"));
 
         // test execution
         assertDoesNotThrow(() -> sut.processRecoverNotNotifiedScheduledTrigger("info", documentdb, contextMock));
