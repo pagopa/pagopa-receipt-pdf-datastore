@@ -186,7 +186,7 @@ microservice-chart: &microservice-chart
 # Configuration for standard application
 pagopa-receipt-pdf-datastore:
   !!merge <<: *microservice-chart
-  fullnameOverride: "ppagopa-receipt-pdf-datastore"
+  fullnameOverride: "pagopa-receipt-pdf-datastore"
   ingress:
     !!merge <<: *ingress
   resources:
