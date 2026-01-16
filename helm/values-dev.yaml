@@ -1,7 +1,7 @@
 microservice-chart: &microservice-chart
   namespace: "receipts"
   nameOverride: ""
-  fullnameOverride: ""
+  fullnameOverride: "pagopa-receipt-pdf-datastore"
   image:
     repository: ghcr.io/pagopa/pagopa-receipt-pdf-datastore
     tag: "1.16.5-1-PAGOPA-3343-cart"
@@ -129,6 +129,21 @@ microservice-chart: &microservice-chart
     ENABLE_CART: "true"
     AUTHENTICATED_CHANNELS: "IO,CHECKOUT,WISP,CHECKOUT_CART"
     UNWANTED_REMITTANCE_INFO: "pagamento multibeneficiario,pagamento bpay"
+    AzureWebJobs.BizEventToReceiptProcessor.Disabled: "false"
+    AzureWebJobs.CartReceiptToReviewed.Disabled: "true"
+    AzureWebJobs.ReceiptToReviewed.Disabled: "true"
+    AzureWebJobs.RecoverFailedCartReceipt.Disabled: "true"
+    AzureWebJobs.RecoverFailedCartReceiptMassive.Disabled: "true"
+    AzureWebJobs.RecoverFailedReceipt.Disabled: "true"
+    AzureWebJobs.RecoverFailedReceiptMassive.Disabled: "true"
+    AzureWebJobs.RecoverNotNotifiedCartReceipt.Disabled: "true"
+    AzureWebJobs.RecoverNotNotifiedCartReceiptMassive.Disabled: "true"
+    AzureWebJobs.RecoverNotNotifiedReceipt.Disabled: "true"
+    AzureWebJobs.RecoverNotNotifiedReceiptMassive.Disabled: "true"
+    AzureWebJobs.RecoverFailedCartReceiptScheduled.Disabled: "true"
+    AzureWebJobs.RecoverFailedReceiptScheduled.Disabled: "true"
+    AzureWebJobs.RecoverNotNotifiedCartTimerTriggerProcessor.Disabled: "true"
+    AzureWebJobs.RecoverNotNotifiedTimerTriggerProcessor.Disabled: "true"
   envFieldRef:
     APP_NAME: "metadata.labels['app.kubernetes.io/instance']"
     APP_VERSION: "metadata.labels['app.kubernetes.io/version']"
@@ -174,33 +189,6 @@ microservice-chart: &microservice-chart
         pullPolicy: Always
       envConfig:
       envSecret:
-# Configuration for standard application
-app:
-  !!merge <<: *microservice-chart
-  fullnameOverride: "pagopa-receipt-pdf-datastore"
-  ingress:
-    !!merge <<: *ingress
-  resources:
-    !!merge <<: *resources
-  envConfig:
-    !!merge <<: *envConfig
-    AzureWebJobs.BizEventToReceiptProcessor.Disabled: "false"
-    AzureWebJobs.CartReceiptToReviewed.Disabled: "true"
-    AzureWebJobs.ReceiptToReviewed.Disabled: "true"
-    AzureWebJobs.RecoverFailedCartReceipt.Disabled: "true"
-    AzureWebJobs.RecoverFailedCartReceiptMassive.Disabled: "true"
-    AzureWebJobs.RecoverFailedReceipt.Disabled: "true"
-    AzureWebJobs.RecoverFailedReceiptMassive.Disabled: "true"
-    AzureWebJobs.RecoverNotNotifiedCartReceipt.Disabled: "true"
-    AzureWebJobs.RecoverNotNotifiedCartReceiptMassive.Disabled: "true"
-    AzureWebJobs.RecoverNotNotifiedReceipt.Disabled: "true"
-    AzureWebJobs.RecoverNotNotifiedReceiptMassive.Disabled: "true"
-    AzureWebJobs.RecoverFailedCartReceiptScheduled.Disabled: "true"
-    AzureWebJobs.RecoverFailedReceiptScheduled.Disabled: "true"
-    AzureWebJobs.RecoverNotNotifiedCartTimerTriggerProcessor.Disabled: "true"
-    AzureWebJobs.RecoverNotNotifiedTimerTriggerProcessor.Disabled: "true"
-  envSecret:
-    !!merge <<: *envSecret
 pagopa-receipt-pdf-datastore-helpdesk:
   !!merge <<: *microservice-chart
   fullnameOverride: "pagopa-receipt-pdf-datastore-helpdesk"
