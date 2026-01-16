@@ -21,7 +21,7 @@ microservice-chart: &microservice-chart
     initialDelaySeconds: 60
     failureThreshold: 6
     periodSeconds: 10
-  deployment:
+  deployment: &deployment
     create: true
     replicas: 1
     strategy:
@@ -101,7 +101,6 @@ microservice-chart: &microservice-chart
     CART_FOR_RECEIPT_CONTAINER_NAME: "cart-for-receipts"
     CART_RECEIPTS_MESSAGE_ERRORS_CONTAINER_NAME: "cart-receipts-message-errors"
     COSMOS_RECEIPT_ERROR_CONTAINER_NAME: "receipts-message-errors"
-    COSMOS_RECEIPT_CART_CONTAINER_NAME: "cart-for-receipts"
     COSMOS_BIZ_EVENT_CONTAINER_NAME: "biz-events"
     PDV_TOKENIZER_BASE_PATH: "https://api.uat.tokenizer.pdv.pagopa.it/tokenizer/v1"
     PDV_TOKENIZER_INITIAL_INTERVAL: "200"
@@ -129,6 +128,21 @@ microservice-chart: &microservice-chart
     ENABLE_CART: "true"
     AUTHENTICATED_CHANNELS: "IO,CHECKOUT,WISP,CHECKOUT_CART"
     UNWANTED_REMITTANCE_INFO: "pagamento multibeneficiario,pagamento bpay"
+    AzureWebJobs.BizEventToReceiptProcessor.Disabled: "false"
+    AzureWebJobs.CartReceiptToReviewed.Disabled: "true"
+    AzureWebJobs.ReceiptToReviewed.Disabled: "true"
+    AzureWebJobs.RecoverFailedCartReceipt.Disabled: "true"
+    AzureWebJobs.RecoverFailedCartReceiptMassive.Disabled: "true"
+    AzureWebJobs.RecoverFailedReceipt.Disabled: "true"
+    AzureWebJobs.RecoverFailedReceiptMassive.Disabled: "true"
+    AzureWebJobs.RecoverNotNotifiedCartReceipt.Disabled: "true"
+    AzureWebJobs.RecoverNotNotifiedCartReceiptMassive.Disabled: "true"
+    AzureWebJobs.RecoverNotNotifiedReceipt.Disabled: "true"
+    AzureWebJobs.RecoverNotNotifiedReceiptMassive.Disabled: "true"
+    AzureWebJobs.RecoverFailedCartReceiptScheduled.Disabled: "true"
+    AzureWebJobs.RecoverFailedReceiptScheduled.Disabled: "true"
+    AzureWebJobs.RecoverNotNotifiedCartTimerTriggerProcessor.Disabled: "true"
+    AzureWebJobs.RecoverNotNotifiedTimerTriggerProcessor.Disabled: "true"
   envFieldRef:
     APP_NAME: "metadata.labels['app.kubernetes.io/instance']"
     APP_VERSION: "metadata.labels['app.kubernetes.io/version']"
@@ -174,33 +188,6 @@ microservice-chart: &microservice-chart
         pullPolicy: Always
       envConfig:
       envSecret:
-# Configuration for standard application
-pagopa-receipt-pdf-datastore:
-  !!merge <<: *microservice-chart
-  fullnameOverride: "pagopa-receipt-pdf-datastore"
-  ingress:
-    !!merge <<: *ingress
-  resources:
-    !!merge <<: *resources
-  envConfig:
-    !!merge <<: *envConfig
-    AzureWebJobs.BizEventToReceiptProcessor.Disabled: "false"
-    AzureWebJobs.CartReceiptToReviewed.Disabled: "true"
-    AzureWebJobs.ReceiptToReviewed.Disabled: "true"
-    AzureWebJobs.RecoverFailedCartReceipt.Disabled: "true"
-    AzureWebJobs.RecoverFailedCartReceiptMassive.Disabled: "true"
-    AzureWebJobs.RecoverFailedReceipt.Disabled: "true"
-    AzureWebJobs.RecoverFailedReceiptMassive.Disabled: "true"
-    AzureWebJobs.RecoverNotNotifiedCartReceipt.Disabled: "true"
-    AzureWebJobs.RecoverNotNotifiedCartReceiptMassive.Disabled: "true"
-    AzureWebJobs.RecoverNotNotifiedReceipt.Disabled: "true"
-    AzureWebJobs.RecoverNotNotifiedReceiptMassive.Disabled: "true"
-    AzureWebJobs.RecoverFailedCartReceiptScheduled.Disabled: "true"
-    AzureWebJobs.RecoverFailedReceiptScheduled.Disabled: "true"
-    AzureWebJobs.RecoverNotNotifiedCartTimerTriggerProcessor.Disabled: "true"
-    AzureWebJobs.RecoverNotNotifiedTimerTriggerProcessor.Disabled: "true"
-  envSecret:
-    !!merge <<: *envSecret
 pagopa-receipt-pdf-datastore-helpdesk:
   !!merge <<: *microservice-chart
   fullnameOverride: "pagopa-receipt-pdf-datastore-helpdesk"
