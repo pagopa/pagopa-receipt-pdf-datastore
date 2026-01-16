@@ -1,15 +1,6 @@
 const TOKENIZED_FISCAL_CODE = "cd07268c-73e8-4df4-8305-a35085e32eff";
 const FISCAL_CODE = "AAAAAA00A00A000A";
 
-const axios = require("axios");
-
-const datastore_url = process.env.DATASTORE_URL;
-
-axios.defaults.headers.common['Ocp-Apim-Subscription-Key'] = process.env.SUBKEY || ""; // for all requests
-if (process.env.canary) {
-  axios.defaults.headers.common['X-CANARY'] = 'canary' // for all requests
-}
-
 const getTokenizedBizEvent = () => {
 	let environment = process.env.ENVIRONMENT || "";
 	if (environment === "uat") {
@@ -204,15 +195,6 @@ function createReceipt(id, status) {
 	return receipt
 }
 
-function createCartEvent(id, listOfBizEventsIds) {
-	return {
-		"id":id,
-		"cartPaymentId": listOfBizEventsIds,
-		"totalNotice": listOfBizEventsIds.length,
-		"status": "INSERTED"
-	}
-}
-
 function makeId(length) {
 	let result = '';
 	const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -227,5 +209,5 @@ function makeId(length) {
 
 module.exports = {
 	TOKENIZED_FISCAL_CODE,
-	createEvent, sleep, createCartEvent, createReceipt, createReceiptError, makeId
+	createEvent, sleep, createReceipt, createReceiptError, makeId
 }

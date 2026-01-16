@@ -13,15 +13,6 @@ const cartContainer = client.database(databaseId).container(cartContainerId);
 const receiptErrorContainer = client.database(databaseId).container(receiptErrorContainerId);
 
 
-async function getDocumentByIdFromReceiptsDatastore(id) {
-    return await receiptContainer.items
-        .query({
-            query: "SELECT * from c WHERE c.eventId=@eventId",
-            parameters: [{ name: "@eventId", value: id }]
-        })
-        .fetchNext();
-}
-
 async function getCartDocumentByIdFromReceiptsDatastore(id) {
     return await cartContainer.items
         .query({
@@ -32,7 +23,7 @@ async function getCartDocumentByIdFromReceiptsDatastore(id) {
 }
 
 async function deleteDocumentFromReceiptsDatastoreByEventId(eventId) {
-    let documents = await getDocumentByIdFromReceiptsDatastore(eventId);
+    let documents = await getDocumentFromReceiptsDatastoreByEventId(eventId);
 
     documents?.resources?.forEach(el => {
         deleteDocumentFromReceiptsDatastore(el.id);
@@ -46,15 +37,6 @@ async function deleteDocumentFromReceiptsDatastore(id) {
         if (error.code !== 404) {
             console.log(error)
         }
-    }
-}
-
-async function createDocumentInCartDatastore(id, listOfBizEventsIds) {
-    let event = createCartEvent(id, listOfBizEventsIds);
-    try {
-        return await cartContainer.items.create(event);
-    } catch (err) {
-        console.log(err);
     }
 }
 
@@ -114,14 +96,6 @@ async function getDocumentFromReceiptsErrorDatastoreByBizEventId(id) {
         .fetchNext();
 }
 
-async function deleteMultipleDocumentsFromReceiptsDatastoreByEventId(eventId) {
-    let documents = await getDocumentFromReceiptsDatastoreByEventId(eventId);
-
-    documents?.resources?.forEach(el => {
-        deleteDocumentFromReceiptsDatastore(el.id);
-    })
-}
-
 async function deleteMultipleDocumentFromReceiptErrorDatastoreByEventId(id) {
     let documents = await getDocumentFromReceiptsErrorDatastoreByBizEventId(id);
 
@@ -130,17 +104,7 @@ async function deleteMultipleDocumentFromReceiptErrorDatastoreByEventId(id) {
     })
 }
 
-async function deleteDocumentFromReceiptsDatastore(id) {
-    try {
-        return await receiptContainer.item(id, id).delete();
-    } catch (error) {
-        if (error.code !== 404) {
-            console.log(error)
-        }
-    }
-}
-
-async function getDocumentFromReceiptsDatastoreByEventId(id) {
+async function getDocumentFromReceiptsDatastoreByEventIdOrdered(id) {
     return await receiptContainer.items
         .query({
             query: "SELECT * from c WHERE c.eventId=@eventId ORDER BY c._ts DESC",
@@ -150,7 +114,7 @@ async function getDocumentFromReceiptsDatastoreByEventId(id) {
 }
 
 module.exports = {
-    getDocumentByIdFromReceiptsDatastore, deleteDocumentFromReceiptsDatastoreByEventId, deleteDocumentFromReceiptsDatastore, createDocumentInCartDatastore, deleteDocumentFromCartDatastore, getCartDocumentByIdFromReceiptsDatastore,
-    createDocumentInReceiptErrorDatastore, deleteDocumentFromReceiptErrorDatastore, getDocumentFromReceiptsErrorDatastoreByBizEventId, deleteMultipleDocumentsFromReceiptsDatastoreByEventId, deleteMultipleDocumentFromReceiptErrorDatastoreByEventId,
-    createDocumentInReceiptsDatastore, getDocumentFromReceiptsDatastoreByEventId
+    deleteDocumentFromReceiptsDatastoreByEventId, deleteDocumentFromReceiptsDatastore,  getCartDocumentByIdFromReceiptsDatastore,
+    createDocumentInReceiptErrorDatastore, deleteDocumentFromReceiptErrorDatastore, getDocumentFromReceiptsErrorDatastoreByBizEventId, deleteMultipleDocumentFromReceiptErrorDatastoreByEventId,
+    createDocumentInReceiptsDatastore, getDocumentFromReceiptsDatastoreByEventId, getDocumentFromReceiptsDatastoreByEventIdOrdered, deleteDocumentFromCartDatastore
 }
