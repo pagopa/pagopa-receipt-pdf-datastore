@@ -194,6 +194,7 @@ pagopa-receipt-pdf-datastore:
   envConfig:
     !!merge <<: *envConfig
     AzureWebJobs.BizEventToReceiptProcessor.Disabled: "false"
+    AzureWebJobs.CartReceiptToReviewed.Disabled: "true"
     AzureWebJobs.ReceiptToReviewed.Disabled: "true"
     AzureWebJobs.RecoverFailedCartReceipt.Disabled: "true"
     AzureWebJobs.RecoverFailedCartReceiptMassive.Disabled: "true"
@@ -229,6 +230,7 @@ pagopa-receipt-pdf-datastore-helpdesk:
     COSMOS_BIZ_EVENT_READ_REGION: "North Europe"
     COSMOS_RECEIPT_READ_REGION: "North Europe"
     AzureWebJobs.BizEventToReceiptProcessor.Disabled: "true"
+    AzureWebJobs.CartReceiptToReviewed.Disabled: "false"
     AzureWebJobs.ReceiptToReviewed.Disabled: "false"
     AzureWebJobs.RecoverFailedCartReceipt.Disabled: "false"
     AzureWebJobs.RecoverFailedCartReceiptMassive.Disabled: "false"
