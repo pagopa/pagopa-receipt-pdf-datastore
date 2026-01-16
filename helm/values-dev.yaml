@@ -175,7 +175,7 @@ microservice-chart: &microservice-chart
       envConfig:
       envSecret:
 # Configuration for standard application
-pagopa-receipt-pdf-datastore:
+app:
   !!merge <<: *microservice-chart
   fullnameOverride: "pagopa-receipt-pdf-datastore"
   ingress:
