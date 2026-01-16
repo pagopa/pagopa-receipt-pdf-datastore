@@ -1,7 +1,7 @@
 microservice-chart: &microservice-chart
   namespace: "receipts"
   nameOverride: ""
-  fullnameOverride: "pagopa-receipt-pdf-datastore"
+  fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-receipt-pdf-datastore
     tag: "1.16.5-1-PAGOPA-3343-cart"
@@ -21,7 +21,7 @@ microservice-chart: &microservice-chart
     initialDelaySeconds: 60
     failureThreshold: 6
     periodSeconds: 10
-  deployment:
+  deployment: &deployment
     create: true
     replicas: 1
     strategy:
