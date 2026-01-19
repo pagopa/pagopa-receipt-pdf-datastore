@@ -44,6 +44,14 @@ public interface ReceiptCosmosClient {
     CosmosItemResponse<Receipt> saveReceipts(Receipt receipt);
 
     /**
+     * Update Receipts on CosmosDB database
+     *
+     * @param receipt Receipts to update
+     * @return receipt documents
+     */
+    CosmosItemResponse<Receipt> updateReceipts(Receipt receipt);
+
+    /**
      * Retrieve the not notified receipt documents with {@link ReceiptStatusType#GENERATED}
      *
      * @param continuationToken Paged query continuation token

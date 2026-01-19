@@ -218,6 +218,35 @@ class BizEventToReceiptServiceImplTest {
     }
 
     @Test
+    void run_OK_updateReceipt() {
+        doReturn(cosmosReceiptResponse).when(receiptCosmosClient).updateReceipts(any());
+        doReturn(HttpStatus.CREATED.value()).when(cosmosReceiptResponse).getStatusCode();
+
+        Receipt receipt = new Receipt();
+
+        Receipt result = assertDoesNotThrow(() -> sut.updateReceipt(receipt));
+
+        assertNotNull(result);
+        assertEquals(ReceiptStatusType.INSERTED, result.getStatus());
+        assertTrue(result.getInserted_at() > 0);
+    }
+
+    @Test
+    void run_KO_updateReceipt() {
+        doThrow(new RuntimeException()).when(receiptCosmosClient).updateReceipts(any());
+
+        Receipt receipt = new Receipt();
+
+        Receipt result = assertDoesNotThrow(() -> sut.updateReceipt(receipt));
+
+        assertNotNull(result);
+        assertEquals(ReceiptStatusType.FAILED, result.getStatus());
+        assertNotNull(result.getReasonErr());
+        assertEquals(ReasonErrorCode.ERROR_COSMOS.getCode(), result.getReasonErr().getCode());
+        assertNotNull(result.getReasonErr().getMessage());
+    }
+
+    @Test
     void run_OK_getTransactionCreationDate_fromTransactionDetails() {
         String date = "date";
         String dateInfo = "dateInfo";

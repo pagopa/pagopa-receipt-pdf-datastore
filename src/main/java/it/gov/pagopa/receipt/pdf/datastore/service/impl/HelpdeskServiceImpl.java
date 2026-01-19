@@ -65,9 +65,11 @@ public class HelpdeskServiceImpl implements HelpdeskService {
         validateBizEvent(bizEvent, 1);
 
         Receipt receipt = createReceipt(bizEvent, bizEventToReceiptService, logger);
+        // override generated id to avoid receipt duplication
+        receipt.setId(existingReceipt.getId());
 
         if (isReceiptStatusValid(receipt)) {
-            this.bizEventToReceiptService.handleSaveReceipt(receipt);
+            receipt = this.bizEventToReceiptService.updateReceipt(receipt);
         }
 
         if (isReceiptStatusValid(receipt)) {

@@ -120,6 +120,16 @@ class ReceiptCosmosClientImplTest {
     }
 
     @Test
+    void updateReceiptsSuccess() {
+        when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
+        when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
+
+        assertDoesNotThrow(() -> sut.updateReceipts(new Receipt()));
+
+        verify(mockContainer).upsertItem(any());
+    }
+
+    @Test
     void runOk_FailedQueryClient() {
         when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);

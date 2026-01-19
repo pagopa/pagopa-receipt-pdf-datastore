@@ -15,6 +15,7 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.event.PaymentInfo;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.Transaction;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.TransactionDetails;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.enumeration.BizEventStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.CartItem;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReasonError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
@@ -95,6 +96,7 @@ class HelpdeskServiceImplTest {
             return null;
         }).when(bizEventToReceiptServiceMock).tokenizeFiscalCodes(any(), any(Receipt.class), any(EventData.class));
         doReturn(CREATION_DATE).when(bizEventToReceiptServiceMock).getTransactionCreationDate(any());
+        doReturn(buildReceipt()).when(bizEventToReceiptServiceMock).updateReceipt(any());
 
         Receipt result = assertDoesNotThrow(() -> sut.recoverFailedReceipt(Receipt.builder().eventId("id").build()));
 
@@ -108,7 +110,6 @@ class HelpdeskServiceImplTest {
         assertEquals(1, result.getEventData().getCart().size());
         assertEquals(REMITTANCE_INFORMATION, result.getEventData().getCart().get(0).getSubject());
 
-        verify(bizEventToReceiptServiceMock).handleSaveReceipt(any());
         verify(bizEventToReceiptServiceMock).handleSendMessageToQueue(anyList(), any());
     }
 
@@ -121,7 +122,7 @@ class HelpdeskServiceImplTest {
 
         verify(bizEventToReceiptServiceMock, never()).tokenizeFiscalCodes(any(), any(), any());
         verify(bizEventToReceiptServiceMock, never()).getTransactionCreationDate(any());
-        verify(bizEventToReceiptServiceMock, never()).handleSaveReceipt(any());
+        verify(bizEventToReceiptServiceMock, never()).updateReceipt(any());
         verify(bizEventToReceiptServiceMock, never()).handleSendMessageToQueue(anyList(), any());
     }
 
@@ -137,7 +138,7 @@ class HelpdeskServiceImplTest {
 
         verify(bizEventToReceiptServiceMock, never()).tokenizeFiscalCodes(any(), any(), any());
         verify(bizEventToReceiptServiceMock, never()).getTransactionCreationDate(any());
-        verify(bizEventToReceiptServiceMock, never()).handleSaveReceipt(any());
+        verify(bizEventToReceiptServiceMock, never()).updateReceipt(any());
         verify(bizEventToReceiptServiceMock, never()).handleSendMessageToQueue(anyList(), any());
     }
 
@@ -152,7 +153,7 @@ class HelpdeskServiceImplTest {
 
         verify(bizEventToReceiptServiceMock, never()).tokenizeFiscalCodes(any(), any(), any());
         verify(bizEventToReceiptServiceMock, never()).getTransactionCreationDate(any());
-        verify(bizEventToReceiptServiceMock, never()).handleSaveReceipt(any());
+        verify(bizEventToReceiptServiceMock, never()).updateReceipt(any());
         verify(bizEventToReceiptServiceMock, never()).handleSendMessageToQueue(anyList(), any());
     }
 
@@ -170,7 +171,7 @@ class HelpdeskServiceImplTest {
 
         verify(bizEventToReceiptServiceMock, never()).tokenizeFiscalCodes(any(), any(), any());
         verify(bizEventToReceiptServiceMock, never()).getTransactionCreationDate(any());
-        verify(bizEventToReceiptServiceMock, never()).handleSaveReceipt(any());
+        verify(bizEventToReceiptServiceMock, never()).updateReceipt(any());
         verify(bizEventToReceiptServiceMock, never()).handleSendMessageToQueue(anyList(), any());
     }
 
@@ -184,7 +185,7 @@ class HelpdeskServiceImplTest {
 
         verify(bizEventToReceiptServiceMock, never()).tokenizeFiscalCodes(any(), any(), any());
         verify(bizEventToReceiptServiceMock, never()).getTransactionCreationDate(any());
-        verify(bizEventToReceiptServiceMock, never()).handleSaveReceipt(any());
+        verify(bizEventToReceiptServiceMock, never()).updateReceipt(any());
         verify(bizEventToReceiptServiceMock, never()).handleSendMessageToQueue(anyList(), any());
     }
 
@@ -209,6 +210,12 @@ class HelpdeskServiceImplTest {
     @Test
     @SneakyThrows
     void recoverFailedReceipt_KO_ErrorSave() {
+        Receipt receipt = buildReceipt();
+        receipt.setStatus(ReceiptStatusType.FAILED);
+        receipt.setReasonErr(ReasonError.builder()
+                .code(ReasonErrorCode.ERROR_COSMOS.getCode())
+                .build());
+
         doReturn(generateValidBizEvent("1")).when(bizEventCosmosClientMock).getBizEventDocument(anyString());
         doAnswer(invocation -> {
             EventData passed = invocation.getArgument(2);
@@ -217,14 +224,7 @@ class HelpdeskServiceImplTest {
             return null;
         }).when(bizEventToReceiptServiceMock).tokenizeFiscalCodes(any(), any(Receipt.class), any(EventData.class));
         doReturn(CREATION_DATE).when(bizEventToReceiptServiceMock).getTransactionCreationDate(any());
-        doAnswer(invocation -> {
-            Receipt passed = invocation.getArgument(0);
-            passed.setStatus(ReceiptStatusType.FAILED);
-            passed.setReasonErr(ReasonError.builder()
-                    .code(ReasonErrorCode.ERROR_COSMOS.getCode())
-                    .build());
-            return null;
-        }).when(bizEventToReceiptServiceMock).handleSaveReceipt(any(Receipt.class));
+        doReturn(receipt).when(bizEventToReceiptServiceMock).updateReceipt(any());
 
         Receipt result = assertDoesNotThrow(() -> sut.recoverFailedReceipt(Receipt.builder().eventId("id").build()));
 
@@ -245,6 +245,7 @@ class HelpdeskServiceImplTest {
             return null;
         }).when(bizEventToReceiptServiceMock).tokenizeFiscalCodes(any(), any(Receipt.class), any(EventData.class));
         doReturn(CREATION_DATE).when(bizEventToReceiptServiceMock).getTransactionCreationDate(any());
+        doReturn(buildReceipt()).when(bizEventToReceiptServiceMock).updateReceipt(any());
         doAnswer(invocation -> {
             Receipt passed = invocation.getArgument(1);
             passed.setStatus(ReceiptStatusType.NOT_QUEUE_SENT);
@@ -644,7 +645,26 @@ class HelpdeskServiceImplTest {
         return item;
     }
 
-    private static CartForReceipt buildCart(CartStatusType cartStatusType) {
+    private Receipt buildReceipt() {
+        return Receipt.builder()
+                .id(EVENT_ID)
+                .eventId(EVENT_ID)
+                .eventData(EventData.builder()
+                        .debtorFiscalCode(TOKENIZED_DEBTOR_FISCAL_CODE)
+                        .payerFiscalCode(TOKENIZED_PAYER_FISCAL_CODE)
+                        .transactionCreationDate(CREATION_DATE)
+                        .cart(List.of(
+                                CartItem.builder()
+                                        .subject(REMITTANCE_INFORMATION)
+                                        .build()
+                        ))
+                        .build())
+                .status(ReceiptStatusType.INSERTED)
+                .inserted_at(134512343)
+                .build();
+    }
+
+    private CartForReceipt buildCart(CartStatusType cartStatusType) {
         return CartForReceipt.builder().status(cartStatusType).build();
     }
 

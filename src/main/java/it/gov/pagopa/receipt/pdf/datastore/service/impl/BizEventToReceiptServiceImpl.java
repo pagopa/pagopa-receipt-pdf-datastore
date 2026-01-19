@@ -2,7 +2,6 @@ package it.gov.pagopa.receipt.pdf.datastore.service.impl;
 
 import com.azure.core.http.rest.Response;
 import com.azure.cosmos.models.CosmosItemResponse;
-import com.azure.cosmos.models.FeedResponse;
 import com.azure.storage.queue.models.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.HttpStatus;
@@ -173,7 +172,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             logger.error("Save receipt with eventId {} on cosmos failed", receipt.getEventId(), e);
         }
 
-        if (statusCode != (HttpStatus.CREATED.value())) {
+        if (statusCode != HttpStatus.CREATED.value()) {
             String errorString = String.format(
                     "[BizEventToReceiptService] Error saving receipt to cosmos for receipt with eventId %s, cosmos client responded with status %s",
                     receipt.getEventId(), statusCode);
@@ -181,6 +180,30 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             //Error info
             logger.error(errorString);
         }
+    }
+
+    @Override
+    public Receipt updateReceipt(Receipt receipt) {
+        int statusCode;
+        try {
+            receipt.setStatus(ReceiptStatusType.INSERTED);
+            receipt.setInserted_at(System.currentTimeMillis());
+            CosmosItemResponse<Receipt> response = this.receiptCosmosClient.updateReceipts(receipt);
+            statusCode = response.getStatusCode();
+        } catch (Exception e) {
+            statusCode = ReasonErrorCode.ERROR_COSMOS.getCode();
+            logger.error("Update receipt with eventId {} on cosmos failed", receipt.getEventId(), e);
+        }
+
+        if (statusCode != HttpStatus.OK.value()) {
+            String errorString = String.format(
+                    "Error updating receipt to cosmos for receipt with eventId %s, cosmos client responded with status %s",
+                    receipt.getEventId(), statusCode);
+            handleError(receipt, ReceiptStatusType.FAILED, errorString, statusCode);
+            //Error info
+            logger.error(errorString);
+        }
+        return receipt;
     }
 
     /**

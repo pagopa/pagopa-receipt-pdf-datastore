@@ -105,6 +105,17 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      * {@inheritDoc}
      */
     @Override
+    public CosmosItemResponse<Receipt> updateReceipts(Receipt receipt) {
+        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
+        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
+
+        return cosmosContainer.upsertItem(receipt);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Iterable<FeedResponse<Receipt>> getGeneratedReceiptDocuments(String continuationToken, Integer pageSize)  {
         OffsetDateTime currentDateTime = OffsetDateTime.now();
         long now = currentDateTime.toInstant().toEpochMilli();
