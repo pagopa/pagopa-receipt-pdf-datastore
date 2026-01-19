@@ -139,24 +139,6 @@ function createEvent(id, transactionId, totalNotice) {
 	return json_event
 }
 
-// function createReceipt(id, fiscalCode, pdfName) {
-// 	let receipt =
-// 	{
-// 		"eventId": id,
-// 		"eventData": {
-// 			"debtorFiscalCode": fiscalCode,
-// 			"payerFiscalCode": fiscalCode
-// 		},
-// 		"status": "IO_NOTIFIED",
-// 		"mdAttach": {
-// 			"name": pdfName,
-// 			"url": pdfName
-// 		},
-// 		"id": id
-// 	}
-// 	return receipt
-// }
-
 function createReceiptError(id, status) {
 	return {
 		"id": id,
