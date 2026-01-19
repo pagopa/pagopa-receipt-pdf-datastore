@@ -167,6 +167,15 @@ function createReceiptError(id, status) {
 	}
 }
 
+function createCartReceiptError(id, status) {
+	return {
+		"id": id,
+		"messagePayload": TOKENIZED_BIZ_EVENT,
+		"messageError": "Unexpected error when decrypting the given string",
+		"status": status || "TO_REVIEW",
+	}
+}
+
 function createReceipt(id, status) {
 	let currentDate = new Date();
 	let receipt =
@@ -195,6 +204,49 @@ function createReceipt(id, status) {
 	return receipt
 }
 
+function createCartReceipt(id, status) {
+	let currentDate = new Date();
+	let cart =
+	{
+		"eventId": id,
+		"id": id,
+		"version": "1",
+		"payload": {
+			"payerFiscalCode": TOKENIZED_FISCAL_CODE,
+			"transactionCreationDate": "2025-11-02T10:14:57.218496702Z",
+			"totalNotice": "2",
+			"totalAmount": "26,48",
+			"cart": [
+				{
+					"bizEventId": `${id}-0`,
+					"subject": "oggetto 1",
+					"payeeName": "Ministero delle infrastrutture e dei trasporti",
+					"debtorFiscalCode": TOKENIZED_FISCAL_CODE,
+					"amount": "16.0",
+					"reasonErrDebtor": null
+				},
+				{
+					"bizEventId": `${id}-1`,
+					"subject": "oggetto 2",
+					"payeeName": "Ministero delle infrastrutture e dei trasporti",
+					"debtorFiscalCode": TOKENIZED_FISCAL_CODE,
+					"amount": "10.2",
+					"reasonErrDebtor": null
+				}
+			],
+			"reasonErrPayer": null
+		},
+		"status": status,
+		"numRetry": 0,
+		"notificationNumRetry": 0,
+		"reasonErr": null,
+		"inserted_at": currentDate.getTime() - 360000,
+		"generated_at": currentDate.getTime() - 360000,
+		"notified_at": 0
+	}
+	return cart
+}
+
 function makeId(length) {
 	let result = '';
 	const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -209,5 +261,5 @@ function makeId(length) {
 
 module.exports = {
 	TOKENIZED_FISCAL_CODE,
-	createEvent, sleep, createReceipt, createReceiptError, makeId
+	createEvent, sleep, createReceipt, createReceiptError, makeId, createCartReceiptError, createCartReceipt
 }
