@@ -220,7 +220,7 @@ class BizEventToReceiptServiceImplTest {
     @Test
     void run_OK_updateReceipt() {
         doReturn(cosmosReceiptResponse).when(receiptCosmosClient).updateReceipts(any());
-        doReturn(HttpStatus.CREATED.value()).when(cosmosReceiptResponse).getStatusCode();
+        doReturn(HttpStatus.OK.value()).when(cosmosReceiptResponse).getStatusCode();
 
         Receipt receipt = new Receipt();
 
