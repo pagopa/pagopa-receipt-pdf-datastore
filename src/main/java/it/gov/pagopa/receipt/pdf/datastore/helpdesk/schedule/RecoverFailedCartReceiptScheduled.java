@@ -46,6 +46,7 @@ public class RecoverFailedCartReceiptScheduled {
      *  <li>{@link CartStatusType#INSERTED}</li>
      *  <li>{@link CartStatusType#FAILED}</li>
      *  <li>{@link CartStatusType#NOT_QUEUE_SENT}</li>
+     *  <li>{@link CartStatusType#WAITING_FOR_BIZ_EVENT}</li>
      * </ul>
      * <p>
      * It recovers cart receipts and send on queue the event in order to proceed with the receipt generation.

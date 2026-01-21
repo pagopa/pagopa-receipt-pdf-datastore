@@ -73,7 +73,7 @@ class RecoverFailedCartReceiptTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = CartStatusType.class, names = {"INSERTED", "NOT_QUEUE_SENT", "FAILED"}, mode = EnumSource.Mode.INCLUDE)
+    @EnumSource(value = CartStatusType.class, names = {"WAITING_FOR_BIZ_EVENT", "INSERTED", "NOT_QUEUE_SENT", "FAILED"}, mode = EnumSource.Mode.INCLUDE)
     @SneakyThrows
     void recoverFailedCartReceiptSuccess(CartStatusType status) {
         CartForReceipt failedReceipt = createFailedCart();
@@ -112,7 +112,7 @@ class RecoverFailedCartReceiptTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = CartStatusType.class, names = {"INSERTED", "NOT_QUEUE_SENT", "FAILED"}, mode = EnumSource.Mode.EXCLUDE)
+    @EnumSource(value = CartStatusType.class, names = {"WAITING_FOR_BIZ_EVENT", "INSERTED", "NOT_QUEUE_SENT", "FAILED"}, mode = EnumSource.Mode.EXCLUDE)
     @SneakyThrows
     void recoverFailedCartReceiptFailReceiptWithUnexpectedStatus(CartStatusType status) {
         CartForReceipt failedReceipt = createFailedCart();

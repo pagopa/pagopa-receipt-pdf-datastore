@@ -78,7 +78,7 @@ public class CartReceiptCosmosServiceImpl implements CartReceiptCosmosService {
         if (statusType.equals(CartStatusType.FAILED) || statusType.equals(CartStatusType.NOT_QUEUE_SENT)) {
             return this.cartReceiptsCosmosClient.getFailedCartReceiptDocuments(continuationToken, pageSize);
         }
-        if (statusType.equals(CartStatusType.INSERTED)) {
+        if (statusType.equals(CartStatusType.INSERTED)  || statusType.equals(CartStatusType.WAITING_FOR_BIZ_EVENT)) {
             return this.cartReceiptsCosmosClient.getInsertedCartReceiptDocuments(continuationToken, pageSize);
         }
         String errMsg = String.format("Unexpected status for retrieving failed receipt: %s", statusType);

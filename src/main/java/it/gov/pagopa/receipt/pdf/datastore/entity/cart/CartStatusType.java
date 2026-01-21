@@ -19,6 +19,7 @@ public enum CartStatusType {
     TO_REVIEW;
 
     private static final Set<CartStatusType> DATASTORE_FAILED_STATUS = Set.of(
+            WAITING_FOR_BIZ_EVENT,
             NOT_QUEUE_SENT,
             INSERTED,
             FAILED

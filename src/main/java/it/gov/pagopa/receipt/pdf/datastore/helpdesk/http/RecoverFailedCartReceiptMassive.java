@@ -53,6 +53,7 @@ public class RecoverFailedCartReceiptMassive {
      *  <li>{@link CartStatusType#INSERTED}</li>
      *  <li>{@link CartStatusType#FAILED}</li>
      *  <li>{@link CartStatusType#NOT_QUEUE_SENT}</li>
+     *  <li>{@link CartStatusType#WAITING_FOR_BIZ_EVENT}</li>
      * </ul>
      * <p>
      * It creates the cart receipts and send on queue the event in order to proceed with the receipt generation.
@@ -87,7 +88,7 @@ public class RecoverFailedCartReceiptMassive {
 
         if (status == null || status.isNotAFailedDatastoreStatus()) {
             String message = String.format("The provided status %s is not among the processable" +
-                    "statuses (INSERTED, NOT_QUEUE_SENT, FAILED).", status);
+                    "statuses (WAITING_FOR_BIZ_EVENT, INSERTED, NOT_QUEUE_SENT, FAILED).", status);
             return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, message);
         }
 
