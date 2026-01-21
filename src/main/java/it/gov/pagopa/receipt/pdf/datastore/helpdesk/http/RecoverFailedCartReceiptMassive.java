@@ -46,7 +46,7 @@ public class RecoverFailedCartReceiptMassive {
     }
 
     /**
-     * This function will be invoked when an Http Trigger occurs.
+     * This function will be invoked when a Http Trigger occurs.
      * <p>
      * It recovers all the cart receipts with the specified status that has to be one of:
      * <ul>
@@ -54,7 +54,6 @@ public class RecoverFailedCartReceiptMassive {
      *  <li>{@link CartStatusType#FAILED}</li>
      *  <li>{@link CartStatusType#NOT_QUEUE_SENT}</li>
      * </ul>
-
      * <p>
      * It creates the cart receipts and send on queue the event in order to proceed with the receipt generation.
      *

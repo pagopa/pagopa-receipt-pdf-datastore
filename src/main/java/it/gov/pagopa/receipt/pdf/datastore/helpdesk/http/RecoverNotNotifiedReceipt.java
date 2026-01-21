@@ -47,7 +47,7 @@ public class RecoverNotNotifiedReceipt {
     }
 
     /**
-     * This function will be invoked when an Http Trigger occurs.
+     * This function will be invoked when a Http Trigger occurs.
      * <p>
      * It recovers the receipt with the specified biz event id
      * <p>

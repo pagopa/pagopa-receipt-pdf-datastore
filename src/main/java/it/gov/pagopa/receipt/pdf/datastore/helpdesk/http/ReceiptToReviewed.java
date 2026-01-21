@@ -44,9 +44,13 @@ public class ReceiptToReviewed {
     }
 
     /**
-     * This function will be invoked when an Http Trigger occurs
+     * This function will be invoked when a Http Trigger occurs
+     * <p>
+     * The function is responsible for retrieving a receipt-error with the provided event-id.
+     * If the retrieved document is in the expected status {@link ReceiptErrorStatusType#TO_REVIEW} updates the status
+     * to {@link ReceiptErrorStatusType#REVIEWED} and saves it.
      *
-     * @return response with HttpStatus.OK
+     * @return response with {@link HttpStatus#OK} if the operation succeeded
      */
     @FunctionName("ReceiptToReviewed")
     public HttpResponseMessage run(

@@ -11,20 +11,24 @@ import com.microsoft.azure.functions.annotation.BindingName;
 import com.microsoft.azure.functions.annotation.CosmosDBOutput;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
+import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventBadRequestException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventUnprocessableEntityException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
+import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.datastore.service.HelpdeskService;
 import it.gov.pagopa.receipt.pdf.datastore.service.ReceiptCosmosService;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.HelpdeskServiceImpl;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.ReceiptCosmosServiceImpl;
+import it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.isReceiptStatusValid;
@@ -51,17 +55,19 @@ public class RecoverFailedReceipt {
     }
 
     /**
-     * This function will be invoked when an Http Trigger occurs.
-     * The function is responsible for retrieving receipts that are in a FAILED, INSERTED and NOT_QUEUE_SENT state.
+     * This function will be invoked when a Http Trigger occurs.
+     * <p>
+     * The function is responsible for retrieving receipts that are in a {@link ReceiptStatusType#INSERTED},
+     * {@link ReceiptStatusType#FAILED} and {@link ReceiptStatusType#NOT_QUEUE_SENT} state.
      * For a single receipt, the function should:
      * <ul>
      *      <li>try to retrieve the biz event -> if it doesn't find it, error</li>
-     *      <li>check that it's a valid biz: BizEventToReceiptUtils.isBizEventInvalid() -> if invalid, error</li>
-     *      <li>check that it's not a cart biz: BizEventToReceiptUtils.getTotalNotice() == 1 -> if cart, error</li>
-     *      <li>check that the receipt is in one of the 3 manageable states: FAILED, INSERTED, and NOT_QUEUE_SENT -> if not, error</li>
-     *      <li>recreate the receipt from the biz: BizEventToReceiptUtils.createReceipt()</li>
-     *      <li>if everything is OK, it updates the receipt on the cosmos. BizEventToReceiptService.handleSaveReceipt()</li>
-     *      <li>if everything is OK, send it to the queue BizEventToReceiptService.handleSendMessageToQueue()</li>
+     *      <li>check that it's a valid biz: {@link BizEventToReceiptUtils#isBizEventInvalid(BizEvent)} -> if invalid, error</li>
+     *      <li>check that it's not a cart biz: {@link BizEventToReceiptUtils#getTotalNotice(BizEvent, Logger)} == 1 -> if cart, error</li>
+     *      <li>check that the receipt is in one of the 3 manageable states -> if not, error</li>
+     *      <li>recreate the receipt from the biz: {@link BizEventToReceiptUtils#createReceipt(BizEvent, BizEventToReceiptService, Logger)} </li>
+     *      <li>if everything is OK, it updates the receipt on the cosmos. {@link BizEventToReceiptService#handleSaveReceipt(Receipt)}</li>
+     *      <li>if everything is OK, send it to the queue {@link BizEventToReceiptService#handleSendMessageToQueue(List, Receipt)}</li>
      * </ul>
      * <p>
      * It recovers the receipt with the specified biz event id that has the following status:

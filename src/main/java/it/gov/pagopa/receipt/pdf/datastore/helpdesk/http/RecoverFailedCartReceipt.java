@@ -14,6 +14,7 @@ import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventBadRequestException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventUnprocessableEntityException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
@@ -22,6 +23,7 @@ import it.gov.pagopa.receipt.pdf.datastore.service.CartReceiptCosmosService;
 import it.gov.pagopa.receipt.pdf.datastore.service.HelpdeskService;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.CartReceiptCosmosServiceImpl;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.HelpdeskServiceImpl;
+import it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,23 +57,27 @@ public class RecoverFailedCartReceipt {
     }
 
     /**
-     * This function will be invoked when an Http Trigger occurs.
-     * The function is responsible for retrieving cart receipts that are in a FAILED, INSERTED and NOT_QUEUE_SENT state.
+     * This function will be invoked when a Http Trigger occurs.
+     * <p>
+     * The function is responsible for retrieving cart receipts that are in a {@link CartStatusType#FAILED},
+     * {@link CartStatusType#INSERTED} and {@link CartStatusType#NOT_QUEUE_SENT} state.
      * For a cart receipt, the function should:
      * <ul>
      *     <li> try to retrieve cart receipt -> if it doesn't find it, error</li>
      *     <li> check cart receipt {@link CartStatusType}-> if it is no among the processable ones, error</li>
      *     <li> try to retrieve the list of biz events -> if it doesn't find it, error</li>
-     *     <li> check that the biz events are valid: BizEventToReceiptUtils.isBizEventInvalid() -> if invalid, error</li>
-     *     <li> check that the biz events are valid: BizEventToReceiptUtils.getTotalNotice() == biz event list size -> if not, error</li>
+     *     <li> check that the biz events are valid: {@link BizEventToReceiptUtils#isBizEventInvalid(BizEvent)} -> if invalid, error</li>
+     *     <li> check that the biz events are valid: {@link BizEventToReceiptUtils#getTotalNotice(BizEvent, Logger)} == biz event list size -> if not, error</li>
      *     <li> recreate the receipt from the biz</li>
      *     <li> if everything is OK, it updates the receipt on the cosmos</li>
      *     <li> if everything is OK, send it to the queue</li>
      * </ul>
      * It recovers the receipt with the specified biz event id that has the following status:
-     * - ({@link CartStatusType#INSERTED})
-     * - ({@link CartStatusType#FAILED})
-     * - ({@link CartStatusType#NOT_QUEUE_SENT})
+     * <ul>
+     *  <li>{@link CartStatusType#INSERTED}</li>
+     *  <li>{@link CartStatusType#FAILED}</li>
+     *  <li>{@link CartStatusType#NOT_QUEUE_SENT}</li>
+     * </ul>
      * <p>
      * It creates the receipts if not exist and send on queue the event in order to proceed with the receipt generation.
      *

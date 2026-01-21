@@ -44,7 +44,7 @@ public class RecoverNotNotifiedReceiptMassive {
     }
 
     /**
-     * This function will be invoked when an Http Trigger occurs.
+     * This function will be invoked when a Http Trigger occurs.
      * <p>
      * It recovers all receipt with the provided status.
      * <p>
