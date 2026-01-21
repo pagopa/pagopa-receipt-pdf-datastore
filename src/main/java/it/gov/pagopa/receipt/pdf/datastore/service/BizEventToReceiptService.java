@@ -20,10 +20,10 @@ public interface BizEventToReceiptService {
     /**
      * Handles sending biz-events as message to queue and updates receipt's status
      *
-     * @param bizEvent Biz-event from CosmosDB
+     * @param bizEventList Biz-event list from CosmosDB
      * @param receipt  Receipt to update
      */
-    void handleSendMessageToQueue(BizEvent bizEvent, Receipt receipt);
+    void handleSendMessageToQueue(List<BizEvent> bizEventList, Receipt receipt);
 
     /**
      * This method handles sending biz-events as messages to the cart queue.
@@ -49,6 +49,13 @@ public interface BizEventToReceiptService {
      * @param receipt Receipt to save
      */
     void handleSaveReceipt(Receipt receipt);
+
+    /**
+     * Update receipts on CosmosDB using {@link ReceiptCosmosClient}
+     *
+     * @param receipt Receipt to save
+     */
+    Receipt updateReceipt(Receipt receipt);
 
     /**
      * Retrieve conditionally the transaction creation date from biz-event
@@ -84,6 +91,17 @@ public interface BizEventToReceiptService {
     CartForReceipt buildCartForReceipt(BizEvent bizEvent);
 
     /**
+     * Creates a new instance of Cart Receipt, using the tokenizer service to mask the PII, based on
+     * the provided list of BizEvent
+     *
+     * @param bizEventList list of biz event that compose the cart
+     * @return the Cart Receipt
+     * @throws PDVTokenizerException when an error occur while tokenizing PII
+     * @throws JsonProcessingException when an error occur while parsing PDV Tokenizer response
+     */
+    CartForReceipt buildCartFromBizEventList(List<BizEvent> bizEventList) throws PDVTokenizerException, JsonProcessingException;
+
+    /**
      * Retrieve all events that are associated to the cart with the specified id
      *
      * @param cart the cart
@@ -107,6 +125,19 @@ public interface BizEventToReceiptService {
      * @return the saved cart or if it fails the cart updated with the reason error
      */
     CartForReceipt saveCartForReceipt(CartForReceipt cartForReceipt, BizEvent bizEvent);
+
+    /**
+     * This method saves the provided CartForReceipt object to the datastore without attempting a retry on failure.
+     *
+     * <p>
+     * If the operation fail it change the {@link CartForReceipt#getStatus()}
+     * to {@link CartStatusType#FAILED} and add a {@link ReasonError}
+     * </p>
+     *
+     * @param cartForReceipt the cart to save
+     * @return the saved cart or if it fails the cart updated with the reason error
+     */
+    CartForReceipt saveCartForReceiptWithoutRetry(CartForReceipt cartForReceipt);
 
     /**
      * Recovers a cart from the CosmosDB by the property eventId

@@ -41,6 +41,7 @@ import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static it.gov.pagopa.receipt.pdf.datastore.service.impl.BizEventToReceiptServiceImpl.FISCAL_CODE_ANONYMOUS;
@@ -120,7 +121,9 @@ class BizEventToReceiptServiceImplTest {
 
         Receipt receipt = new Receipt();
 
-        assertDoesNotThrow(() -> sut.handleSendMessageToQueue(any(), receipt));
+        List<BizEvent> events = Collections.singletonList(new BizEvent());
+
+        assertDoesNotThrow(() -> sut.handleSendMessageToQueue(events, receipt));
 
         assertNotNull(receipt);
         assertEquals(ReceiptStatusType.NOT_QUEUE_SENT, receipt.getStatus());
@@ -212,6 +215,35 @@ class BizEventToReceiptServiceImplTest {
         assertNotNull(receipt.getReasonErr());
         assertEquals(ReasonErrorCode.ERROR_COSMOS.getCode(), receipt.getReasonErr().getCode());
         assertNotNull(receipt.getReasonErr().getMessage());
+    }
+
+    @Test
+    void run_OK_updateReceipt() {
+        doReturn(cosmosReceiptResponse).when(receiptCosmosClient).updateReceipts(any());
+        doReturn(HttpStatus.OK.value()).when(cosmosReceiptResponse).getStatusCode();
+
+        Receipt receipt = new Receipt();
+
+        Receipt result = assertDoesNotThrow(() -> sut.updateReceipt(receipt));
+
+        assertNotNull(result);
+        assertEquals(ReceiptStatusType.INSERTED, result.getStatus());
+        assertTrue(result.getInserted_at() > 0);
+    }
+
+    @Test
+    void run_KO_updateReceipt() {
+        doThrow(new RuntimeException()).when(receiptCosmosClient).updateReceipts(any());
+
+        Receipt receipt = new Receipt();
+
+        Receipt result = assertDoesNotThrow(() -> sut.updateReceipt(receipt));
+
+        assertNotNull(result);
+        assertEquals(ReceiptStatusType.FAILED, result.getStatus());
+        assertNotNull(result.getReasonErr());
+        assertEquals(ReasonErrorCode.ERROR_COSMOS.getCode(), result.getReasonErr().getCode());
+        assertNotNull(result.getReasonErr().getMessage());
     }
 
     @Test

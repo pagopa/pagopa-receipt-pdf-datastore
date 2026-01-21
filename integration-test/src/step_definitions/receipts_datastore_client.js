@@ -1,16 +1,47 @@
 const { CosmosClient } = require("@azure/cosmos");
-const { createCartEvent } = require("./common");
+const { createReceipt, createCartReceipt, createReceiptError, createCartReceiptError } = require("./common");
 
 const cosmos_db_conn_string = process.env.RECEIPTS_COSMOS_CONN_STRING || "";
 const databaseId = process.env.RECEIPT_COSMOS_DB_NAME;
 const receiptContainerId = process.env.RECEIPT_COSMOS_DB_CONTAINER_NAME;
 const cartContainerId = process.env.RECEIPTS_COSMOS_CART_CONTAINER_NAME;
+const receiptErrorContainerId = process.env.RECEIPT_ERROR_COSMOS_DB_CONTAINER_NAME;
+const cartReceiptErrorContainerId = process.env.CART_RECEIPT_ERROR_COSMOS_DB_CONTAINER_NAME;
 
 const client = new CosmosClient(cosmos_db_conn_string);
 const receiptContainer = client.database(databaseId).container(receiptContainerId);
 const cartContainer = client.database(databaseId).container(cartContainerId);
+const receiptErrorContainer = client.database(databaseId).container(receiptErrorContainerId);
+const cartReceiptErrorContainer = client.database(databaseId).container(cartReceiptErrorContainerId);
 
-async function getDocumentByIdFromReceiptsDatastore(id) {
+async function deleteDocumentFromReceiptsDatastoreByEventId(eventId) {
+    let documents = await getDocumentFromReceiptsDatastoreByEventId(eventId);
+    
+    for (let doc of documents.resources) {
+        await deleteDocumentFromReceiptsDatastore(doc.id);
+    }
+}
+
+async function deleteDocumentFromReceiptsDatastore(id) {
+    try {
+        return await receiptContainer.item(id, id).delete();
+    } catch (error) {
+        if (error.code !== 404) {
+            console.log(error)
+        }
+    }
+}
+
+async function createDocumentInReceiptsDatastore(id, status) {
+    let receipt = createReceipt(id, status);
+    try {
+        return await receiptContainer.items.create(receipt);
+    } catch (err) {
+        console.log(err);
+    }
+}
+
+async function getDocumentFromReceiptsDatastoreByEventId(id) {
     return await receiptContainer.items
         .query({
             query: "SELECT * from c WHERE c.eventId=@eventId",
@@ -28,17 +59,9 @@ async function getCartDocumentByIdFromReceiptsDatastore(id) {
         .fetchNext();
 }
 
-async function deleteDocumentFromReceiptsDatastoreByEventId(eventId) {
-    let documents = await getDocumentByIdFromReceiptsDatastore(eventId);
-
-    documents?.resources?.forEach(el => {
-        deleteDocumentFromReceiptsDatastore(el.id);
-    })
-}
-
-async function deleteDocumentFromReceiptsDatastore(id) {
+async function deleteDocumentFromCartDatastore(id) {
     try {
-        return await receiptContainer.item(id, id).delete();
+        return await cartContainer.item(id, id).delete();
     } catch (error) {
         if (error.code !== 404) {
             console.log(error)
@@ -46,18 +69,27 @@ async function deleteDocumentFromReceiptsDatastore(id) {
     }
 }
 
-async function createDocumentInCartDatastore(id, listOfBizEventsIds) {
-    let event = createCartEvent(id, listOfBizEventsIds);
+async function createDocumentInCartReceiptsDatastore(id, status) {
+    let cart = createCartReceipt(id, status);
     try {
-        return await cartContainer.items.create(event);
+        return await cartContainer.items.create(cart);
     } catch (err) {
         console.log(err);
     }
 }
 
-async function deleteDocumentFromCartDatastore(id, eventId) {
+async function createDocumentInReceiptErrorDatastore(id, status) {
+    let receipt = createReceiptError(id, status);
     try {
-        return await cartContainer.item(id, eventId).delete();
+        return await receiptErrorContainer.items.create(receipt);
+    } catch (err) {
+        console.log(err);
+    }
+}
+
+async function deleteDocumentFromReceiptErrorDatastore(id) {
+    try {
+        return await receiptErrorContainer.item(id, id).delete();
     } catch (error) {
         if (error.code !== 404) {
             console.log(error)
@@ -65,6 +97,64 @@ async function deleteDocumentFromCartDatastore(id, eventId) {
     }
 }
 
+async function getDocumentFromReceiptsErrorDatastoreByBizEventId(id) {
+    return await receiptErrorContainer.items
+        .query({
+            query: "SELECT * from c WHERE c.bizEventId=@bizEventId",
+            parameters: [{ name: "@bizEventId", value: id }]
+        })
+        .fetchNext();
+}
+
+async function deleteMultipleDocumentFromReceiptErrorDatastoreByEventId(id) {
+    let documents = await getDocumentFromReceiptsErrorDatastoreByBizEventId(id);
+    
+    for (let doc of documents.resources) {
+        await deleteDocumentFromReceiptErrorDatastore(doc.id);
+    }
+}
+
+async function getDocumentFromReceiptsDatastoreByEventIdOrdered(id) {
+    return await receiptContainer.items
+    .query({
+        query: "SELECT * from c WHERE c.eventId=@eventId ORDER BY c._ts DESC",
+        parameters: [{ name: "@eventId", value: id }]
+    })
+    .fetchNext();
+}
+
+async function createDocumentInCartReceiptErrorDatastore(id, status) {
+    let receipt = createCartReceiptError(id, status);
+    try {
+        return await cartReceiptErrorContainer.items.create(receipt);
+    } catch (err) {
+        console.log(err);
+    }
+}
+
+async function deleteDocumentFromCartReceiptErrorDatastore(id) {
+    try {
+        return await cartReceiptErrorContainer.item(id, id).delete();
+    } catch (error) {
+        if (error.code !== 404) {
+            console.log(error)
+        }
+    }
+}
+
+async function getDocumentFromCartReceiptsErrorDatastoreById(id) {
+    return await cartReceiptErrorContainer.items
+        .query({
+            query: "SELECT * from c WHERE c.id=@id",
+            parameters: [{ name: "@id", value: id }]
+        })
+        .fetchNext();
+}
+
 module.exports = {
-    getDocumentByIdFromReceiptsDatastore, deleteDocumentFromReceiptsDatastoreByEventId, deleteDocumentFromReceiptsDatastore, createDocumentInCartDatastore, deleteDocumentFromCartDatastore, getCartDocumentByIdFromReceiptsDatastore
+    deleteDocumentFromReceiptsDatastoreByEventId, deleteDocumentFromReceiptsDatastore,  getCartDocumentByIdFromReceiptsDatastore,
+    createDocumentInReceiptErrorDatastore, deleteDocumentFromReceiptErrorDatastore, getDocumentFromReceiptsErrorDatastoreByBizEventId, deleteMultipleDocumentFromReceiptErrorDatastoreByEventId,
+    createDocumentInReceiptsDatastore, getDocumentFromReceiptsDatastoreByEventId, getDocumentFromReceiptsDatastoreByEventIdOrdered, deleteDocumentFromCartDatastore,
+    createDocumentInCartReceiptErrorDatastore, deleteDocumentFromCartReceiptErrorDatastore, getDocumentFromCartReceiptsErrorDatastoreById,
+    createDocumentInCartReceiptsDatastore
 }

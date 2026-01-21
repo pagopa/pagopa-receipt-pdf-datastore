@@ -1,5 +1,7 @@
 package it.gov.pagopa.receipt.pdf.datastore.entity.cart;
 
+import java.util.Set;
+
 public enum CartStatusType {
 
     WAITING_FOR_BIZ_EVENT,
@@ -14,6 +16,24 @@ public enum CartStatusType {
     IO_NOTIFIER_RETRY,
     UNABLE_TO_SEND,
     NOT_TO_NOTIFY,
-    TO_REVIEW
+    TO_REVIEW;
 
+    private static final Set<CartStatusType> DATASTORE_FAILED_STATUS = Set.of(
+            NOT_QUEUE_SENT,
+            INSERTED,
+            FAILED
+    );
+
+    private static final Set<CartStatusType> NOTIFICATION_FAILED_STATUS = Set.of(
+            GENERATED,
+            IO_ERROR_TO_NOTIFY
+    );
+
+    public boolean isAFailedDatastoreStatus() {
+        return DATASTORE_FAILED_STATUS.contains(this);
+    }
+
+    public boolean isANotificationFailedStatus() {
+        return NOTIFICATION_FAILED_STATUS.contains(this);
+    }
 }

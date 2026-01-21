@@ -1,13 +1,16 @@
 package it.gov.pagopa.receipt.pdf.datastore.exception;
 
-public class UnableToQueueException extends Exception {
+/**
+ * Thrown in case an invalid parameter is provided in a helpdesk request
+ */
+public class InvalidParameterException extends Exception {
 
     /**
      * Constructs new exception with provided message and cause
      *
      * @param message Detail message
      */
-    public UnableToQueueException(String message) {
+    public InvalidParameterException(String message) {
         super(message);
     }
 
@@ -17,8 +20,9 @@ public class UnableToQueueException extends Exception {
      * @param message Detail message
      * @param cause   Exception thrown
      */
-    public UnableToQueueException(String message, Throwable cause) {
+    public InvalidParameterException(String message, Throwable cause) {
         super(message, cause);
     }
-
 }
+
+

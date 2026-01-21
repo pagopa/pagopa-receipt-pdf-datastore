@@ -23,6 +23,7 @@ public class Receipt {
     private int numRetry;
     private ReasonError reasonErr;
     private ReasonError reasonErrPayer;
+    private int notificationNumRetry;
     private long inserted_at;
     private long generated_at;
     private long notified_at;

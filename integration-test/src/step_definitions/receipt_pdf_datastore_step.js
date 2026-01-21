@@ -2,7 +2,7 @@ const assert = require('assert');
 const { After, Given, When, Then, setDefaultTimeout } = require('@cucumber/cucumber');
 const { sleep, recoverFailedEvent } = require("./common");
 const { createDocumentInBizEventsDatastore, deleteDocumentFromBizEventsDatastore } = require("./biz_events_datastore_client");
-const { getDocumentByIdFromReceiptsDatastore, deleteDocumentFromReceiptsDatastoreByEventId, deleteDocumentFromReceiptsDatastore, deleteDocumentFromCartDatastore, createDocumentInCartDatastore, getCartDocumentByIdFromReceiptsDatastore } = require("./receipts_datastore_client");
+const { getDocumentFromReceiptsDatastoreByEventId, deleteDocumentFromReceiptsDatastoreByEventId, deleteDocumentFromReceiptsDatastore, deleteDocumentFromCartDatastore, getCartDocumentByIdFromReceiptsDatastore } = require("./receipts_datastore_client");
 
 // set timeout for Hooks function, it allows to wait for long task
 setDefaultTimeout(360 * 1000);
@@ -76,7 +76,7 @@ Given('a list of {int} bizEvents starting with id {string} and transactionId {st
 When('biz event has been properly stored into receipt datastore after {int} ms with eventId {string}', async function (time, eventId) {
     // boundary time spent by azure function to process event
     await sleep(time);
-    this.responseToCheck = await getDocumentByIdFromReceiptsDatastore(eventId);
+    this.responseToCheck = await getDocumentFromReceiptsDatastoreByEventId(eventId);
 });
 
 When('cart event has been properly stored into receipt datastore after {int} ms with id {string}', async function (time, id) {

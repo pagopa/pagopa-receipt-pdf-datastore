@@ -10,6 +10,8 @@ import it.gov.pagopa.receipt.pdf.datastore.client.BizEventCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventNotFoundException;
 
+import java.util.List;
+
 /**
  * Client for the CosmosDB database
  */
@@ -25,10 +27,12 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
     private BizEventCosmosClientImpl() {
         String azureKey = System.getenv("COSMOS_BIZ_EVENT_KEY");
         String serviceEndpoint = System.getenv("COSMOS_BIZ_EVENT_SERVICE_ENDPOINT");
+        String readRegion = System.getenv("COSMOS_BIZ_EVENT_READ_REGION");
 
         this.cosmosClient = new CosmosClientBuilder()
                 .endpoint(serviceEndpoint)
                 .key(azureKey)
+                .preferredRegions(List.of(readRegion))
                 .buildClient();
     }
 
@@ -64,5 +68,24 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
         } else {
             throw new BizEventNotFoundException("Document not found in the defined container");
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<BizEvent> getAllCartBizEventDocument(String transactionId) {
+        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
+        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
+
+        //Build query
+        String query = String.format("SELECT * FROM c WHERE c.transactionDetails.transaction.transactionId = '%s'",
+                transactionId);
+
+        //Query the container
+        return cosmosContainer
+                .queryItems(query, new CosmosQueryRequestOptions(), BizEvent.class)
+                .stream().limit(6)
+                .toList();
     }
 }

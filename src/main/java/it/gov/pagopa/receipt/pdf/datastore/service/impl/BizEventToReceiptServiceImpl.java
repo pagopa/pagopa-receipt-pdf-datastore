@@ -76,16 +76,10 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
      * {@inheritDoc}
      */
     @Override
-    public void handleSendMessageToQueue(BizEvent bizEvent, Receipt receipt) {
+    public void handleSendMessageToQueue(List<BizEvent> bizEventList, Receipt receipt) {
         //Encode biz-event to base64 string
-        String messageText = Base64.getMimeEncoder()
-                .encodeToString(
-                        Objects.requireNonNull(
-                                ObjectMapperUtils.writeValueAsString(
-                                        // Keep a list for backwards compatibility
-                                        Collections.singletonList(bizEvent)
-                                )).getBytes(StandardCharsets.UTF_8)
-                );
+        String messageText = Base64.getMimeEncoder().encodeToString(
+                Objects.requireNonNull(ObjectMapperUtils.writeValueAsString(bizEventList)).getBytes(StandardCharsets.UTF_8));
 
         //Add message to the queue
         int statusCode;
@@ -94,7 +88,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             statusCode = sendMessageResult.getStatusCode();
         } catch (Exception e) {
             statusCode = ReasonErrorCode.ERROR_QUEUE.getCode();
-            logger.error("Sending BizEvent with id {} to queue failed", receipt.getEventId(), e);
+            logger.error("Sending BizEvent with id {} to queue failed", bizEventList.get(0).getId(), e);
         }
 
         if (statusCode != HttpStatus.CREATED.value()) {
@@ -173,7 +167,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             logger.error("Save receipt with eventId {} on cosmos failed", receipt.getEventId(), e);
         }
 
-        if (statusCode != (HttpStatus.CREATED.value())) {
+        if (statusCode != HttpStatus.CREATED.value()) {
             String errorString = String.format(
                     "[BizEventToReceiptService] Error saving receipt to cosmos for receipt with eventId %s, cosmos client responded with status %s",
                     receipt.getEventId(), statusCode);
@@ -181,6 +175,30 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             //Error info
             logger.error(errorString);
         }
+    }
+
+    @Override
+    public Receipt updateReceipt(Receipt receipt) {
+        int statusCode;
+        try {
+            receipt.setStatus(ReceiptStatusType.INSERTED);
+            receipt.setInserted_at(System.currentTimeMillis());
+            CosmosItemResponse<Receipt> response = this.receiptCosmosClient.updateReceipts(receipt);
+            statusCode = response.getStatusCode();
+        } catch (Exception e) {
+            statusCode = ReasonErrorCode.ERROR_COSMOS.getCode();
+            logger.error("Update receipt with eventId {} on cosmos failed", receipt.getEventId(), e);
+        }
+
+        if (statusCode != HttpStatus.OK.value()) {
+            String errorString = String.format(
+                    "Error updating receipt to cosmos for receipt with eventId %s, cosmos client responded with status %s",
+                    receipt.getEventId(), statusCode);
+            handleError(receipt, ReceiptStatusType.FAILED, errorString, statusCode);
+            //Error info
+            logger.error(errorString);
+        }
+        return receipt;
     }
 
     /**
@@ -217,7 +235,6 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         }
     }
 
-
     /**
      * {@inheritDoc}
      */
@@ -253,6 +270,24 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
 
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public CartForReceipt buildCartFromBizEventList(List<BizEvent> bizEventList) throws PDVTokenizerException, JsonProcessingException {
+        List<CartPayment> cartItems = new ArrayList<>();
+        for (BizEvent bizEvent : bizEventList) {
+            cartItems.add(buildCartPayment(bizEvent));
+        }
+
+        BizEvent bizEvent = bizEventList.get(0);
+        String transactionId = bizEvent.getTransactionDetails().getTransaction().getTransactionId();
+
+        CartForReceipt cartForReceipt = buildCart(bizEvent, transactionId, cartItems);
+        cartForReceipt.setStatus(CartStatusType.INSERTED);
+        cartForReceipt.setInserted_at(System.currentTimeMillis());
+
+        return cartForReceipt;
+    }
 
     @Override
     public List<BizEvent> getCartBizEvents(CartForReceipt cart) {
@@ -294,16 +329,20 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             statusCode = trySaveCart(cartForReceipt);
         }
 
-        if (statusCode != HttpStatus.CREATED.value() && statusCode != HttpStatus.OK.value()) {
-            String errorString = String.format(
-                    "[BizEventToReceiptService] Error saving cart to cosmos for receipt with eventId %s, cosmos client responded with status %s",
-                    cartForReceipt.getEventId(), statusCode);
-            ReasonError reasonError = new ReasonError(statusCode, errorString);
-            cartForReceipt.setReasonErr(reasonError);
-            cartForReceipt.setStatus(CartStatusType.FAILED);
-            //Error info
-            logger.error(errorString);
-        }
+        handleSaveCartFailure(cartForReceipt, statusCode);
+        return cartForReceipt;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public CartForReceipt saveCartForReceiptWithoutRetry(CartForReceipt cartForReceipt) {
+        int statusCode;
+
+        statusCode = trySaveCart(cartForReceipt);
+        handleSaveCartFailure(cartForReceipt, statusCode);
+
         return cartForReceipt;
     }
 
@@ -341,6 +380,19 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             logger.error("Save cart with eventId {} on cosmos failed", cartForReceipt.getEventId(), e);
         }
         return statusCode;
+    }
+
+    private void handleSaveCartFailure(CartForReceipt cartForReceipt, int statusCode) {
+        if (statusCode != HttpStatus.CREATED.value() && statusCode != HttpStatus.OK.value()) {
+            String errorString = String.format(
+                    "[BizEventToReceiptService] Error saving cart to cosmos for receipt with eventId %s, cosmos client responded with status %s",
+                    cartForReceipt.getEventId(), statusCode);
+            ReasonError reasonError = new ReasonError(statusCode, errorString);
+            cartForReceipt.setReasonErr(reasonError);
+            cartForReceipt.setStatus(CartStatusType.FAILED);
+            //Error info
+            logger.error(errorString);
+        }
     }
 
     /**

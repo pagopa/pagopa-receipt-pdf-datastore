@@ -5,7 +5,7 @@ import com.microsoft.azure.functions.HttpRequestMessage;
 import com.microsoft.azure.functions.HttpResponseMessage;
 import com.microsoft.azure.functions.HttpStatus;
 import it.gov.pagopa.receipt.pdf.datastore.model.AppInfo;
-import it.gov.pagopa.receipt.pdf.datastore.util.HttpResponseMessageMock;
+import it.gov.pagopa.receipt.pdf.datastore.utils.HttpResponseMessageMock;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;

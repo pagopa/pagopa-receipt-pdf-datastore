@@ -20,8 +20,21 @@
   "logging": {
     "fileLoggingMode": "always",
     "logLevel": {
-      "Function.BizEventToReceiptProcessor": "Information",
-      "Function.CartEventToReceiptProcessor": "Information"
+      "Function.BizEventToReceiptProcessor.Disabled": "Information",
+      "Function.CartReceiptToReviewed.Disabled": "Information",
+      "Function.ReceiptToReviewed.Disabled": "Information",
+      "Function.RecoverFailedCartReceipt.Disabled": "Information",
+      "Function.RecoverFailedCartReceiptMassive.Disabled": "Information",
+      "Function.RecoverFailedReceipt.Disabled": "Information",
+      "Function.RecoverFailedReceiptMassive.Disabled": "Information",
+      "Function.RecoverNotNotifiedCartReceipt.Disabled": "Information",
+      "Function.RecoverNotNotifiedCartReceiptMassive.Disabled": "Information",
+      "Function.RecoverNotNotifiedReceipt.Disabled": "Information",
+      "Function.RecoverNotNotifiedReceiptMassive.Disabled": "Information",
+      "Function.RecoverFailedCartReceiptScheduled.Disabled": "Information",
+      "Function.RecoverFailedReceiptScheduled.Disabled": "Information",
+      "Function.RecoverNotNotifiedCartTimerTriggerProcessor.Disabled": "Information",
+      "Function.RecoverNotNotifiedTimerTriggerProcessor.Disabled": "Information"
     },
     "applicationInsights": {
       "samplingSettings": {
