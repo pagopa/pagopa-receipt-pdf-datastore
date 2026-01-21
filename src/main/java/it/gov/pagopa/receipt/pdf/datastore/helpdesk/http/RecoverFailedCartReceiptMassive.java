@@ -86,7 +86,7 @@ public class RecoverFailedCartReceiptMassive {
             return buildErrorResponse(request, HttpStatus.BAD_REQUEST, e.getMessage());
         }
 
-        if (!status.isAFailedDatastoreStatus()) {
+        if (status == null || !status.isAFailedDatastoreStatus()) {
             String message = String.format("The provided status %s is not among the processable" +
                     "statuses (INSERTED, NOT_QUEUE_SENT, FAILED).", status);
             return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, message);

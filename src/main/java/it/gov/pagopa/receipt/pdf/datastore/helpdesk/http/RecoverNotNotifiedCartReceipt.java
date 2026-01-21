@@ -85,7 +85,7 @@ public class RecoverNotNotifiedCartReceipt {
             return buildErrorResponse(request, HttpStatus.NOT_FOUND, errMsg);
         }
 
-        if (!cart.getStatus().isANotificationFailedStatus()) {
+        if (cart.getStatus() == null || !cart.getStatus().isANotificationFailedStatus()) {
             String errMsg = String.format("The requested cart receipt with id %s is not in the expected status",
                     cart.getEventId());
             logger.error(errMsg);

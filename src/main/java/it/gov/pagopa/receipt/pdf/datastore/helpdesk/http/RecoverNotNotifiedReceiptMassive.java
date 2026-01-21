@@ -80,7 +80,7 @@ public class RecoverNotNotifiedReceiptMassive {
             return buildErrorResponse(request, HttpStatus.BAD_REQUEST, e.getMessage());
         }
 
-        if (!status.isANotificationFailedStatus()) {
+        if (status == null || !status.isANotificationFailedStatus()) {
             String message = String.format("The provided status %s is not among the processable" +
                     "statuses (GENERATED, IO_ERROR_TO_NOTIFY).", status);
             return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, message);

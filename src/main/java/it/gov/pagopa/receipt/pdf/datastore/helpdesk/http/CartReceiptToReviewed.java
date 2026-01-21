@@ -77,7 +77,7 @@ public class CartReceiptToReviewed {
             return buildErrorResponse(request, HttpStatus.NOT_FOUND, responseMsg);
         }
 
-        if (!receiptError.getStatus().equals(ReceiptErrorStatusType.TO_REVIEW)) {
+        if (!ReceiptErrorStatusType.TO_REVIEW.equals(receiptError.getStatus())) {
             responseMsg = String.format("Found cartReceiptError with invalid status %s for cartId %s", receiptError.getStatus(), cartId);
             return buildErrorResponse(request, HttpStatus.INTERNAL_SERVER_ERROR, responseMsg);
         }
