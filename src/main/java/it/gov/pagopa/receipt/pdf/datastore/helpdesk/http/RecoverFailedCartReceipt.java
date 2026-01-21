@@ -110,7 +110,7 @@ public class RecoverFailedCartReceipt {
             return buildErrorResponse(request, HttpStatus.NOT_FOUND, errMsg);
         }
 
-        if (isCartStatusNotProcessable(existingCart.getStatus())) {
+        if (existingCart.getStatus() == null || existingCart.getStatus().isNotAFailedDatastoreStatus()) {
             String errMsg = String.format(
                     "The provided cart is in status %s, which is not among the processable " +
                             "statuses (INSERTED, NOT_QUEUE_SENT, FAILED).",
@@ -146,11 +146,5 @@ public class RecoverFailedCartReceipt {
         return request.createResponseBuilder(HttpStatus.OK)
                 .body(responseMsg)
                 .build();
-    }
-
-    private boolean isCartStatusNotProcessable(CartStatusType status) {
-        return !CartStatusType.INSERTED.equals(status)
-                && !CartStatusType.NOT_QUEUE_SENT.equals(status)
-                && !CartStatusType.FAILED.equals(status);
     }
 }

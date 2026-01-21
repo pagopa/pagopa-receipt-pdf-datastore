@@ -84,7 +84,7 @@ public class RecoverNotNotifiedReceipt {
             return buildErrorResponse(request, HttpStatus.NOT_FOUND, errMsg);
         }
 
-        if (receipt.getStatus() == null || !receipt.getStatus().isANotificationFailedStatus()) {
+        if (receipt.getStatus() == null || receipt.getStatus().isNotANotificationFailedStatus()) {
             String errMsg = String.format("The requested receipt with eventId %s is not in the expected status",
                     receipt.getEventId());
             logger.error(errMsg);

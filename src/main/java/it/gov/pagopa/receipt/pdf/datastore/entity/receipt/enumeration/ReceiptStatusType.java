@@ -16,11 +16,11 @@ public enum ReceiptStatusType {
             IO_ERROR_TO_NOTIFY
     );
 
-    public boolean isAFailedDatastoreStatus() {
-        return DATASTORE_FAILED_STATUS.contains(this);
+    public boolean isNotAFailedDatastoreStatus() {
+        return !DATASTORE_FAILED_STATUS.contains(this);
     }
 
-    public boolean isANotificationFailedStatus() {
-        return NOTIFICATION_FAILED_STATUS.contains(this);
+    public boolean isNotANotificationFailedStatus() {
+        return !NOTIFICATION_FAILED_STATUS.contains(this);
     }
 }
