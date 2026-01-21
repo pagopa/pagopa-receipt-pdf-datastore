@@ -6,8 +6,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Set;
-
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder(toBuilder = true)
@@ -19,10 +17,8 @@ public class CartForReceipt {
     private String version;
     private Payload payload;
     private CartStatusType status;
-    private Set<String> cartPaymentId;
     private int numRetry;
     private int notificationNumRetry;
-    private Integer totalNotice;
     private ReasonError reasonErr;
     private long inserted_at;
     private long generated_at;
