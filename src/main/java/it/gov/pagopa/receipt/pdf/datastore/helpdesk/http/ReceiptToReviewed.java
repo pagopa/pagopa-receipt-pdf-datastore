@@ -83,7 +83,7 @@ public class ReceiptToReviewed {
 
         if (!ReceiptErrorStatusType.TO_REVIEW.equals(receiptError.getStatus())) {
             responseMsg = String.format("Found receiptError with invalid status %s for bizEventId %s", receiptError.getStatus(), eventId);
-            return buildErrorResponse(request, HttpStatus.INTERNAL_SERVER_ERROR, responseMsg);
+            return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, responseMsg);
         }
 
         receiptError.setStatus(ReceiptErrorStatusType.REVIEWED);
