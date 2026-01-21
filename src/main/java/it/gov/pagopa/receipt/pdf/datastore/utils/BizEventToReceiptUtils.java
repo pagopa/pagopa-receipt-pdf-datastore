@@ -82,7 +82,6 @@ public class BizEventToReceiptUtils {
         eventData.setCart(cartItems);
 
         receipt.setEventData(eventData);
-        receipt.setStatus(ReceiptStatusType.INSERTED);
         return receipt;
     }
 

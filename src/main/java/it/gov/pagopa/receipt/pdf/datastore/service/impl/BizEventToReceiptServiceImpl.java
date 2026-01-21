@@ -88,12 +88,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             statusCode = sendMessageResult.getStatusCode();
         } catch (Exception e) {
             statusCode = ReasonErrorCode.ERROR_QUEUE.getCode();
-            if (bizEventList.size() == 1) {
-                logger.error("Sending BizEvent with id {} to queue failed", bizEventList.get(0).getId(), e);
-            } else {
-                logger.error("Failed to enqueue cart with id {}",
-                        bizEventList.get(0).getTransactionDetails().getTransaction().getIdTransaction(), e);
-            }
+            logger.error("Sending BizEvent with id {} to queue failed", bizEventList.get(0).getId(), e);
         }
 
         if (statusCode != HttpStatus.CREATED.value()) {
