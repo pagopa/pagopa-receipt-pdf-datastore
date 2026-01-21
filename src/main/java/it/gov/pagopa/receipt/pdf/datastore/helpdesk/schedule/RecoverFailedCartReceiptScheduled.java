@@ -68,7 +68,6 @@ public class RecoverFailedCartReceiptScheduled {
             List<CartForReceipt> failedCart = new ArrayList<>();
             failedCart.addAll(recover(CartStatusType.INSERTED));
             failedCart.addAll(recover(CartStatusType.FAILED));
-            failedCart.addAll(recover(CartStatusType.NOT_QUEUE_SENT));
 
             documentdb.setValue(failedCart);
         }
