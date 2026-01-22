@@ -2,7 +2,6 @@ package it.gov.pagopa.receipt.pdf.datastore.service.impl;
 
 import com.azure.core.http.rest.Response;
 import com.azure.cosmos.models.CosmosItemResponse;
-import com.azure.cosmos.models.FeedResponse;
 import com.azure.storage.queue.models.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.HttpStatus;

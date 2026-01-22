@@ -2,7 +2,6 @@ package it.gov.pagopa.receipt.pdf.datastore.service.impl;
 
 import com.azure.cosmos.models.FeedResponse;
 import it.gov.pagopa.receipt.pdf.datastore.client.CartReceiptsCosmosClient;
-import it.gov.pagopa.receipt.pdf.datastore.client.impl.ReceiptCosmosClientImpl;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.CartReceiptError;
@@ -12,7 +11,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -24,11 +22,9 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-@ExtendWith({MockitoExtension.class, SystemStubsExtension.class})
+@ExtendWith(MockitoExtension.class)
 class CartReceiptCosmosServiceImplTest {
 
-    @Mock
-    private ReceiptCosmosClientImpl receiptCosmosClient;
     @Mock
     private CartReceiptsCosmosClient cartReceiptsCosmosClient;
     @Mock
