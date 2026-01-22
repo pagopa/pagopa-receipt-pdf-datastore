@@ -108,7 +108,7 @@ public class RecoverFailedReceipt {
             return buildErrorResponse(request, HttpStatus.NOT_FOUND, errMsg);
         }
 
-        if (isReceiptStatusNotProcessable(existingReceipt.getStatus())) {
+        if (existingReceipt.getStatus() == null || existingReceipt.getStatus().isNotAFailedDatastoreStatus()) {
             String errMsg = String.format(
                     "The provided receipt is in status %s, which is not among the processable " +
                             "statuses (INSERTED, NOT_QUEUE_SENT, FAILED).",
@@ -141,11 +141,5 @@ public class RecoverFailedReceipt {
         return request.createResponseBuilder(HttpStatus.OK)
                 .body(responseMsg)
                 .build();
-    }
-
-    private boolean isReceiptStatusNotProcessable(ReceiptStatusType status) {
-        return !ReceiptStatusType.INSERTED.equals(status)
-                && !ReceiptStatusType.NOT_QUEUE_SENT.equals(status)
-                && !ReceiptStatusType.FAILED.equals(status);
     }
 }

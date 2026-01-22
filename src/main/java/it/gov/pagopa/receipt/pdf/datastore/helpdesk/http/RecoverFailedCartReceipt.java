@@ -60,7 +60,8 @@ public class RecoverFailedCartReceipt {
      * This function will be invoked when a Http Trigger occurs.
      * <p>
      * The function is responsible for retrieving cart receipts that are in a {@link CartStatusType#FAILED},
-     * {@link CartStatusType#INSERTED} and {@link CartStatusType#NOT_QUEUE_SENT} state.
+     * {@link CartStatusType#INSERTED}, {@link CartStatusType#NOT_QUEUE_SENT} and
+     * {@link CartStatusType#WAITING_FOR_BIZ_EVENT} state.
      * For a cart receipt, the function should:
      * <ul>
      *     <li> try to retrieve cart receipt -> if it doesn't find it, error</li>
@@ -77,6 +78,7 @@ public class RecoverFailedCartReceipt {
      *  <li>{@link CartStatusType#INSERTED}</li>
      *  <li>{@link CartStatusType#FAILED}</li>
      *  <li>{@link CartStatusType#NOT_QUEUE_SENT}</li>
+     *  <li>{@link CartStatusType#WAITING_FOR_BIZ_EVENT}</li>
      * </ul>
      * <p>
      * It creates the receipts if not exist and send on queue the event in order to proceed with the receipt generation.
@@ -110,10 +112,10 @@ public class RecoverFailedCartReceipt {
             return buildErrorResponse(request, HttpStatus.NOT_FOUND, errMsg);
         }
 
-        if (isCartStatusNotProcessable(existingCart.getStatus())) {
+        if (existingCart.getStatus() == null || existingCart.getStatus().isNotAFailedDatastoreStatus()) {
             String errMsg = String.format(
                     "The provided cart is in status %s, which is not among the processable " +
-                            "statuses (INSERTED, NOT_QUEUE_SENT, FAILED).",
+                            "statuses (WAITING_FOR_BIZ_EVENT, INSERTED, NOT_QUEUE_SENT, FAILED).",
                     existingCart.getStatus()
             );
             logger.error(errMsg);
@@ -146,11 +148,5 @@ public class RecoverFailedCartReceipt {
         return request.createResponseBuilder(HttpStatus.OK)
                 .body(responseMsg)
                 .build();
-    }
-
-    private boolean isCartStatusNotProcessable(CartStatusType status) {
-        return !CartStatusType.INSERTED.equals(status)
-                && !CartStatusType.NOT_QUEUE_SENT.equals(status)
-                && !CartStatusType.FAILED.equals(status);
     }
 }

@@ -12,8 +12,8 @@ import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.FeedResponse;
 import it.gov.pagopa.receipt.pdf.datastore.client.CartReceiptsCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
+import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.CartReceiptError;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.CartConcurrentUpdateException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
 
@@ -100,7 +100,10 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
             String continuationToken,
             Integer pageSize
     ) {
-        String query = "SELECT * FROM c WHERE c.status = 'FAILED'";
+        String query = String.format("SELECT * FROM c WHERE (c.status = '%s' or c.status = '%s') AND c.inserted_at >= %s",
+                CartStatusType.FAILED, CartStatusType.NOT_QUEUE_SENT,
+                OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(
+                        Long.parseLong(numDaysRecoverFailed)).toInstant().toEpochMilli());
         return executePagedQuery(cartForReceiptContainerName, query, continuationToken, pageSize);
     }
 
@@ -117,8 +120,8 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
         long daysAgo = currentDateTime.truncatedTo(ChronoUnit.DAYS).minusDays(Long.parseLong(numDaysRecoverFailed)).toInstant().toEpochMilli();
 
         String query = String.format(
-                "SELECT * FROM c WHERE (c.status = '%s' AND c.inserted_at >= %s AND ( %s - c.inserted_at) >= %s)",
-                ReceiptStatusType.INSERTED, daysAgo, now, millisDiff);
+                "SELECT * FROM c WHERE (c.status = '%s' or c.status = '%s') AND c.inserted_at >= %s AND ( %s - c.inserted_at) >= %s",
+                CartStatusType.INSERTED, CartStatusType.WAITING_FOR_BIZ_EVENT, daysAgo, now, millisDiff);
 
         return executePagedQuery(cartForReceiptContainerName, query, continuationToken, pageSize);
     }
@@ -131,7 +134,7 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
         long daysAgo = OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(Long.parseLong(numDaysRecoverNotNotified)).toInstant().toEpochMilli();
 
         String query = String.format("SELECT * FROM c WHERE c.status = '%s' AND c.generated_at >= %s",
-                ReceiptStatusType.IO_ERROR_TO_NOTIFY, daysAgo);
+                CartStatusType.IO_ERROR_TO_NOTIFY, daysAgo);
 
         return executePagedQuery(cartForReceiptContainerName, query, continuationToken, pageSize);
     }
@@ -146,7 +149,7 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
         long daysAgo = currentDateTime.truncatedTo(ChronoUnit.DAYS).minusDays(Long.parseLong(numDaysRecoverNotNotified)).toInstant().toEpochMilli();
 
         String query = String.format("SELECT * FROM c WHERE (c.status = '%s' AND c.generated_at >= %s AND ( %s - c.generated_at) >= %s)",
-                ReceiptStatusType.GENERATED, daysAgo, now, millisNotifyDif);
+                CartStatusType.GENERATED, daysAgo, now, millisNotifyDif);
 
         return executePagedQuery(cartForReceiptContainerName, query, continuationToken, pageSize);
     }

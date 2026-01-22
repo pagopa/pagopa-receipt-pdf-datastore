@@ -66,7 +66,7 @@ class RecoverFailedCartReceiptMassiveTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = CartStatusType.class, names = {"INSERTED", "NOT_QUEUE_SENT", "FAILED"}, mode = EnumSource.Mode.INCLUDE)
+    @EnumSource(value = CartStatusType.class, names = {"WAITING_FOR_BIZ_EVENT", "INSERTED", "NOT_QUEUE_SENT", "FAILED"}, mode = EnumSource.Mode.INCLUDE)
     @SneakyThrows
     void recoverFailedCartReceiptMassiveSuccess(CartStatusType status) {
         doReturn(Collections.singletonMap("status", status.name())).when(requestMock).getQueryParameters();
@@ -116,7 +116,7 @@ class RecoverFailedCartReceiptMassiveTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = CartStatusType.class, names = {"INSERTED", "NOT_QUEUE_SENT", "FAILED"}, mode = EnumSource.Mode.EXCLUDE)
+    @EnumSource(value = CartStatusType.class, names = {"WAITING_FOR_BIZ_EVENT", "INSERTED", "NOT_QUEUE_SENT", "FAILED"}, mode = EnumSource.Mode.EXCLUDE)
     @SneakyThrows
     void recoverFailedCartReceiptMassiveFailStatusParamUnprocessable(CartStatusType status) {
         doReturn(Collections.singletonMap("status", status.name())).when(requestMock).getQueryParameters();
