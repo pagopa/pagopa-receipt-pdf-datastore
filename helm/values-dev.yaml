@@ -1,10 +1,10 @@
-microservice-chart:
+microservice-chart: &microservice-chart
   namespace: "receipts"
   nameOverride: ""
   fullnameOverride: "pagopa-receipt-pdf-datastore"
   image:
     repository: ghcr.io/pagopa/pagopa-receipt-pdf-datastore
-    tag: "1.16.5"
+    tag: "1.17.0"
     pullPolicy: Always
   # https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script.WebHost/Controllers/HostController.cs
   livenessProbe:
@@ -21,7 +21,7 @@ microservice-chart:
     initialDelaySeconds: 60
     failureThreshold: 6
     periodSeconds: 10
-  deployment:
+  deployment: &deployment
     create: true
     replicas: 1
     strategy:
@@ -43,7 +43,7 @@ microservice-chart:
     ports:
       - 8080 #http
       - 12345 #jmx-exporter
-  ingress:
+  ingress: &ingress
     create: true
     host: "weudev.receipts.internal.dev.platform.pagopa.it"
     path: /pagopa-receipt-pdf-datastore/(.*)
@@ -58,7 +58,7 @@ microservice-chart:
       type: RuntimeDefault
   securityContext:
     allowPrivilegeEscalation: false
-  resources:
+  resources: &resources
     requests:
       memory: "768Mi"
       cpu: "300m"
@@ -83,7 +83,7 @@ microservice-chart:
           type: Utilization # Allowed types are 'Utilization' or 'AverageValue'
           value: "70"
   fileConfig: {}
-  envConfig:
+  envConfig: &envConfig
     ENV: "dev"
     TZ: "Europe/Rome"
     WEBSITE_SITE_NAME: "pagopareceiptpdfdatastore" # required to show cloud role name in application insights
@@ -93,45 +93,60 @@ microservice-chart:
     CART_QUEUE_TOPIC: "pagopa-d-weu-receipts-queue-cart-receipt-waiting-4-gen"
     COSMOS_RECEIPT_SERVICE_ENDPOINT: "https://pagopa-d-weu-receipts-ds-cosmos-account.documents.azure.com:443/"
     COSMOS_BIZ_EVENT_SERVICE_ENDPOINT: "https://pagopa-d-weu-bizevents-ds-cosmos-account.documents.azure.com:443/"
+    COSMOS_BIZ_EVENT_READ_REGION: "West Europe"
+    COSMOS_RECEIPT_READ_REGION: "West Europe"
     COSMOS_RECEIPT_DB_NAME: "db"
     COSMOS_BIZ_EVENT_DB_NAME: "db"
     COSMOS_RECEIPT_CONTAINER_NAME: "receipts"
     CART_FOR_RECEIPT_CONTAINER_NAME: "cart-for-receipts"
     CART_RECEIPTS_MESSAGE_ERRORS_CONTAINER_NAME: "cart-receipts-message-errors"
     COSMOS_RECEIPT_ERROR_CONTAINER_NAME: "receipts-message-errors"
-    COSMOS_RECEIPT_MESSAGE_CONTAINER_NAME: "receipts-io-messages-evt"
-    COSMOS_RECEIPT_CART_CONTAINER_NAME: "cart-for-receipts"
     COSMOS_BIZ_EVENT_CONTAINER_NAME: "biz-events"
     PDV_TOKENIZER_BASE_PATH: "https://api.uat.tokenizer.pdv.pagopa.it/tokenizer/v1"
     PDV_TOKENIZER_INITIAL_INTERVAL: "200"
     PDV_TOKENIZER_MULTIPLIER: "2.0"
     PDV_TOKENIZER_RANDOMIZATION_FACTOR: "0.6"
     PDV_TOKENIZER_MAX_RETRIES: "3"
-    ENABLE_ECS_CONSOLE: "true"
-    CONSOLE_LOG_THRESHOLD: "DEBUG"
-    CONSOLE_LOG_PATTERN: "%d{HH:mm:ss.SSS}[%thread]%-5level%logger{36}-%msg%n"
-    CONSOLE_LOG_CHARSET: "UTF-8"
     OTEL_RESOURCE_ATTRIBUTES: "service.name=pagopareceiptpdfdatastoreotl,deployment.environment=dev"
     OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.elastic-system.svc:4317"
     OTEL_LOGS_EXPORTER: none
     OTEL_TRACES_SAMPLER: "always_on"
+    AZURE_FUNCTIONS_MESH_JAVA_OPTS: "-javaagent:/home/site/wwwroot/jmx_prometheus_javaagent-0.19.0.jar=12345:/home/site/wwwroot/config.yaml -javaagent:/home/site/wwwroot/opentelemetry-javaagent.jar -Xmx768m -XX:+UseG1GC"
+    RECOVER_NOT_NOTIFY_SCHEDULE: "0 0 */2 * * *"
+    RECOVER_NOT_NOTIFY_CART_SCHEDULE: "0 0 */2 * * *"
+    RECOVER_FAILED_CRON: "0 0 */2 * * *"
+    RECOVER_CART_FAILED_CRON: "0 0 */2 * * *"
+    FAILED_AUTORECOVER_ENABLED: "false"
+    FAILED_CART_AUTORECOVER_ENABLED: "false"
+    NOT_NOTIFIED_AUTORECOVER_ENABLED: "false"
+    NOT_NOTIFIED_CART_AUTORECOVER_ENABLED: "false"
     MAX_DATE_DIFF_MILLIS: "1800000" # 30min
     MAX_DATE_DIFF_NOTIFY_MILLIS: "1800000" # 30min
-    TRIGGER_NOTIFY_REC_SCHEDULE: "0 0 */2 * * *"
-    RECOVER_FAILED_CRON: "0 0 */2 * * *"
-    AZURE_FUNCTIONS_MESH_JAVA_OPTS: "-javaagent:/home/site/wwwroot/jmx_prometheus_javaagent-0.19.0.jar=12345:/home/site/wwwroot/config.yaml -javaagent:/home/site/wwwroot/opentelemetry-javaagent.jar -Xmx768m -XX:+UseG1GC"
-    FAILED_AUTORECOVER_ENABLED: "false"
-    NOT_NOTIFIED_AUTORECOVER_ENABLED: "false"
     RECOVER_FAILED_MASSIVE_MAX_DAYS: "0"
     RECOVER_NOT_NOTIFIED_MASSIVE_MAX_DAYS: "0"
     ECOMMERCE_FILTER_ENABLED: "false"
     ENABLE_CART: "true"
     AUTHENTICATED_CHANNELS: "IO,CHECKOUT,WISP,CHECKOUT_CART"
     UNWANTED_REMITTANCE_INFO: "pagamento multibeneficiario,pagamento bpay"
+    AzureWebJobs.BizEventToReceiptProcessor.Disabled: "false"
+    AzureWebJobs.CartReceiptToReviewed.Disabled: "true"
+    AzureWebJobs.ReceiptToReviewed.Disabled: "true"
+    AzureWebJobs.RecoverFailedCartReceipt.Disabled: "true"
+    AzureWebJobs.RecoverFailedCartReceiptMassive.Disabled: "true"
+    AzureWebJobs.RecoverFailedReceipt.Disabled: "true"
+    AzureWebJobs.RecoverFailedReceiptMassive.Disabled: "true"
+    AzureWebJobs.RecoverNotNotifiedCartReceipt.Disabled: "true"
+    AzureWebJobs.RecoverNotNotifiedCartReceiptMassive.Disabled: "true"
+    AzureWebJobs.RecoverNotNotifiedReceipt.Disabled: "true"
+    AzureWebJobs.RecoverNotNotifiedReceiptMassive.Disabled: "true"
+    AzureWebJobs.RecoverFailedCartReceiptScheduled.Disabled: "true"
+    AzureWebJobs.RecoverFailedReceiptScheduled.Disabled: "true"
+    AzureWebJobs.RecoverNotNotifiedCartTimerTriggerProcessor.Disabled: "true"
+    AzureWebJobs.RecoverNotNotifiedTimerTriggerProcessor.Disabled: "true"
   envFieldRef:
     APP_NAME: "metadata.labels['app.kubernetes.io/instance']"
     APP_VERSION: "metadata.labels['app.kubernetes.io/version']"
-  envSecret:
+  envSecret: &envSecret
     APPLICATIONINSIGHTS_CONNECTION_STRING: "ai-d-connection-string"
     COSMOS_RECEIPTS_CONN_STRING: "cosmos-receipt-connection-string"
     RECEIPT_QUEUE_CONN_STRING: "receipts-storage-account-connection-string"
@@ -173,3 +188,31 @@ microservice-chart:
         pullPolicy: Always
       envConfig:
       envSecret:
+pagopa-receipt-pdf-datastore-helpdesk:
+  !!merge <<: *microservice-chart
+  fullnameOverride: "pagopa-receipt-pdf-datastore-helpdesk"
+  ingress:
+    !!merge <<: *ingress
+    path: /pagopa-receipt-pdf-datastore-helpdesk/(.*)
+  resources:
+    !!merge <<: *resources
+  envConfig:
+    !!merge <<: *envConfig
+    WEBSITE_SITE_NAME: 'pagopareceiptpdfdatastorehelpdesk'
+    AzureWebJobs.BizEventToReceiptProcessor.Disabled: "true"
+    AzureWebJobs.CartReceiptToReviewed.Disabled: "false"
+    AzureWebJobs.ReceiptToReviewed.Disabled: "false"
+    AzureWebJobs.RecoverFailedCartReceipt.Disabled: "false"
+    AzureWebJobs.RecoverFailedCartReceiptMassive.Disabled: "false"
+    AzureWebJobs.RecoverFailedReceipt.Disabled: "false"
+    AzureWebJobs.RecoverFailedReceiptMassive.Disabled: "false"
+    AzureWebJobs.RecoverNotNotifiedCartReceipt.Disabled: "false"
+    AzureWebJobs.RecoverNotNotifiedCartReceiptMassive.Disabled: "false"
+    AzureWebJobs.RecoverNotNotifiedReceipt.Disabled: "false"
+    AzureWebJobs.RecoverNotNotifiedReceiptMassive.Disabled: "false"
+    AzureWebJobs.RecoverFailedCartReceiptScheduled.Disabled: "false"
+    AzureWebJobs.RecoverFailedReceiptScheduled.Disabled: "false"
+    AzureWebJobs.RecoverNotNotifiedCartTimerTriggerProcessor.Disabled: "false"
+    AzureWebJobs.RecoverNotNotifiedTimerTriggerProcessor.Disabled: "false"
+  envSecret:
+    !!merge <<: *envSecret

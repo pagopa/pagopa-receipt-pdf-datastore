@@ -1,15 +1,6 @@
 const TOKENIZED_FISCAL_CODE = "cd07268c-73e8-4df4-8305-a35085e32eff";
 const FISCAL_CODE = "AAAAAA00A00A000A";
 
-const axios = require("axios");
-
-const datastore_url = process.env.DATASTORE_URL;
-
-axios.defaults.headers.common['Ocp-Apim-Subscription-Key'] = process.env.SUBKEY || ""; // for all requests
-if (process.env.canary) {
-  axios.defaults.headers.common['X-CANARY'] = 'canary' // for all requests
-}
-
 const getTokenizedBizEvent = () => {
 	let environment = process.env.ENVIRONMENT || "";
 	if (environment === "uat") {
@@ -148,28 +139,19 @@ function createEvent(id, transactionId, totalNotice) {
 	return json_event
 }
 
-// function createReceipt(id, fiscalCode, pdfName) {
-// 	let receipt =
-// 	{
-// 		"eventId": id,
-// 		"eventData": {
-// 			"debtorFiscalCode": fiscalCode,
-// 			"payerFiscalCode": fiscalCode
-// 		},
-// 		"status": "IO_NOTIFIED",
-// 		"mdAttach": {
-// 			"name": pdfName,
-// 			"url": pdfName
-// 		},
-// 		"id": id
-// 	}
-// 	return receipt
-// }
-
 function createReceiptError(id, status) {
 	return {
 		"id": id,
 		"bizEventId": id,
+		"messagePayload": TOKENIZED_BIZ_EVENT,
+		"messageError": "Unexpected error when decrypting the given string",
+		"status": status || "TO_REVIEW",
+	}
+}
+
+function createCartReceiptError(id, status) {
+	return {
+		"id": id,
 		"messagePayload": TOKENIZED_BIZ_EVENT,
 		"messageError": "Unexpected error when decrypting the given string",
 		"status": status || "TO_REVIEW",
@@ -204,13 +186,47 @@ function createReceipt(id, status) {
 	return receipt
 }
 
-function createCartEvent(id, listOfBizEventsIds) {
-	return {
-		"id":id,
-		"cartPaymentId": listOfBizEventsIds,
-		"totalNotice": listOfBizEventsIds.length,
-		"status": "INSERTED"
+function createCartReceipt(id, status) {
+	let currentDate = new Date();
+	let cart =
+	{
+		"eventId": id,
+		"id": id,
+		"version": "1",
+		"payload": {
+			"payerFiscalCode": TOKENIZED_FISCAL_CODE,
+			"transactionCreationDate": "2025-11-02T10:14:57.218496702Z",
+			"totalNotice": "2",
+			"totalAmount": "26,48",
+			"cart": [
+				{
+					"bizEventId": `${id}-0`,
+					"subject": "oggetto 1",
+					"payeeName": "Ministero delle infrastrutture e dei trasporti",
+					"debtorFiscalCode": TOKENIZED_FISCAL_CODE,
+					"amount": "16.0",
+					"reasonErrDebtor": null
+				},
+				{
+					"bizEventId": `${id}-1`,
+					"subject": "oggetto 2",
+					"payeeName": "Ministero delle infrastrutture e dei trasporti",
+					"debtorFiscalCode": TOKENIZED_FISCAL_CODE,
+					"amount": "10.2",
+					"reasonErrDebtor": null
+				}
+			],
+			"reasonErrPayer": null
+		},
+		"status": status,
+		"numRetry": 0,
+		"notificationNumRetry": 0,
+		"reasonErr": null,
+		"inserted_at": currentDate.getTime() - 360000,
+		"generated_at": currentDate.getTime() - 360000,
+		"notified_at": 0
 	}
+	return cart
 }
 
 function makeId(length) {
@@ -227,5 +243,5 @@ function makeId(length) {
 
 module.exports = {
 	TOKENIZED_FISCAL_CODE,
-	createEvent, sleep, createCartEvent, createReceipt, createReceiptError, makeId
+	createEvent, sleep, createReceipt, createReceiptError, makeId, createCartReceiptError, createCartReceipt
 }

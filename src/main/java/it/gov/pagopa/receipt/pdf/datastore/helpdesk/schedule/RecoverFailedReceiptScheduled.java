@@ -74,7 +74,7 @@ public class RecoverFailedReceiptScheduled {
     }
 
     private List<Receipt> recover(ReceiptStatusType status) {
-        MassiveRecoverResult recoverResult = this.helpdeskService.massiveRecoverByStatus(status);
+        MassiveRecoverResult recoverResult = this.helpdeskService.massiveRecoverFailedReceipt(status);
 
         int successCounter = recoverResult.getSuccessCounter();
         int errorCounter = recoverResult.getErrorCounter();

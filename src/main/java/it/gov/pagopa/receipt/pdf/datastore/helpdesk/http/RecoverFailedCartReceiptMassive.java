@@ -46,7 +46,7 @@ public class RecoverFailedCartReceiptMassive {
     }
 
     /**
-     * This function will be invoked when an Http Trigger occurs.
+     * This function will be invoked when a Http Trigger occurs.
      * <p>
      * It recovers all the cart receipts with the specified status that has to be one of:
      * <ul>
@@ -54,7 +54,6 @@ public class RecoverFailedCartReceiptMassive {
      *  <li>{@link CartStatusType#FAILED}</li>
      *  <li>{@link CartStatusType#NOT_QUEUE_SENT}</li>
      * </ul>
-
      * <p>
      * It creates the cart receipts and send on queue the event in order to proceed with the receipt generation.
      *
@@ -86,13 +85,13 @@ public class RecoverFailedCartReceiptMassive {
             return buildErrorResponse(request, HttpStatus.BAD_REQUEST, e.getMessage());
         }
 
-        if (!status.isAFailedDatastoreStatus()) {
+        if (status == null || !status.isAFailedDatastoreStatus()) {
             String message = String.format("The provided status %s is not among the processable" +
                     "statuses (INSERTED, NOT_QUEUE_SENT, FAILED).", status);
             return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, message);
         }
 
-        MassiveCartRecoverResult recoverResult = this.helpdeskService.massiveRecoverByStatus(status);
+        MassiveCartRecoverResult recoverResult = this.helpdeskService.massiveRecoverFailedCart(status);
 
         int successCounter = recoverResult.getSuccessCounter();
         int errorCounter = recoverResult.getErrorCounter();

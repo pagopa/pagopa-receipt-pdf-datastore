@@ -44,9 +44,13 @@ public class CartReceiptToReviewed {
     }
 
     /**
-     * This function will be invoked when an Http Trigger occurs
+     * This function will be invoked when a Http Trigger occurs
+     * <p>
+     * The function is responsible for retrieving a cart-receipt-error with the provided cart-id.
+     * If the retrieved document is in the expected status {@link ReceiptErrorStatusType#TO_REVIEW} updates the status
+     * to {@link ReceiptErrorStatusType#REVIEWED} and saves it.
      *
-     * @return response with HttpStatus.OK
+     * @return response with {@link HttpStatus#OK} if the operation succeeded
      */
     @FunctionName("CartReceiptToReviewed")
     public HttpResponseMessage run(
@@ -77,7 +81,7 @@ public class CartReceiptToReviewed {
             return buildErrorResponse(request, HttpStatus.NOT_FOUND, responseMsg);
         }
 
-        if (!receiptError.getStatus().equals(ReceiptErrorStatusType.TO_REVIEW)) {
+        if (!ReceiptErrorStatusType.TO_REVIEW.equals(receiptError.getStatus())) {
             responseMsg = String.format("Found cartReceiptError with invalid status %s for cartId %s", receiptError.getStatus(), cartId);
             return buildErrorResponse(request, HttpStatus.INTERNAL_SERVER_ERROR, responseMsg);
         }

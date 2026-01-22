@@ -43,7 +43,7 @@ public class RecoverNotNotifiedCartReceiptMassive {
     }
 
     /**
-     * This function will be invoked when an Http Trigger occurs.
+     * This function will be invoked when a Http Trigger occurs.
      * <p>
      * It recovers all receipt with the provided status.
      * <p>
@@ -79,13 +79,13 @@ public class RecoverNotNotifiedCartReceiptMassive {
             return buildErrorResponse(request, HttpStatus.BAD_REQUEST, e.getMessage());
         }
 
-        if (!status.isANotificationFailedStatus()) {
+        if (status == null || !status.isANotificationFailedStatus()) {
             String message = String.format("The provided status %s is not among the processable" +
                     "statuses (GENERATED, IO_ERROR_TO_NOTIFY).", status);
             return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, message);
         }
 
-        List<CartForReceipt> receiptList = this.helpdeskService.massiveRecoverNoNotified(status);
+        List<CartForReceipt> receiptList = this.helpdeskService.massiveRecoverNoNotifiedCart(status);
         if (receiptList.isEmpty()) {
             return request.createResponseBuilder(HttpStatus.OK).body("No receipts to be recovered").build();
         }

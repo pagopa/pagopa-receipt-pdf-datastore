@@ -48,7 +48,7 @@ public class RecoverNotNotifiedCartReceipt {
     }
 
     /**
-     * This function will be invoked when an Http Trigger occurs.
+     * This function will be invoked when a Http Trigger occurs.
      * <p>
      * It recovers the receipt with the specified biz event id
      * <p>
@@ -85,7 +85,7 @@ public class RecoverNotNotifiedCartReceipt {
             return buildErrorResponse(request, HttpStatus.NOT_FOUND, errMsg);
         }
 
-        if (!cart.getStatus().isANotificationFailedStatus()) {
+        if (cart.getStatus() == null || !cart.getStatus().isANotificationFailedStatus()) {
             String errMsg = String.format("The requested cart receipt with id %s is not in the expected status",
                     cart.getEventId());
             logger.error(errMsg);

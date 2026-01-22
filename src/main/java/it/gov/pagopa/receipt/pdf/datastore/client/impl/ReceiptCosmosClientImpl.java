@@ -8,15 +8,14 @@ import com.azure.cosmos.models.CosmosItemResponse;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.FeedResponse;
 import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptCosmosClient;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.IOMessage;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReceiptError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
-import it.gov.pagopa.receipt.pdf.datastore.exception.IoMessageNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -28,7 +27,6 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
 
     private final String databaseId = System.getenv("COSMOS_RECEIPT_DB_NAME");
     private final String containerId = System.getenv("COSMOS_RECEIPT_CONTAINER_NAME");
-    private final String containerMessageId = System.getenv().getOrDefault("COSMOS_RECEIPT_MESSAGE_CONTAINER_NAME", "receipts-io-messages-evt");
     private final String containerReceiptErrorId = System.getenv().getOrDefault("COSMOS_RECEIPT_ERROR_CONTAINER_NAME", "receipts-message-errors");
 
     private static final String DOCUMENT_NOT_FOUND_ERR_MSG = "Document not found in the defined container";
@@ -43,10 +41,12 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
     private ReceiptCosmosClientImpl() {
         String azureKey = System.getenv("COSMOS_RECEIPT_KEY");
         String serviceEndpoint = System.getenv("COSMOS_RECEIPT_SERVICE_ENDPOINT");
+        String readRegion = System.getenv("COSMOS_RECEIPT_READ_REGION");
 
         this.cosmosClient = new CosmosClientBuilder()
                 .endpoint(serviceEndpoint)
                 .key(azureKey)
+                .preferredRegions(List.of(readRegion))
                 .buildClient();
     }
 
@@ -105,6 +105,17 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      * {@inheritDoc}
      */
     @Override
+    public CosmosItemResponse<Receipt> updateReceipts(Receipt receipt) {
+        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
+        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
+
+        return cosmosContainer.upsertItem(receipt);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public Iterable<FeedResponse<Receipt>> getGeneratedReceiptDocuments(String continuationToken, Integer pageSize)  {
         OffsetDateTime currentDateTime = OffsetDateTime.now();
         long now = currentDateTime.toInstant().toEpochMilli();
@@ -143,15 +154,6 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
                 ReceiptStatusType.INSERTED, daysAgo, now, millisDiff);
 
         return executePagedQuery(containerId, query, Receipt.class, continuationToken, pageSize);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public IOMessage getIoMessage(String messageId) throws IoMessageNotFoundException {
-        return getDocumentByFilter(containerMessageId, "messageId", messageId, IOMessage.class)
-                .orElseThrow(() -> new IoMessageNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG));
     }
 
     /**

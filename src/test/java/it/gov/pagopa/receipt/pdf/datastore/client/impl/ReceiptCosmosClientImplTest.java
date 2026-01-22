@@ -5,10 +5,8 @@ import com.azure.cosmos.CosmosContainer;
 import com.azure.cosmos.CosmosDatabase;
 import com.azure.cosmos.models.FeedResponse;
 import com.azure.cosmos.util.CosmosPagedIterable;
-import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.IOMessage;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReceiptError;
-import it.gov.pagopa.receipt.pdf.datastore.exception.IoMessageNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -50,13 +48,9 @@ class ReceiptCosmosClientImplTest {
     @Mock
     private Iterable<FeedResponse<Receipt>> mockReceiptIterableByPage;
     @Mock
-    private CosmosPagedIterable<IOMessage> mockIOMessageIterable;
-    @Mock
     private Stream<Receipt> mockReceiptStream;
     @Mock
     private Stream<ReceiptError> mockReceiptErrorStream;
-    @Mock
-    private Stream<IOMessage> mockIOMessageStream;
 
     @InjectMocks
     private ReceiptCosmosClientImpl sut;
@@ -126,6 +120,16 @@ class ReceiptCosmosClientImplTest {
     }
 
     @Test
+    void updateReceiptsSuccess() {
+        when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
+        when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
+
+        assertDoesNotThrow(() -> sut.updateReceipts(new Receipt()));
+
+        verify(mockContainer).upsertItem(any());
+    }
+
+    @Test
     void runOk_FailedQueryClient() {
         when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
@@ -176,32 +180,4 @@ class ReceiptCosmosClientImplTest {
 
         assertNotNull(result);
     }
-
-    @Test
-    void getIoMessage_Success() {
-        when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
-        when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
-        when(mockContainer.queryItems(anyString(), any(), eq(IOMessage.class))).thenReturn(mockIOMessageIterable);
-        when(mockIOMessageIterable.stream()).thenReturn(mockIOMessageStream);
-        when(mockIOMessageStream.findFirst()).thenReturn(Optional.of(IOMessage.builder().id(IO_MESSAGE_ID).build()));
-
-        IOMessage result = assertDoesNotThrow(() -> sut.getIoMessage(IO_MESSAGE_ID));
-
-        assertEquals(IO_MESSAGE_ID, result.getId());
-    }
-
-    @Test
-    void getIoMessage_NotFound() {
-        when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
-        when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
-        when(mockContainer.queryItems(anyString(), any(), eq(IOMessage.class))).thenReturn(mockIOMessageIterable);
-        when(mockIOMessageIterable.stream()).thenReturn(mockIOMessageStream);
-        when(mockIOMessageStream.findFirst()).thenReturn(Optional.empty());
-
-        IoMessageNotFoundException e =
-                assertThrows(IoMessageNotFoundException.class, () -> sut.getIoMessage(IO_MESSAGE_ID));
-
-        assertNotNull(e);
-    }
-
 }

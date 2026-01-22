@@ -46,7 +46,7 @@ public class RecoverFailedReceiptMassive {
     }
 
     /**
-     * This function will be invoked when an Http Trigger occurs.
+     * This function will be invoked when a Http Trigger occurs.
      * <p>
      * It recovers all the receipts with the specified status that has to be one of:
      * <ul>
@@ -85,13 +85,13 @@ public class RecoverFailedReceiptMassive {
             return buildErrorResponse(request, HttpStatus.BAD_REQUEST, e.getMessage());
         }
 
-        if (!status.isAFailedDatastoreStatus()) {
+        if (status == null || !status.isAFailedDatastoreStatus()) {
             String message = String.format("The provided status %s is not among the processable" +
                     "statuses (INSERTED, NOT_QUEUE_SENT, FAILED).", status);
             return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, message);
         }
 
-        MassiveRecoverResult recoverResult = this.helpdeskService.massiveRecoverByStatus(status);
+        MassiveRecoverResult recoverResult = this.helpdeskService.massiveRecoverFailedReceipt(status);
 
         int successCounter = recoverResult.getSuccessCounter();
         int errorCounter = recoverResult.getErrorCounter();

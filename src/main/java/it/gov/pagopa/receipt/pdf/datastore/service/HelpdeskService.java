@@ -76,7 +76,7 @@ public interface HelpdeskService {
      * @param status the status to be recovered
      * @return the recover result
      */
-    MassiveRecoverResult massiveRecoverByStatus(ReceiptStatusType status);
+    MassiveRecoverResult massiveRecoverFailedReceipt(ReceiptStatusType status);
 
     /**
      * Massive recover all failed cart with the specified status {@link CartStatusType}
@@ -84,7 +84,7 @@ public interface HelpdeskService {
      * @param status the status to be recovered
      * @return the recover result
      */
-    MassiveCartRecoverResult massiveRecoverByStatus(CartStatusType status);
+    MassiveCartRecoverResult massiveRecoverFailedCart(CartStatusType status);
 
     /**
      * Massive recover all not notified receipt with the specified status {@link ReceiptStatusType}
@@ -92,7 +92,7 @@ public interface HelpdeskService {
      * @param status the status to be recovered
      * @return the recover result
      */
-    List<Receipt> massiveRecoverNoNotified(ReceiptStatusType status);
+    List<Receipt> massiveRecoverNoNotifiedReceipt(ReceiptStatusType status);
 
     /**
      * Massive recover all not notified cart receipt with the specified status {@link CartStatusType}
@@ -100,5 +100,5 @@ public interface HelpdeskService {
      * @param status the status to be recovered
      * @return the recover result
      */
-    List<CartForReceipt> massiveRecoverNoNotified(CartStatusType status);
+    List<CartForReceipt> massiveRecoverNoNotifiedCart(CartStatusType status);
 }

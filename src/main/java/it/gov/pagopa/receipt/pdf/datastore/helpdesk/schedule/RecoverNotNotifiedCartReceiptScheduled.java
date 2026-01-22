@@ -18,7 +18,7 @@ import java.util.List;
 
 public class RecoverNotNotifiedCartReceiptScheduled {
 
-    private final boolean isEnabled = Boolean.parseBoolean(System.getenv().getOrDefault("NOT_NOTIFIED_AUTORECOVER_ENABLED", "true"));
+    private final boolean isEnabled = Boolean.parseBoolean(System.getenv().getOrDefault("NOT_NOTIFIED_CART_AUTORECOVER_ENABLED", "true"));
 
     private final Logger logger = LoggerFactory.getLogger(RecoverNotNotifiedCartReceiptScheduled.class);
 
@@ -45,7 +45,7 @@ public class RecoverNotNotifiedCartReceiptScheduled {
     public void processRecoverNotNotifiedScheduledTrigger(
             @TimerTrigger(
                     name = "timerInfoNotNotifiedCart",
-                    schedule = "%TRIGGER_NOTIFY_REC_SCHEDULE%"
+                    schedule = "%RECOVER_CART_FAILED_CRON%"
             )
             String timerInfo,
             @CosmosDBOutput(
@@ -68,7 +68,7 @@ public class RecoverNotNotifiedCartReceiptScheduled {
     }
 
     private List<CartForReceipt> process(ExecutionContext context, CartStatusType statusType) {
-        List<CartForReceipt> receiptList = this.helpdeskService.massiveRecoverNoNotified(statusType);
+        List<CartForReceipt> receiptList = this.helpdeskService.massiveRecoverNoNotifiedCart(statusType);
 
         List<String> idList = receiptList.parallelStream().map(CartForReceipt::getId).toList();
         logger.info("[{}] Recovered {} cart receipts for status {} with ids: {}",

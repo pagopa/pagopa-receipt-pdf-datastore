@@ -26,7 +26,7 @@ public class RecoverFailedCartReceiptScheduled {
 
     private final Logger logger = LoggerFactory.getLogger(RecoverFailedCartReceiptScheduled.class);
 
-    private final boolean isEnabled = Boolean.parseBoolean(System.getenv().getOrDefault("FAILED_AUTORECOVER_ENABLED", "true"));
+    private final boolean isEnabled = Boolean.parseBoolean(System.getenv().getOrDefault("FAILED_CART_AUTORECOVER_ENABLED", "true"));
 
     private final HelpdeskService helpdeskService;
 
@@ -52,7 +52,7 @@ public class RecoverFailedCartReceiptScheduled {
      */
     @FunctionName("RecoverFailedCartReceiptScheduled")
     public void run(
-            @TimerTrigger(name = "timerInfoFailed", schedule = "%RECOVER_FAILED_CRON%") String timerInfo,
+            @TimerTrigger(name = "timerInfoFailed", schedule = "%RECOVER_CART_FAILED_CRON%") String timerInfo,
             @CosmosDBOutput(
                     name = "CartReceiptDatastore",
                     databaseName = "db",
@@ -74,7 +74,7 @@ public class RecoverFailedCartReceiptScheduled {
     }
 
     private List<CartForReceipt> recover(CartStatusType status) {
-        MassiveCartRecoverResult recoverResult = this.helpdeskService.massiveRecoverByStatus(status);
+        MassiveCartRecoverResult recoverResult = this.helpdeskService.massiveRecoverFailedCart(status);
 
         int successCounter = recoverResult.getSuccessCounter();
         int errorCounter = recoverResult.getErrorCounter();
