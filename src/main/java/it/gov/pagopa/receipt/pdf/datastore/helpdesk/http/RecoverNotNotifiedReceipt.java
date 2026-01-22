@@ -80,14 +80,14 @@ public class RecoverNotNotifiedReceipt {
             receipt = this.receiptCosmosService.getReceipt(eventId);
         } catch (ReceiptNotFoundException e) {
             String errMsg = String.format("Unable to retrieve the receipt with eventId %s", eventId);
-            logger.error("[{}] {}", context.getFunctionName(), errMsg, e);
+            logger.warn("[{}] {}", context.getFunctionName(), errMsg, e);
             return buildErrorResponse(request, HttpStatus.NOT_FOUND, errMsg);
         }
 
         if (receipt.getStatus() == null || !receipt.getStatus().isANotificationFailedStatus()) {
             String errMsg = String.format("The requested receipt with eventId %s is not in the expected status",
                     receipt.getEventId());
-            logger.error(errMsg);
+            logger.warn(errMsg);
             return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, errMsg);
         }
 

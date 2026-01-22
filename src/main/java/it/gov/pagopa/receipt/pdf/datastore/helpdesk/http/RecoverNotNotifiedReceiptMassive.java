@@ -77,12 +77,14 @@ public class RecoverNotNotifiedReceiptMassive {
         try {
             status = validateReceiptStatusParam(statusParam);
         } catch (InvalidParameterException e) {
+            logger.warn("[{}]", context.getFunctionName(), e);
             return buildErrorResponse(request, HttpStatus.BAD_REQUEST, e.getMessage());
         }
 
         if (status == null || !status.isANotificationFailedStatus()) {
             String message = String.format("The provided status %s is not among the processable" +
                     "statuses (GENERATED, IO_ERROR_TO_NOTIFY).", status);
+            logger.warn("[{}] {}", context.getFunctionName(), message);
             return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, message);
         }
 
