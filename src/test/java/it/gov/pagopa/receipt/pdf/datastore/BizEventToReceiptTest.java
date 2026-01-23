@@ -265,7 +265,7 @@ class BizEventToReceiptTest {
     @Test
     void runDiscardedWithCartReceiptAlreadyInserted() throws CartNotFoundException {
         CartForReceipt cart = CartForReceipt.builder()
-                .eventId(CART_ID)
+                .cartId(CART_ID)
                 .payload(Payload.builder()
                         .cart(Collections.singletonList(
                                 CartPayment.builder()
@@ -519,7 +519,7 @@ class BizEventToReceiptTest {
         CartForReceipt savedCart = cartForReceiptCaptor.getValue();
 
         assertNotNull(savedCart);
-        assertEquals(CART_ID, savedCart.getEventId());
+        assertEquals(CART_ID, savedCart.getCartId());
         assertEquals(CartStatusType.WAITING_FOR_BIZ_EVENT, savedCart.getStatus());
         assertNotNull(savedCart.getPayload());
         assertEquals(TOKENIZED_PAYER_FISCAL_CODE, savedCart.getPayload().getPayerFiscalCode());
@@ -561,7 +561,7 @@ class BizEventToReceiptTest {
         CartForReceipt savedCart = cartForReceiptCaptor.getValue();
 
         assertNotNull(savedCart);
-        assertEquals(CART_ID, savedCart.getEventId());
+        assertEquals(CART_ID, savedCart.getCartId());
         assertEquals(CartStatusType.INSERTED, savedCart.getStatus());
         assertNotNull(savedCart.getPayload());
         assertEquals(TOKENIZED_PAYER_FISCAL_CODE, savedCart.getPayload().getPayerFiscalCode());
@@ -613,7 +613,7 @@ class BizEventToReceiptTest {
         CartForReceipt savedCart = savedCartList.get(0);
 
         assertNotNull(savedCart);
-        assertEquals(CART_ID, savedCart.getEventId());
+        assertEquals(CART_ID, savedCart.getCartId());
         assertEquals(CartStatusType.FAILED, savedCart.getStatus());
         assertNotNull(savedCart.getPayload());
         assertNull(savedCart.getPayload().getPayerFiscalCode());
@@ -661,7 +661,7 @@ class BizEventToReceiptTest {
         CartForReceipt savedCart = savedCartList.get(0);
 
         assertNotNull(savedCart);
-        assertEquals(CART_ID, savedCart.getEventId());
+        assertEquals(CART_ID, savedCart.getCartId());
         assertEquals(CartStatusType.FAILED, savedCart.getStatus());
         assertNotNull(savedCart.getPayload());
         assertNotNull(savedCart.getPayload());
@@ -717,7 +717,7 @@ class BizEventToReceiptTest {
         CartForReceipt savedCart = savedCartList.get(0);
 
         assertNotNull(savedCart);
-        assertEquals(CART_ID, savedCart.getEventId());
+        assertEquals(CART_ID, savedCart.getCartId());
         assertEquals(CartStatusType.FAILED, savedCart.getStatus());
         assertNotNull(savedCart.getPayload());
         assertEquals(TOKENIZED_PAYER_FISCAL_CODE, savedCart.getPayload().getPayerFiscalCode());
@@ -775,7 +775,7 @@ class BizEventToReceiptTest {
         CartForReceipt savedCart = savedCartList.get(0);
 
         assertNotNull(savedCart);
-        assertEquals(CART_ID, savedCart.getEventId());
+        assertEquals(CART_ID, savedCart.getCartId());
         assertEquals(CartStatusType.NOT_QUEUE_SENT, savedCart.getStatus());
         assertNotNull(savedCart.getPayload());
         assertEquals(TOKENIZED_PAYER_FISCAL_CODE, savedCart.getPayload().getPayerFiscalCode());
@@ -795,7 +795,7 @@ class BizEventToReceiptTest {
 
     private CartForReceipt buildCartForReceiptWaitingForBiz() {
         return CartForReceipt.builder()
-                .eventId(CART_ID)
+                .cartId(CART_ID)
                 .status(CartStatusType.WAITING_FOR_BIZ_EVENT)
                 .version("1")
                 .payload(Payload.builder()
@@ -816,7 +816,7 @@ class BizEventToReceiptTest {
 
     private CartForReceipt buildCartForReceiptInserted() {
         return CartForReceipt.builder()
-                .eventId(CART_ID)
+                .cartId(CART_ID)
                 .status(CartStatusType.INSERTED)
                 .version("1")
                 .payload(Payload.builder()
@@ -844,7 +844,7 @@ class BizEventToReceiptTest {
 
     private CartForReceipt buildCartForReceiptFailed() {
         return CartForReceipt.builder()
-                .eventId(CART_ID)
+                .cartId(CART_ID)
                 .status(CartStatusType.FAILED)
                 .version("1")
                 .payload(Payload.builder()

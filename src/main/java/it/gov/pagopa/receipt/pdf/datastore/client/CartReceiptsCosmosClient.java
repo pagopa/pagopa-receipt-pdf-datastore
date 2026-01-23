@@ -13,11 +13,11 @@ public interface CartReceiptsCosmosClient {
     /**
      * Retrieve Cart For Receipt document from CosmosDB database
      *
-     * @param eventId Biz-event transaction id, that identifies the cart
+     * @param cartId Biz-event transaction id, that identifies the cart
      * @return cart-for-receipts document
      * @throws CartNotFoundException in case no cart has been found with the given event id
      */
-    CartForReceipt getCartItem(String eventId) throws CartNotFoundException;
+    CartForReceipt getCartItem(String cartId) throws CartNotFoundException;
 
     /**
      * Update Cart For Receipt on CosmosDB database

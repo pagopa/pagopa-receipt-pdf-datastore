@@ -114,13 +114,13 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             statusCode = sendMessageResult.getStatusCode();
         } catch (Exception e) {
             statusCode = ReasonErrorCode.ERROR_QUEUE.getCode();
-            logger.warn("Failed to enqueue cart with id {}", cartForReceipt.getEventId(), e);
+            logger.warn("Failed to enqueue cart with id {}", cartForReceipt.getCartId(), e);
         }
 
         if (statusCode != HttpStatus.CREATED.value()) {
             String errorString = String.format(
                     "[BizEventToReceiptService] Error sending message to queue for cartForReceipt with eventId %s",
-                    cartForReceipt.getEventId());
+                    cartForReceipt.getCartId());
             cartForReceipt.setStatus(CartStatusType.NOT_QUEUE_SENT);
             ReasonError reasonError = new ReasonError(statusCode, errorString);
             cartForReceipt.setReasonErr(reasonError);
@@ -298,7 +298,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
                 bizEventList.add(bizEvent);
             }
         } catch (BizEventNotFoundException e) {
-            String errMsg = String.format("Error while fetching cart with event id %s biz-events: %s", cart.getEventId(), e.getMessage());
+            String errMsg = String.format("Error while fetching cart with event id %s biz-events: %s", cart.getCartId(), e.getMessage());
             logger.error("{}", errMsg, e);
             cart.setStatus(CartStatusType.FAILED);
             cart.setReasonErr(ReasonError.builder()
@@ -319,7 +319,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         statusCode = trySaveCart(cartForReceipt);
 
         if (statusCode == ReasonErrorCode.ERROR_COSMOS_ETAG_MISMATCH.getCode()) {
-            logger.debug("Fetch again cart with eventId {} and then retry save on cosmos", cartForReceipt.getEventId());
+            logger.debug("Fetch again cart with cartId {} and then retry save on cosmos", cartForReceipt.getCartId());
             cartForReceipt = buildCartForReceipt(bizEvent);
 
             if (!isCartStatusValid(cartForReceipt)) {
@@ -373,11 +373,11 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
 
             statusCode = response.getStatusCode();
         } catch (CartConcurrentUpdateException e) {
-            logger.error("Save cart with eventId {} on cosmos failed for concurrent update", cartForReceipt.getEventId(), e);
+            logger.error("Save cart with cartId {} on cosmos failed for concurrent update", cartForReceipt.getCartId(), e);
             statusCode = ReasonErrorCode.ERROR_COSMOS_ETAG_MISMATCH.getCode();
         } catch (Exception e) {
             statusCode = ReasonErrorCode.ERROR_COSMOS.getCode();
-            logger.error("Save cart with eventId {} on cosmos failed", cartForReceipt.getEventId(), e);
+            logger.error("Save cart with cartId {} on cosmos failed", cartForReceipt.getCartId(), e);
         }
         return statusCode;
     }
@@ -385,8 +385,8 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
     private void handleSaveCartFailure(CartForReceipt cartForReceipt, int statusCode) {
         if (statusCode != HttpStatus.CREATED.value() && statusCode != HttpStatus.OK.value()) {
             String errorString = String.format(
-                    "[BizEventToReceiptService] Error saving cart to cosmos for receipt with eventId %s, cosmos client responded with status %s",
-                    cartForReceipt.getEventId(), statusCode);
+                    "[BizEventToReceiptService] Error saving cart to cosmos for receipt with cartId %s, cosmos client responded with status %s",
+                    cartForReceipt.getCartId(), statusCode);
             ReasonError reasonError = new ReasonError(statusCode, errorString);
             cartForReceipt.setReasonErr(reasonError);
             cartForReceipt.setStatus(CartStatusType.FAILED);
@@ -421,7 +421,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
         logger.error("an error occurred during buildCartForReceipt method", e);
         return cartForReceipt.toBuilder()
                 .status(CartStatusType.FAILED)
-                .eventId(transactionId)
+                .cartId(transactionId)
                 .reasonErr(ReasonError.builder()
                         .code(code)
                         .message(message)
@@ -436,7 +436,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
                 // remove UUID suffix in order to grant document overwrite in case of concurrent insert, in this way
                 // _etag check will avoid overwrite and prevent data loss
                 .id(transactionId)
-                .eventId(transactionId)
+                .cartId(transactionId)
                 .status(CartStatusType.WAITING_FOR_BIZ_EVENT)
                 .version("1") // this is the first version of this document
                 .payload(Payload.builder()
