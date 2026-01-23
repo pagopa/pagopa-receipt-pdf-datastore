@@ -77,12 +77,13 @@ public class CartReceiptToReviewed {
             receiptError = cartReceiptCosmosService.getCartReceiptError(cartId);
         } catch (NoSuchElementException | CartNotFoundException e) {
             responseMsg = String.format("No cartReceiptError has been found with cartId %s", cartId);
-            logger.error("[{}] {}", context.getFunctionName(), responseMsg, e);
+            logger.warn("[{}] {}", context.getFunctionName(), responseMsg, e);
             return buildErrorResponse(request, HttpStatus.NOT_FOUND, responseMsg);
         }
 
         if (!ReceiptErrorStatusType.TO_REVIEW.equals(receiptError.getStatus())) {
             responseMsg = String.format("Found cartReceiptError with invalid status %s for cartId %s", receiptError.getStatus(), cartId);
+            logger.warn("[{}] {}", context.getFunctionName(), responseMsg);
             return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, responseMsg);
         }
 

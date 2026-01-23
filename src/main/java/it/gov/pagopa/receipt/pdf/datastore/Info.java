@@ -49,7 +49,7 @@ public class Info {
                 name = properties.getProperty("name", null);
             }
         } catch (Exception e) {
-            logger.error("Impossible to retrieve information from pom.properties file.", e);
+            logger.warn("Impossible to retrieve information from pom.properties file.", e);
         }
         return AppInfo.builder().version(version).environment("azure-fn").name(name).build();
     }

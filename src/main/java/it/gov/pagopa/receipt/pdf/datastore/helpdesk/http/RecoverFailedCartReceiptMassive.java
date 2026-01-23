@@ -83,12 +83,14 @@ public class RecoverFailedCartReceiptMassive {
         try {
             status = validateCartStatusParam(statusParam);
         } catch (InvalidParameterException e) {
+            logger.warn("[{}]", context.getFunctionName(), e);
             return buildErrorResponse(request, HttpStatus.BAD_REQUEST, e.getMessage());
         }
 
         if (status == null || status.isNotAFailedDatastoreStatus()) {
             String message = String.format("The provided status %s is not among the processable" +
                     "statuses (WAITING_FOR_BIZ_EVENT, INSERTED, NOT_QUEUE_SENT, FAILED).", status);
+            logger.warn("[{}] {}", context.getFunctionName(), message);
             return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, message);
         }
 
@@ -101,6 +103,7 @@ public class RecoverFailedCartReceiptMassive {
             documentdb.setValue(recoverResult.getFailedCartList());
 
             String msg = String.format("Recovered %s receipts but %s encountered an error.", successCounter, errorCounter);
+            logger.error("[{}] {}", context.getFunctionName(), msg);
             return request
                     .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ProblemJson.builder()

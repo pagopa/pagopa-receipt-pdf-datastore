@@ -79,7 +79,7 @@ public class RecoverFailedReceiptScheduled {
         int errorCounter = recoverResult.getErrorCounter();
 
         if (errorCounter > 0) {
-            logger.error("Recovered {} cart receipts but {} encountered an error.", successCounter, errorCounter);
+            logger.warn("Recovered {} cart receipts but {} encountered an error.", successCounter, errorCounter);
             return recoverResult.getFailedReceiptList();
         }
 

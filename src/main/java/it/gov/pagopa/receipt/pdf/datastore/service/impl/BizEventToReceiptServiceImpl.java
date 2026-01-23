@@ -88,7 +88,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             statusCode = sendMessageResult.getStatusCode();
         } catch (Exception e) {
             statusCode = ReasonErrorCode.ERROR_QUEUE.getCode();
-            logger.error("Sending BizEvent with id {} to queue failed", bizEventList.get(0).getId(), e);
+            logger.warn("Sending BizEvent with id {} to queue failed", bizEventList.get(0).getId(), e);
         }
 
         if (statusCode != HttpStatus.CREATED.value()) {
@@ -114,7 +114,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             statusCode = sendMessageResult.getStatusCode();
         } catch (Exception e) {
             statusCode = ReasonErrorCode.ERROR_QUEUE.getCode();
-            logger.error("Failed to enqueue cart with id {}", cartForReceipt.getEventId(), e);
+            logger.warn("Failed to enqueue cart with id {}", cartForReceipt.getEventId(), e);
         }
 
         if (statusCode != HttpStatus.CREATED.value()) {
@@ -164,7 +164,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             statusCode = response.getStatusCode();
         } catch (Exception e) {
             statusCode = ReasonErrorCode.ERROR_COSMOS.getCode();
-            logger.error("Save receipt with eventId {} on cosmos failed", receipt.getEventId(), e);
+            logger.warn("Save receipt with eventId {} on cosmos failed", receipt.getEventId(), e);
         }
 
         if (statusCode != HttpStatus.CREATED.value()) {
@@ -323,7 +323,7 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
             cartForReceipt = buildCartForReceipt(bizEvent);
 
             if (!isCartStatusValid(cartForReceipt)) {
-                logger.error("Cart build after fetch failed");
+                logger.warn("Cart build after fetch failed");
                 return cartForReceipt;
             }
             statusCode = trySaveCart(cartForReceipt);
