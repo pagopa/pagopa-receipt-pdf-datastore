@@ -100,7 +100,7 @@ class CartReceiptToReviewedTest {
 
         // test execution
         HttpResponseMessage response = assertDoesNotThrow(() -> function.run(request, CART_ID, documentdb, executionContextMock));
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatus());
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, response.getStatus());
 
         verifyNoInteractions(documentdb);
     }

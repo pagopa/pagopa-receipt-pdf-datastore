@@ -83,8 +83,8 @@ public class CartReceiptToReviewed {
 
         if (!ReceiptErrorStatusType.TO_REVIEW.equals(receiptError.getStatus())) {
             responseMsg = String.format("Found cartReceiptError with invalid status %s for cartId %s", receiptError.getStatus(), cartId);
-            logger.error("[{}] {}", context.getFunctionName(), responseMsg);
-            return buildErrorResponse(request, HttpStatus.INTERNAL_SERVER_ERROR, responseMsg);
+            logger.warn("[{}] {}", context.getFunctionName(), responseMsg);
+            return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, responseMsg);
         }
 
         receiptError.setStatus(ReceiptErrorStatusType.REVIEWED);

@@ -67,7 +67,6 @@ public class RecoverFailedReceiptScheduled {
             List<Receipt> failedReceipts = new ArrayList<>();
             failedReceipts.addAll(recover(ReceiptStatusType.INSERTED));
             failedReceipts.addAll(recover(ReceiptStatusType.FAILED));
-            failedReceipts.addAll(recover(ReceiptStatusType.NOT_QUEUE_SENT));
 
             documentdb.setValue(failedReceipts);
         }

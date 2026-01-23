@@ -46,6 +46,7 @@ public class RecoverFailedCartReceiptScheduled {
      *  <li>{@link CartStatusType#INSERTED}</li>
      *  <li>{@link CartStatusType#FAILED}</li>
      *  <li>{@link CartStatusType#NOT_QUEUE_SENT}</li>
+     *  <li>{@link CartStatusType#WAITING_FOR_BIZ_EVENT}</li>
      * </ul>
      * <p>
      * It recovers cart receipts and send on queue the event in order to proceed with the receipt generation.
@@ -67,7 +68,6 @@ public class RecoverFailedCartReceiptScheduled {
             List<CartForReceipt> failedCart = new ArrayList<>();
             failedCart.addAll(recover(CartStatusType.INSERTED));
             failedCart.addAll(recover(CartStatusType.FAILED));
-            failedCart.addAll(recover(CartStatusType.NOT_QUEUE_SENT));
 
             documentdb.setValue(failedCart);
         }

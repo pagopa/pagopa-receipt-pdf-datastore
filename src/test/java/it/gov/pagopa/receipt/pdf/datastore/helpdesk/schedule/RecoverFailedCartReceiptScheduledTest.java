@@ -54,14 +54,13 @@ class RecoverFailedCartReceiptScheduledTest {
 
         doReturn(createMassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverFailedCart(CartStatusType.FAILED);
         doReturn(createMassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverFailedCart(CartStatusType.INSERTED);
-        doReturn(createMassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverFailedCart(CartStatusType.NOT_QUEUE_SENT);
 
         // test execution
         assertDoesNotThrow(() -> sut.run("info", documentdb, contextMock));
 
         verify(documentdb).setValue(receiptCaptor.capture());
         assertNotNull(receiptCaptor.getValue());
-        assertEquals(3, receiptCaptor.getValue().size());
+        assertEquals(2, receiptCaptor.getValue().size());
     }
 
     @Test
@@ -71,7 +70,6 @@ class RecoverFailedCartReceiptScheduledTest {
 
         doReturn(new MassiveCartRecoverResult()).when(helpdeskServiceMock).massiveRecoverFailedCart(CartStatusType.FAILED);
         doReturn(new MassiveCartRecoverResult()).when(helpdeskServiceMock).massiveRecoverFailedCart(CartStatusType.INSERTED);
-        doReturn(new MassiveCartRecoverResult()).when(helpdeskServiceMock).massiveRecoverFailedCart(CartStatusType.NOT_QUEUE_SENT);
 
         // test execution
         assertDoesNotThrow(() -> sut.run("info", documentdb, contextMock));

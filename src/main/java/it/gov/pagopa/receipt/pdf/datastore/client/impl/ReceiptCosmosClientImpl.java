@@ -85,7 +85,11 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      */
     @Override
     public Iterable<FeedResponse<Receipt>> getFailedReceiptDocuments(String continuationToken, Integer pageSize) {
-        String query = "SELECT * FROM c WHERE c.status = 'FAILED'";
+        String query = String.format("SELECT * FROM c WHERE (c.status = '%s' or c.status = '%s') AND c.inserted_at >= %s",
+                ReceiptStatusType.FAILED, ReceiptStatusType.NOT_QUEUE_SENT,
+                OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(
+                        Long.parseLong(numDaysRecoverFailed)).toInstant().toEpochMilli());
+
         return executePagedQuery(containerId, query, Receipt.class, continuationToken, pageSize);
     }
 

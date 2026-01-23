@@ -8,6 +8,8 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.CartReceiptError;
 import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -85,15 +87,59 @@ class CartReceiptCosmosServiceImplTest {
         verify(cartReceiptsCosmosClient, never()).getIOErrorToNotifyCartReceiptDocuments(anyString(), any());
     }
 
-    @Test
-    void getNotNotifiedCartReceiptByStatus_KO_InvalidStatus() {
+    @ParameterizedTest
+    @EnumSource(value = CartStatusType.class, names = {"GENERATED", "IO_ERROR_TO_NOTIFY"}, mode = EnumSource.Mode.EXCLUDE)
+    void getNotNotifiedCartReceiptByStatus_KO_InvalidStatus(CartStatusType status) {
         assertThrows(
                 IllegalStateException.class,
-                () -> sut.getNotNotifiedCartReceiptByStatus("", 1, CartStatusType.INSERTED)
+                () -> sut.getNotNotifiedCartReceiptByStatus("", 1, status)
         );
 
         verify(cartReceiptsCosmosClient, never()).getGeneratedCartReceiptDocuments(anyString(), any());
         verify(cartReceiptsCosmosClient, never()).getIOErrorToNotifyCartReceiptDocuments(anyString(), any());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = CartStatusType.class, names = {"FAILED", "NOT_QUEUE_SENT"})
+    void getFailedCartReceiptByStatus_OK_FAILED(CartStatusType status) {
+        doReturn(iterableMock).when(cartReceiptsCosmosClient).getFailedCartReceiptDocuments(anyString(), any());
+
+        assertDoesNotThrow(() -> sut.getFailedCartReceiptByStatus("", 1, status));
+
+        verify(cartReceiptsCosmosClient, never()).getInsertedCartReceiptDocuments(anyString(), any());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = CartStatusType.class, names = {"INSERTED", "WAITING_FOR_BIZ_EVENT"})
+    void getFailedCartReceiptByStatus_OK_INSERTED(CartStatusType status) {
+        doReturn(iterableMock).when(cartReceiptsCosmosClient).getInsertedCartReceiptDocuments(anyString(), any());
+
+        assertDoesNotThrow(() -> sut.getFailedCartReceiptByStatus("", 1, status));
+
+        verify(cartReceiptsCosmosClient, never()).getFailedCartReceiptDocuments(anyString(), any());
+    }
+
+    @Test
+    void getFailedCartReceiptByStatus_KO_StatusNull() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> sut.getFailedCartReceiptByStatus("", 1, null)
+        );
+
+        verify(cartReceiptsCosmosClient, never()).getFailedCartReceiptDocuments(anyString(), any());
+        verify(cartReceiptsCosmosClient, never()).getInsertedCartReceiptDocuments(anyString(), any());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = CartStatusType.class, names = {"INSERTED", "WAITING_FOR_BIZ_EVENT","FAILED", "NOT_QUEUE_SENT"}, mode = EnumSource.Mode.EXCLUDE)
+    void getFailedCartReceiptByStatus_KO_InvalidStatus(CartStatusType status) {
+        assertThrows(
+                IllegalStateException.class,
+                () -> sut.getFailedCartReceiptByStatus("", 1, status)
+        );
+
+        verify(cartReceiptsCosmosClient, never()).getFailedCartReceiptDocuments(anyString(), any());
+        verify(cartReceiptsCosmosClient, never()).getInsertedCartReceiptDocuments(anyString(), any());
     }
 
     @Test
