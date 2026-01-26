@@ -14,7 +14,7 @@ resource "azurerm_api_management_api_version_set" "api_helpdesk_api" {
 
 # Helpdesk v1
 module "apim_api_helpdesk_api_v1" {
-  source = "git::https://github.com/pagopa/terraform-azurerm-v3.git//api_management_api?ref=v8.62.1"
+  source = "./.terraform/modules/__v3__/api_management_api"
 
   name                = format("%s-receipts-datastore-helpdesk-api", var.env_short)
   api_management_name = local.apim.name
