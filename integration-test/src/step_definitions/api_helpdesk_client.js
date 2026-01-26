@@ -2,7 +2,7 @@ const axios = require("axios");
 
 const helpdesk_url = process.env.HELPDESK_URL;
 
-axios.defaults.headers.common['Ocp-Apim-Subscription-Key'] = process.env.SUBKEY || ""; // for all requests
+axios.defaults.headers.common['Ocp-Apim-Subscription-Key'] = process.env.HELPDESK_SUBKEY || ""; // for all requests
 if (process.env.canary) {
 	axios.defaults.headers.common['X-CANARY'] = 'canary' // for all requests
 }

@@ -51,10 +51,12 @@ jobs:
           CUCUMBER_PUBLISH_TOKEN_ENV: ${{ secrets.CUCUMBER_PUBLISH_TOKEN }}
           RECEIPTS_COSMOS_CONN_STRING_ENV: ${{ secrets.RECEIPTS_COSMOS_CONN_STRING }}
           BIZEVENTS_COSMOS_CONN_STRING_ENV: ${{ secrets.BIZEVENTS_COSMOS_CONN_STRING }}
+          HELPDESK_SUBKEY_ENV: ${{ secrets.HELPDESK_SUBKEY }}
         run: |
           export CUCUMBER_PUBLISH_TOKEN="$CUCUMBER_PUBLISH_TOKEN_ENV"
           export RECEIPTS_COSMOS_CONN_STRING="$RECEIPTS_COSMOS_CONN_STRING_ENV"
           export BIZEVENTS_COSMOS_CONN_STRING="$BIZEVENTS_COSMOS_CONN_STRING_ENV"
+          export HELPDESK_SUBKEY="$HELPDESK_SUBKEY_ENV"
           cd ./integration-test
           chmod +x ./run_integration_test.sh
           ./run_integration_test.sh ${{( github.event.inputs == null && 'uat') || inputs.environment }}
