@@ -8,8 +8,8 @@ locals {
     helpdesk_api_product_id = "technical_support_api"
   }
 
-  receipt_pdf_datastore_hostname = var.env == "prod" ? "weu${var.env}.receipt-pdf-datastore.internal.platform.pagopa.it" : "weu${var.env}.receipt-pdf-datastore.internal.${var.env}.platform.pagopa.it"
-  receipt_pdf_datastore_url      = "https://${local.receipt_pdf_datastore_hostname}/pagopa-receipt-pdf-datastore"
+  receipt_pdf_datastore_hostname = var.env == "prod" ? "weu${var.env}.receipts.internal.platform.pagopa.it" : "weu${var.env}.receipts.internal.${var.env}.platform.pagopa.it"
+  receipt_pdf_datastore_url      = "https://${local.receipt_pdf_datastore_hostname}/pagopa-receipt-pdf-datastore-helpdesk"
 
   helpdesk_api = {
     display_name          = "Receipt PDF Datastore - Helpdesk API"
