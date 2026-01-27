@@ -104,7 +104,7 @@ public class RecoverFailedReceipt {
             existingReceipt = this.receiptCosmosService.getReceipt(eventId);
         } catch (ReceiptNotFoundException e) {
             String errMsg = "Receipt not found with the provided event id";
-            logger.error(errMsg, e);
+            logger.warn(errMsg, e);
             return buildErrorResponse(request, HttpStatus.NOT_FOUND, errMsg);
         }
 
@@ -114,7 +114,7 @@ public class RecoverFailedReceipt {
                             "statuses (INSERTED, NOT_QUEUE_SENT, FAILED).",
                     existingReceipt.getStatus()
             );
-            logger.error(errMsg);
+            logger.warn(errMsg);
             return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, errMsg);
         }
 
@@ -122,10 +122,10 @@ public class RecoverFailedReceipt {
         try {
             receipt = this.helpdeskService.recoverFailedReceipt(existingReceipt);
         } catch (BizEventUnprocessableEntityException e) {
-            logger.error(e.getMessage(), e);
+            logger.warn(e.getMessage(), e);
             return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, e.getMessage());
         } catch (BizEventBadRequestException | BizEventNotFoundException e) {
-            logger.error(e.getMessage(), e);
+            logger.warn(e.getMessage(), e);
             return buildErrorResponse(request, HttpStatus.BAD_REQUEST, e.getMessage());
         }
 

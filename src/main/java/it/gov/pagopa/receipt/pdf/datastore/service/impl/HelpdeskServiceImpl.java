@@ -61,6 +61,8 @@ public class HelpdeskServiceImpl implements HelpdeskService {
     @Override
     public Receipt recoverFailedReceipt(Receipt existingReceipt)
             throws BizEventUnprocessableEntityException, BizEventBadRequestException, BizEventNotFoundException {
+        // retrieve biz-event with the specified cartId
+
         BizEvent bizEvent = this.bizEventCosmosClient.getBizEventDocument(existingReceipt.getEventId());
         validateBizEvent(bizEvent, 1);
 
@@ -149,7 +151,7 @@ public class HelpdeskServiceImpl implements HelpdeskService {
                             errorCounter++;
                         }
                     } catch (Exception e) {
-                        logger.error("Recover for receipt {} failed", receipt.getEventId(), e);
+                        logger.warn("Recover for receipt {} failed", receipt.getEventId(), e);
                         errorCounter++;
                     }
                 }
@@ -186,7 +188,7 @@ public class HelpdeskServiceImpl implements HelpdeskService {
                             errorCounter++;
                         }
                     } catch (Exception e) {
-                        logger.error("Recover for cart {} failed", cart.getEventId(), e);
+                        logger.warn("Recover for cart {} failed", cart.getEventId(), e);
                         errorCounter++;
                     }
                 }

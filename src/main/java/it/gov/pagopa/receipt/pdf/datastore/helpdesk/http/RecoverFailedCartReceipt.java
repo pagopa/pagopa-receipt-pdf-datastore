@@ -108,7 +108,7 @@ public class RecoverFailedCartReceipt {
             existingCart = this.cartReceiptCosmosService.getCart(cartId);
         } catch (CartNotFoundException e) {
             String errMsg = "Cart receipt not found with the provided cart id";
-            logger.error(errMsg, e);
+            logger.warn(errMsg, e);
             return buildErrorResponse(request, HttpStatus.NOT_FOUND, errMsg);
         }
 
@@ -118,7 +118,7 @@ public class RecoverFailedCartReceipt {
                             "statuses (WAITING_FOR_BIZ_EVENT, INSERTED, NOT_QUEUE_SENT, FAILED).",
                     existingCart.getStatus()
             );
-            logger.error(errMsg);
+            logger.warn(errMsg);
             return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, errMsg);
         }
 
@@ -126,10 +126,10 @@ public class RecoverFailedCartReceipt {
         try {
             cart = this.helpdeskService.recoverFailedCart(existingCart);
         } catch (BizEventUnprocessableEntityException e) {
-            logger.error(e.getMessage(), e);
+            logger.warn(e.getMessage(), e);
             return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, e.getMessage());
         } catch (BizEventBadRequestException e) {
-            logger.error(e.getMessage(), e);
+            logger.warn(e.getMessage(), e);
             return buildErrorResponse(request, HttpStatus.BAD_REQUEST, e.getMessage());
         } catch (PDVTokenizerException | JsonProcessingException e) {
             logger.error(e.getMessage(), e);

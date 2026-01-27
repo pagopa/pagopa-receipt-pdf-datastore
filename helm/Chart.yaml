@@ -3,7 +3,7 @@ name: pagopareceiptpdfdatastore
 description: Microservice description
 type: application
 version: 0.146.0
-appVersion: 1.17.1-1-PAGOPA-3464
+appVersion: 1.17.2
 dependencies:
   - name: microservice-chart
     version: 8.0.2

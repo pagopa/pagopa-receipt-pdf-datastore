@@ -81,14 +81,14 @@ public class RecoverNotNotifiedCartReceipt {
             cart = this.cartReceiptCosmosService.getCart(cartId);
         } catch (CartNotFoundException e) {
             String errMsg = String.format("Unable to retrieve the cart receipt with id %s", cartId);
-            logger.error("[{}] {}", context.getFunctionName(), errMsg, e);
+            logger.warn("[{}] {}", context.getFunctionName(), errMsg, e);
             return buildErrorResponse(request, HttpStatus.NOT_FOUND, errMsg);
         }
 
         if (cart.getStatus() == null || cart.getStatus().isNotANotificationFailedStatus()) {
             String errMsg = String.format("The requested cart receipt with id %s is not in the expected status",
                     cart.getEventId());
-            logger.error(errMsg);
+            logger.warn(errMsg);
             return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, errMsg);
         }
 
