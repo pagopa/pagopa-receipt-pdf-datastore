@@ -17,7 +17,8 @@ const {
     getDocumentFromCartReceiptsErrorDatastoreById,
     createDocumentInCartReceiptsDatastore,
     deleteDocumentFromCartDatastore,
-    getCartDocumentByIdFromReceiptsDatastore
+    getCartDocumentByIdFromReceiptsDatastore,
+    deleteMultipleDocumentFromReceiptErrorDatastoreByEventId
 } = require("../../src/step_definitions/receipts_datastore_client");
 const {
     postCartReceiptToReviewed,

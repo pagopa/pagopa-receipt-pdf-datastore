@@ -883,15 +883,6 @@
               "type": "string"
             },
             "required": true
-          },
-          {
-            "in": "query",
-            "name": "isCart",
-            "description": "Boolean to determine if the id refers to a cart",
-            "schema": {
-              "type": "string"
-            },
-            "required": false
           }
         ],
         "requestBody": {
