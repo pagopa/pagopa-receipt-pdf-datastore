@@ -84,7 +84,7 @@ public class HelpdeskServiceImpl implements HelpdeskService {
     public CartForReceipt recoverFailedCart(CartForReceipt existingCart)
             throws BizEventUnprocessableEntityException, BizEventBadRequestException, PDVTokenizerException, JsonProcessingException {
         // retrieve biz-event with the specified cartId
-        List<BizEvent> bizEvents = this.bizEventCosmosClient.getAllCartBizEventDocument(existingCart.getEventId());
+        List<BizEvent> bizEvents = this.bizEventCosmosClient.getAllCartBizEventDocument(existingCart.getCartId());
         validateCartBizEvents(bizEvents);
 
         CartForReceipt cart = this.bizEventToReceiptService.buildCartFromBizEventList(bizEvents);
@@ -188,7 +188,7 @@ public class HelpdeskServiceImpl implements HelpdeskService {
                             errorCounter++;
                         }
                     } catch (Exception e) {
-                        logger.warn("Recover for cart {} failed", cart.getEventId(), e);
+                        logger.warn("Recover for cart {} failed", cart.getCartId(), e);
                         errorCounter++;
                     }
                 }

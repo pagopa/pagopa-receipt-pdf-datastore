@@ -190,7 +190,7 @@ function createCartReceipt(id, status) {
 	let currentDate = new Date();
 	let cart =
 	{
-		"eventId": id,
+		"cartId": id,
 		"id": id,
 		"version": "1",
 		"payload": {

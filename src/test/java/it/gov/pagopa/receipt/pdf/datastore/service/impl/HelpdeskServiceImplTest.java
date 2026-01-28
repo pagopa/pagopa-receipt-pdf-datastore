@@ -272,7 +272,7 @@ class HelpdeskServiceImplTest {
         doReturn(buildCart(CartStatusType.INSERTED)).when(bizEventToReceiptServiceMock).buildCartFromBizEventList(anyList());
         doReturn(buildCart(CartStatusType.INSERTED)).when(bizEventToReceiptServiceMock).saveCartForReceiptWithoutRetry(any());
 
-        CartForReceipt result = assertDoesNotThrow(() -> sut.recoverFailedCart(CartForReceipt.builder().eventId("id").build()));
+        CartForReceipt result = assertDoesNotThrow(() -> sut.recoverFailedCart(CartForReceipt.builder().cartId("id").build()));
 
         assertNotNull(result);
         assertEquals(CartStatusType.INSERTED, result.getStatus());
@@ -285,7 +285,7 @@ class HelpdeskServiceImplTest {
     void recoverFailedCart_KO_BizEventsNotFound() {
         doReturn(Collections.emptyList()).when(bizEventCosmosClientMock).getAllCartBizEventDocument(anyString());
 
-        assertThrows(BizEventBadRequestException.class, () -> sut.recoverFailedCart(CartForReceipt.builder().eventId("id").build()));
+        assertThrows(BizEventBadRequestException.class, () -> sut.recoverFailedCart(CartForReceipt.builder().cartId("id").build()));
 
         verify(bizEventToReceiptServiceMock, never()).buildCartFromBizEventList(anyList());
         verify(bizEventToReceiptServiceMock, never()).saveCartForReceiptWithoutRetry(any());
@@ -301,7 +301,7 @@ class HelpdeskServiceImplTest {
         doReturn(List.of(bizEvent, generateValidBizEvent("2")))
                 .when(bizEventCosmosClientMock).getAllCartBizEventDocument(anyString());
 
-        assertThrows(BizEventBadRequestException.class, () -> sut.recoverFailedCart(CartForReceipt.builder().eventId("id").build()));
+        assertThrows(BizEventBadRequestException.class, () -> sut.recoverFailedCart(CartForReceipt.builder().cartId("id").build()));
 
         verify(bizEventToReceiptServiceMock, never()).buildCartFromBizEventList(anyList());
         verify(bizEventToReceiptServiceMock, never()).saveCartForReceiptWithoutRetry(any());
@@ -316,7 +316,7 @@ class HelpdeskServiceImplTest {
         doReturn(List.of(bizEvent, generateValidBizEvent("2")))
                 .when(bizEventCosmosClientMock).getAllCartBizEventDocument(anyString());
 
-        assertThrows(BizEventBadRequestException.class, () -> sut.recoverFailedCart(CartForReceipt.builder().eventId("id").build()));
+        assertThrows(BizEventBadRequestException.class, () -> sut.recoverFailedCart(CartForReceipt.builder().cartId("id").build()));
 
         verify(bizEventToReceiptServiceMock, never()).buildCartFromBizEventList(anyList());
         verify(bizEventToReceiptServiceMock, never()).saveCartForReceiptWithoutRetry(any());
@@ -334,7 +334,7 @@ class HelpdeskServiceImplTest {
         doReturn(List.of(bizEvent, generateValidBizEvent("2")))
                 .when(bizEventCosmosClientMock).getAllCartBizEventDocument(anyString());
 
-        assertThrows(BizEventBadRequestException.class, () -> sut.recoverFailedCart(CartForReceipt.builder().eventId("id").build()));
+        assertThrows(BizEventBadRequestException.class, () -> sut.recoverFailedCart(CartForReceipt.builder().cartId("id").build()));
 
         verify(bizEventToReceiptServiceMock, never()).buildCartFromBizEventList(anyList());
         verify(bizEventToReceiptServiceMock, never()).saveCartForReceiptWithoutRetry(any());
@@ -347,7 +347,7 @@ class HelpdeskServiceImplTest {
         doReturn(List.of(generateValidBizEvent("2"), generateValidBizEvent("1")))
                 .when(bizEventCosmosClientMock).getAllCartBizEventDocument(anyString());
 
-        assertThrows(BizEventUnprocessableEntityException.class, () -> sut.recoverFailedCart(CartForReceipt.builder().eventId("id").build()));
+        assertThrows(BizEventUnprocessableEntityException.class, () -> sut.recoverFailedCart(CartForReceipt.builder().cartId("id").build()));
 
         verify(bizEventToReceiptServiceMock, never()).buildCartFromBizEventList(anyList());
         verify(bizEventToReceiptServiceMock, never()).saveCartForReceiptWithoutRetry(any());
@@ -364,7 +364,7 @@ class HelpdeskServiceImplTest {
         doReturn(bizEvents).when(bizEventCosmosClientMock).getAllCartBizEventDocument(anyString());
         doThrow(PDVTokenizerException.class).when(bizEventToReceiptServiceMock).buildCartFromBizEventList(anyList());
 
-        PDVTokenizerException e = assertThrows(PDVTokenizerException.class, () -> sut.recoverFailedCart(CartForReceipt.builder().eventId("id").build()));
+        PDVTokenizerException e = assertThrows(PDVTokenizerException.class, () -> sut.recoverFailedCart(CartForReceipt.builder().cartId("id").build()));
 
         assertNotNull(e);
 
@@ -383,7 +383,7 @@ class HelpdeskServiceImplTest {
         doReturn(buildCart(CartStatusType.INSERTED)).when(bizEventToReceiptServiceMock).buildCartFromBizEventList(anyList());
         doReturn(buildCart(CartStatusType.FAILED)).when(bizEventToReceiptServiceMock).saveCartForReceiptWithoutRetry(any());
 
-        CartForReceipt result = assertDoesNotThrow(() -> sut.recoverFailedCart(CartForReceipt.builder().eventId("id").build()));
+        CartForReceipt result = assertDoesNotThrow(() -> sut.recoverFailedCart(CartForReceipt.builder().cartId("id").build()));
 
         assertNotNull(result);
         assertEquals(CartStatusType.FAILED, result.getStatus());
@@ -407,7 +407,7 @@ class HelpdeskServiceImplTest {
             return null;
         }).when(bizEventToReceiptServiceMock).handleSendCartMessageToQueue(anyList(), any(CartForReceipt.class));
 
-        CartForReceipt result = assertDoesNotThrow(() -> sut.recoverFailedCart(CartForReceipt.builder().eventId("id").build()));
+        CartForReceipt result = assertDoesNotThrow(() -> sut.recoverFailedCart(CartForReceipt.builder().cartId("id").build()));
 
         assertNotNull(result);
         assertEquals(CartStatusType.FAILED, result.getStatus());

@@ -64,8 +64,8 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
     }
 
     @Override
-    public CartForReceipt getCartItem(String eventId) throws CartNotFoundException {
-        return getDocumentByFilter(cartForReceiptContainerName, "eventId", eventId, CartForReceipt.class)
+    public CartForReceipt getCartItem(String cartId) throws CartNotFoundException {
+        return getDocumentByFilter(cartForReceiptContainerName, "cartId", cartId, CartForReceipt.class)
                 .orElseThrow(() -> new CartNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG));
     }
 

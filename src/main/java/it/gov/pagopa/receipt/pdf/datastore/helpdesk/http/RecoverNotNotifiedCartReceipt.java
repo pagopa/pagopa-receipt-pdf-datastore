@@ -87,7 +87,7 @@ public class RecoverNotNotifiedCartReceipt {
 
         if (cart.getStatus() == null || cart.getStatus().isNotANotificationFailedStatus()) {
             String errMsg = String.format("The requested cart receipt with id %s is not in the expected status",
-                    cart.getEventId());
+                    cart.getCartId());
             logger.warn(errMsg);
             return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, errMsg);
         }
@@ -96,7 +96,7 @@ public class RecoverNotNotifiedCartReceipt {
 
         documentdb.setValue(restoredCart);
         String responseMsg = String.format("Cart receipt with id %s restored in status %s with success",
-                cart.getEventId(), ReceiptStatusType.GENERATED);
+                cart.getCartId(), ReceiptStatusType.GENERATED);
         return request.createResponseBuilder(HttpStatus.OK).body(responseMsg).build();
     }
 }
