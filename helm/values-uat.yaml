@@ -4,7 +4,7 @@ microservice-chart: &microservice-chart
   fullnameOverride: "pagopa-receipt-pdf-datastore"
   image:
     repository: ghcr.io/pagopa/pagopa-receipt-pdf-datastore
-    tag: "1.17.2"
+    tag: "1.17.2-1-PAGOPA-3464"
     pullPolicy: Always
   # https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script.WebHost/Controllers/HostController.cs
   livenessProbe:
@@ -117,10 +117,10 @@ microservice-chart: &microservice-chart
     RECOVER_NOT_NOTIFY_CART_SCHEDULE: "0 30 */2 * * *"
     RECOVER_FAILED_CRON: "0 0 */2 * * *"
     RECOVER_CART_FAILED_CRON: "0 0 */2 * * *"
-    FAILED_AUTORECOVER_ENABLED: "false"
-    FAILED_CART_AUTORECOVER_ENABLED: "false"
-    NOT_NOTIFIED_AUTORECOVER_ENABLED: "false"
-    NOT_NOTIFIED_CART_AUTORECOVER_ENABLED: "false"
+    FAILED_AUTORECOVER_ENABLED: "true"
+    FAILED_CART_AUTORECOVER_ENABLED: "true"
+    NOT_NOTIFIED_AUTORECOVER_ENABLED: "true"
+    NOT_NOTIFIED_CART_AUTORECOVER_ENABLED: "true"
     MAX_DATE_DIFF_MILLIS: "1800000" # 30min
     MAX_DATE_DIFF_NOTIFY_MILLIS: "1800000" # 30min
     RECOVER_FAILED_MASSIVE_MAX_DAYS: "0"

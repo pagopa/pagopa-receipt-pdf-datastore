@@ -59,6 +59,11 @@ data "azurerm_key_vault_secret" "key_vault_deploy_webhook_slack" {
   key_vault_id = data.azurerm_key_vault.key_vault_domain.id
 }
 
+data "azurerm_key_vault_secret" "key_vault_helpdesk_integration_test_api_key" {
+  name         = "receipt-datastore-helpdesk-integration-test-subkey"
+  key_vault_id = data.azurerm_key_vault.key_vault_domain.id
+}
+
 data "azurerm_storage_account" "receipts_sa" {
   name                = "pagopa${var.env_short}${local.location_short}receiptsfnsa"
   resource_group_name = "pagopa-${var.env_short}-${local.location_short}-receipts-st-rg"

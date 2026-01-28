@@ -1,151 +1,103 @@
 const axios = require("axios");
 
-const helpdesk_url = process.env.HELPDESK_URL;
+// --- INSTANCE CONFIGURATION ---
+const helpdeskClient = axios.create({
+    baseURL: process.env.HELPDESK_URL,
+    headers: {
+        'Ocp-Apim-Subscription-Key': process.env.HELPDESK_SUBKEY || ""
+    }
+});
 
-axios.defaults.headers.common['Ocp-Apim-Subscription-Key'] = process.env.SUBKEY || ""; // for all requests
 if (process.env.canary) {
-	axios.defaults.headers.common['X-CANARY'] = 'canary' // for all requests
+    helpdeskClient.defaults.headers.common['X-CANARY'] = 'canary';
 }
 
-async function postCartReceiptToReviewed(cartId) {
-	let endpoint = process.env.RECEIPT_TO_REVIEW_ENDPOINT || "cart-receipts-error/{cart-id}/reviewed";
-	endpoint = endpoint.replace("{cart-id}", cartId);
+// --- GENERIC HELPER FOR POST ---
+/**
+ * Performs a POST with an empty body and handles the return of the response or error.
+ */
+async function performPost(path) {
+    try {
+        return await helpdeskClient.post(path, {});
+    } catch (error) {
+        return error.response;
+    }
+}
 
-	return await axios.post(helpdesk_url + endpoint, {})
-		.then(res => {
-			return res;
-		})
-		.catch(error => {
-			return error.response;
-		});
+// --- API FUNCTIONS ---
+
+// Reviewed
+async function postCartReceiptToReviewed(cartId) {
+    const endpoint = (process.env.RECEIPT_TO_REVIEW_ENDPOINT || "cart-receipts-error/{cart-id}/reviewed")
+        .replace("{cart-id}", cartId);
+    return await performPost(endpoint);
 }
 
 async function postReceiptToReviewed(eventId) {
-	let endpoint = process.env.RECEIPT_TO_REVIEW_ENDPOINT || "receipts-error/{event-id}/reviewed";
-	endpoint = endpoint.replace("{event-id}", eventId);
-
-	return await axios.post(helpdesk_url + endpoint, {})
-		.then(res => {
-			return res;
-		})
-		.catch(error => {
-			return error.response;
-		});
+    const endpoint = (process.env.RECEIPT_TO_REVIEW_ENDPOINT || "receipts-error/{event-id}/reviewed")
+        .replace("{event-id}", eventId);
+    return await performPost(endpoint);
 }
 
+// Recover Failed
 async function postRecoverFailedCartReceipt(cartId) {
-	let endpoint = process.env.RECOVER_FAILED_ENDPOINT || "cart-receipts/{cart-id}/recover-failed";
-	endpoint = endpoint.replace("{cart-id}", cartId);
-
-	return await axios.post(helpdesk_url + endpoint, {})
-		.then(res => {
-			return res;
-		})
-		.catch(error => {
-			return error.response;
-		});
+    const endpoint = (process.env.RECOVER_FAILED_ENDPOINT || "cart-receipts/{cart-id}/recover-failed")
+        .replace("{cart-id}", cartId);
+    return await performPost(endpoint);
 }
 
 async function postRecoverFailedCartReceiptMassive(status) {
-	let endpoint = process.env.RECOVER_FAILED_MASSIVE_ENDPOINT || "cart-receipts/recover-failed?status={STATUS}";
-	endpoint = endpoint.replace("{STATUS}", status);
-
-	return await axios.post(helpdesk_url + endpoint, {})
-		.then(res => {
-			return res;
-		})
-		.catch(error => {
-			return error.response;
-		});
+    const endpoint = (process.env.RECOVER_FAILED_MASSIVE_ENDPOINT || "cart-receipts/recover-failed?status={STATUS}")
+        .replace("{STATUS}", status);
+    return await performPost(endpoint);
 }
 
 async function postRecoverFailedReceipt(eventId) {
-	let endpoint = process.env.RECOVER_FAILED_ENDPOINT || "receipts/{event-id}/recover-failed";
-	endpoint = endpoint.replace("{event-id}", eventId);
-
-	return await axios.post(helpdesk_url + endpoint, {})
-		.then(res => {
-			return res;
-		})
-		.catch(error => {
-			return error.response;
-		});
+    const endpoint = (process.env.RECOVER_FAILED_ENDPOINT || "receipts/{event-id}/recover-failed")
+        .replace("{event-id}", eventId);
+    return await performPost(endpoint);
 }
 
 async function postRecoverFailedReceiptMassive(status) {
-	let endpoint = process.env.RECOVER_FAILED_MASSIVE_ENDPOINT || "receipts/recover-failed?status={STATUS}";
-	endpoint = endpoint.replace("{STATUS}", status);
-	
-	return await axios.post(helpdesk_url + endpoint, {})
-	.then(res => {
-		return res;
-	})
-	.catch(error => {
-		return error.response;
-	});
+    const endpoint = (process.env.RECOVER_FAILED_MASSIVE_ENDPOINT || "receipts/recover-failed?status={STATUS}")
+        .replace("{STATUS}", status);
+    return await performPost(endpoint);
 }
 
+// Recover Not Notified
 async function postRecoverNotNotifiedCartReceipt(cartId) {
-	let endpoint = process.env.RECOVER_NOT_NOTIFIED_ENDPOINT || "cart-receipts/{cart-id}/recover-not-notified";
-	endpoint = endpoint.replace("{cart-id}", cartId);
-
-	return await axios.post(helpdesk_url + endpoint, {})
-		.then(res => {
-			return res;
-		})
-		.catch(error => {
-			return error.response;
-		});
+    const endpoint = (process.env.RECOVER_NOT_NOTIFIED_ENDPOINT || "cart-receipts/{cart-id}/recover-not-notified")
+        .replace("{cart-id}", cartId);
+    return await performPost(endpoint);
 }
 
 async function postRecoverNotNotifiedCartReceiptMassive(status) {
-	let endpoint = process.env.RECOVER_NOT_NOTIFIED_MASSIVE_ENDPOINT || "cart-receipts/recover-not-notified?status={STATUS}";
-	endpoint = endpoint.replace("{STATUS}", status);
-
-	return await axios.post(helpdesk_url + endpoint, {})
-		.then(res => {
-			return res;
-		})
-		.catch(error => {
-			return error.response;
-		});
+    const endpoint = (process.env.RECOVER_NOT_NOTIFIED_MASSIVE_ENDPOINT || "cart-receipts/recover-not-notified?status={STATUS}")
+        .replace("{STATUS}", status);
+    return await performPost(endpoint);
 }
 
 async function postRecoverNotNotifiedReceipt(eventId) {
-	let endpoint = process.env.RECOVER_NOT_NOTIFIED_ENDPOINT || "receipts/{event-id}/recover-not-notified";
-	endpoint = endpoint.replace("{event-id}", eventId);
-
-	return await axios.post(helpdesk_url + endpoint, {})
-		.then(res => {
-			return res;
-		})
-		.catch(error => {
-			return error.response;
-		});
+    const endpoint = (process.env.RECOVER_NOT_NOTIFIED_ENDPOINT || "receipts/{event-id}/recover-not-notified")
+        .replace("{event-id}", eventId);
+    return await performPost(endpoint);
 }
 
 async function postRecoverNotNotifiedReceiptMassive(status) {
-	let endpoint = process.env.RECOVER_NOT_NOTIFIED_MASSIVE_ENDPOINT || "receipts/recover-not-notified?status={STATUS}";
-	endpoint = endpoint.replace("{STATUS}", status);
-
-	return await axios.post(helpdesk_url + endpoint, {})
-		.then(res => {
-			return res;
-		})
-		.catch(error => {
-			return error.response;
-		});
+    const endpoint = (process.env.RECOVER_NOT_NOTIFIED_MASSIVE_ENDPOINT || "receipts/recover-not-notified?status={STATUS}")
+        .replace("{STATUS}", status);
+    return await performPost(endpoint);
 }
 
 module.exports = {
-	postCartReceiptToReviewed,
-	postReceiptToReviewed,
-	postRecoverFailedCartReceipt,
-	postRecoverFailedCartReceiptMassive,
-	postRecoverFailedReceipt,
-	postRecoverFailedReceiptMassive,
-	postRecoverNotNotifiedCartReceipt,
-	postRecoverNotNotifiedCartReceiptMassive,
-	postRecoverNotNotifiedReceipt,
-	postRecoverNotNotifiedReceiptMassive,
-}
+    postCartReceiptToReviewed,
+    postReceiptToReviewed,
+    postRecoverFailedCartReceipt,
+    postRecoverFailedCartReceiptMassive,
+    postRecoverFailedReceipt,
+    postRecoverFailedReceiptMassive,
+    postRecoverNotNotifiedCartReceipt,
+    postRecoverNotNotifiedCartReceiptMassive,
+    postRecoverNotNotifiedReceipt,
+    postRecoverNotNotifiedReceiptMassive,
+};
