@@ -26,6 +26,7 @@ locals {
     "SUBSCRIPTION_ID" : data.azurerm_subscription.current.subscription_id,
     "RECEIPTS_COSMOS_CONN_STRING" : "AccountEndpoint=https://pagopa-${var.env_short}-${local.location_short}-${local.domain}-ds-cosmos-account.documents.azure.com:443/;AccountKey=${data.azurerm_cosmosdb_account.receipts_cosmos.primary_key};",
     "BIZEVENTS_COSMOS_CONN_STRING" : "AccountEndpoint=https://pagopa-${var.env_short}-${local.location_short}-bizevents-ds-cosmos-account.documents.azure.com:443/;AccountKey=${data.azurerm_cosmosdb_account.bizevents_cosmos.primary_key};"
+    "HELPDESK_SUBKEY" : data.azurerm_key_vault_secret.key_vault_helpdesk_integration_test_api_key.value
   }
   env_variables = {
     "CONTAINER_APP_ENVIRONMENT_NAME" : local.container_app_environment.name,

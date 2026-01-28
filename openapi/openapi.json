@@ -4,7 +4,7 @@
     "title": "Receipts Datastore Helpdesk",
     "description": "Microservice for exposing REST APIs about receipts datastore helpdesk.",
     "termsOfService": "https://www.pagopa.gov.it/",
-    "version": "1.17.2"
+    "version": "1.17.3"
   },
   "servers": [
     {
@@ -883,15 +883,6 @@
               "type": "string"
             },
             "required": true
-          },
-          {
-            "in": "query",
-            "name": "isCart",
-            "description": "Boolean to determine if the id refers to a cart",
-            "schema": {
-              "type": "string"
-            },
-            "required": false
           }
         ],
         "requestBody": {

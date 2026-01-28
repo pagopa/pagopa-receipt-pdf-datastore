@@ -2,7 +2,8 @@ const assert = require('assert');
 const { After, Given, When, Then, setDefaultTimeout } = require('@cucumber/cucumber');
 const {
     createDocumentInBizEventsDatastore,
-    deleteDocumentFromBizEventsDatastore
+    deleteDocumentFromBizEventsDatastore,
+    deleteDocumentByCartIdFromBizEventsDatastore
  } = require("../../src/step_definitions/biz_events_datastore_client");
 const {
     deleteDocumentFromReceiptsDatastore,
@@ -17,7 +18,8 @@ const {
     getDocumentFromCartReceiptsErrorDatastoreById,
     createDocumentInCartReceiptsDatastore,
     deleteDocumentFromCartDatastore,
-    getCartDocumentByIdFromReceiptsDatastore
+    getCartDocumentByIdFromReceiptsDatastore,
+    deleteMultipleDocumentFromReceiptErrorDatastoreByEventId
 } = require("../../src/step_definitions/receipts_datastore_client");
 const {
     postCartReceiptToReviewed,
