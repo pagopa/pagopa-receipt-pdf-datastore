@@ -130,9 +130,9 @@ async function deleteAllHelpdeskDocumentFromErrorCartDatastore() {
         })
         .fetchAll();
 
-    documents?.resources?.forEach(el => {
-        deleteDocumentFromCartReceiptErrorDatastore(el.id);
-    })
+    for (let doc of documents.resources) {
+        await deleteDocumentFromCartReceiptErrorDatastore(doc.id);
+    }
 }
 
 async function createDocumentInCartReceiptErrorDatastore(id, status) {
