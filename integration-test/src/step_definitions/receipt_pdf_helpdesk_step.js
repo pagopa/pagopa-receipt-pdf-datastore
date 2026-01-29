@@ -19,7 +19,8 @@ const {
     createDocumentInCartReceiptsDatastore,
     deleteDocumentFromCartDatastore,
     getCartDocumentByIdFromReceiptsDatastore,
-    deleteMultipleDocumentFromReceiptErrorDatastoreByEventId
+    deleteMultipleDocumentFromReceiptErrorDatastoreByEventId,
+    deleteAllHelpdeskDocumentFromErrorCartDatastore
 } = require("../../src/step_definitions/receipts_datastore_client");
 const {
     postCartReceiptToReviewed,
@@ -91,6 +92,7 @@ After(async function () {
              await deleteDocumentByCartIdFromBizEventsDatastore(cart.id);
          }
      }
+     deleteAllHelpdeskDocumentFromErrorCartDatastore();
 
     helpdesk_eventId = null;
     helpdesk_responseAPI = null;
