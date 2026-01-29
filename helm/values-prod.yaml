@@ -212,6 +212,7 @@ pagopa-receipt-pdf-datastore-helpdesk:
   autoscaling:
     !!merge <<: *autoscaling
     minReplica: 1
+    maxReplica: 3
   envConfig:
     !!merge <<: *envConfig
     WEBSITE_SITE_NAME: 'pagopareceiptpdfdatastorehelpdesk'
