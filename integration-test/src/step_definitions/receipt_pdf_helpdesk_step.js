@@ -284,11 +284,11 @@ Given('a list of {int} cart receipts in status {string} stored into cart receipt
 Given('a list of {int} biz events for each cart is stored into biz-events datastore', async function (numberOfEvents) {
     for (let cart of helpdesk_listOfCarts) {
         for (let i = 0; i < numberOfEvents; i++) {
-            let nextEventId = `${cart.eventId}-${i}`;
+            let nextEventId = `${cart.cartId}-${i}`;
             // prior cancellation to avoid dirty cases
             await deleteDocumentFromBizEventsDatastore(nextEventId);
 
-            let bizEventStoreResponse = await createDocumentInBizEventsDatastore(nextEventId, cart.eventId, `${numberOfEvents}`);
+            let bizEventStoreResponse = await createDocumentInBizEventsDatastore(nextEventId, cart.cartId, `${numberOfEvents}`);
             assert.strictEqual(bizEventStoreResponse.statusCode, 201);
         }
     }
@@ -299,7 +299,7 @@ When('recoverFailedCartReceiptMassive API is called with status {string} as quer
 
 Then('the list of cart receipt is recovered from datastore and no cart receipt in the list has status {string}', async (status) => {
       for (let recoveredCart of helpdesk_listOfCarts) {
-        let responseCosmos = await getCartDocumentByIdFromReceiptsDatastore(recoveredCart.eventId);
+        let responseCosmos = await getCartDocumentByIdFromReceiptsDatastore(recoveredCart.cartId);
         assert.strictEqual(responseCosmos.resources.length > 0, true);
         assert.notStrictEqual(responseCosmos.resources[0].status, status);
     }
