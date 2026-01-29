@@ -59,7 +59,7 @@ Given('a list of {int} bizEvents starting with id {string} and transactionId {st
 
       let existingCart = await getCartDocumentByIdFromReceiptsDatastore(transactionId);
       if (existingCart.resources[0]) {
-          await deleteDocumentFromCartDatastore(existingCart.resources[0].id, existingCart.resources[0].eventId);
+          await deleteDocumentFromCartDatastore(existingCart.resources[0].id, existingCart.resources[0].cartId);
       }
       for(let i = 0; i < numberOfEvents; i++) {
         let finalId = id+i;
@@ -94,7 +94,7 @@ Then('the receipts datastore returns the receipt', async function () {
 Then('the receipts datastore return the cart event', async function () {
     assert.notStrictEqual(this.responseToCheck.resources.length, 0);
     this.cartId = this.responseToCheck.resources[0].id;
-    this.cartEventId = this.responseToCheck.resources[0].eventId;
+    this.cartEventId = this.responseToCheck.resources[0].cartId;
     assert.strictEqual(this.responseToCheck.resources.length, 1);
 });
 
