@@ -53,7 +53,7 @@ async function getDocumentFromReceiptsDatastoreByEventId(id) {
 async function getCartDocumentByIdFromReceiptsDatastore(id) {
     return await cartContainer.items
         .query({
-            query: "SELECT * from c WHERE c.eventId=@id",
+            query: "SELECT * from c WHERE c.cartId=@id",
             parameters: [{ name: "@id", value: id }]
         })
         .fetchNext();
@@ -123,6 +123,18 @@ async function getDocumentFromReceiptsDatastoreByEventIdOrdered(id) {
     .fetchNext();
 }
 
+async function deleteAllHelpdeskDocumentFromErrorCartDatastore() {
+    let documents = await cartReceiptErrorContainer.items
+        .query({
+            query: "SELECT * from c WHERE c.id LIKE 'receipt-datastore-helpdesk-%'"
+        })
+        .fetchAll();
+
+    for (let doc of documents.resources) {
+        await deleteDocumentFromCartReceiptErrorDatastore(doc.id);
+    }
+}
+
 async function createDocumentInCartReceiptErrorDatastore(id, status) {
     let receipt = createCartReceiptError(id, status);
     try {
@@ -156,5 +168,5 @@ module.exports = {
     createDocumentInReceiptErrorDatastore, deleteDocumentFromReceiptErrorDatastore, getDocumentFromReceiptsErrorDatastoreByBizEventId, deleteMultipleDocumentFromReceiptErrorDatastoreByEventId,
     createDocumentInReceiptsDatastore, getDocumentFromReceiptsDatastoreByEventId, getDocumentFromReceiptsDatastoreByEventIdOrdered, deleteDocumentFromCartDatastore,
     createDocumentInCartReceiptErrorDatastore, deleteDocumentFromCartReceiptErrorDatastore, getDocumentFromCartReceiptsErrorDatastoreById,
-    createDocumentInCartReceiptsDatastore
+    createDocumentInCartReceiptsDatastore, deleteAllHelpdeskDocumentFromErrorCartDatastore
 }

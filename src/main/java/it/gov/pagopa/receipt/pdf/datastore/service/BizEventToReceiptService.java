@@ -140,7 +140,7 @@ public interface BizEventToReceiptService {
     CartForReceipt saveCartForReceiptWithoutRetry(CartForReceipt cartForReceipt);
 
     /**
-     * Recovers a cart from the CosmosDB by the property eventId
+     * Recovers a cart from the CosmosDB by the property cartId
      *
      * @param cartId the cart identifier
      * @return the cart found

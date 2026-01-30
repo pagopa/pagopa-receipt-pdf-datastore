@@ -477,7 +477,7 @@ class BizEventToReceiptServiceImplTest {
         CartForReceipt result = assertDoesNotThrow(() -> sut.buildCartForReceipt(bizEvent));
 
         assertNotNull(result);
-        assertEquals(CART_ID, result.getEventId());
+        assertEquals(CART_ID, result.getCartId());
         assertEquals(CartStatusType.WAITING_FOR_BIZ_EVENT, result.getStatus());
         assertNotNull(result.getPayload());
         assertEquals(CREATION_DATE, result.getPayload().getTransactionCreationDate());
@@ -504,7 +504,7 @@ class BizEventToReceiptServiceImplTest {
         CartForReceipt result = assertDoesNotThrow(() -> sut.buildCartForReceipt(bizEvent));
 
         assertNotNull(result);
-        assertEquals(CART_ID, result.getEventId());
+        assertEquals(CART_ID, result.getCartId());
         assertEquals(CartStatusType.INSERTED, result.getStatus());
         assertNotNull(result.getPayload());
         assertEquals(CREATION_DATE, result.getPayload().getTransactionCreationDate());
@@ -538,7 +538,7 @@ class BizEventToReceiptServiceImplTest {
         CartForReceipt result = assertDoesNotThrow(() -> sut.buildCartForReceipt(bizEvent));
 
         assertNotNull(result);
-        assertEquals(CART_ID, result.getEventId());
+        assertEquals(CART_ID, result.getCartId());
         assertEquals(CartStatusType.FAILED, result.getStatus());
         assertNull(result.getPayload());
         assertNotNull(result.getReasonErr());
@@ -559,7 +559,7 @@ class BizEventToReceiptServiceImplTest {
         CartForReceipt result = assertDoesNotThrow(() -> sut.buildCartForReceipt(bizEvent));
 
         assertNotNull(result);
-        assertEquals(CART_ID, result.getEventId());
+        assertEquals(CART_ID, result.getCartId());
         assertEquals(CartStatusType.FAILED, result.getStatus());
         assertNotNull(result.getPayload());
         assertEquals(CREATION_DATE, result.getPayload().getTransactionCreationDate());
@@ -584,7 +584,7 @@ class BizEventToReceiptServiceImplTest {
         CartForReceipt result = assertDoesNotThrow(() -> sut.buildCartForReceipt(bizEvent));
 
         assertNotNull(result);
-        assertEquals(CART_ID, result.getEventId());
+        assertEquals(CART_ID, result.getCartId());
         assertEquals(CartStatusType.FAILED, result.getStatus());
         assertNull(result.getPayload());
         assertNotNull(result.getReasonErr());
@@ -605,7 +605,7 @@ class BizEventToReceiptServiceImplTest {
         CartForReceipt result = assertDoesNotThrow(() -> sut.buildCartForReceipt(bizEvent));
 
         assertNotNull(result);
-        assertEquals(CART_ID, result.getEventId());
+        assertEquals(CART_ID, result.getCartId());
         assertEquals(CartStatusType.FAILED, result.getStatus());
         assertNotNull(result.getPayload());
         assertEquals(CREATION_DATE, result.getPayload().getTransactionCreationDate());
@@ -815,7 +815,7 @@ class BizEventToReceiptServiceImplTest {
         List<CartPayment> cartList = new ArrayList<>();
         cartList.add(cart);
         return CartForReceipt.builder()
-                .eventId(CART_ID)
+                .cartId(CART_ID)
                 .status(CartStatusType.WAITING_FOR_BIZ_EVENT)
                 .version("1")
                 .payload(Payload.builder()
