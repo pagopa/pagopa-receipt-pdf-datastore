@@ -4,7 +4,7 @@
     "title": "Receipts Datastore Helpdesk",
     "description": "Microservice for exposing REST APIs about receipts datastore helpdesk.",
     "termsOfService": "https://www.pagopa.gov.it/",
-    "version": "1.17.3-1-rename-cart-id"
+    "version": "1.17.4"
   },
   "servers": [
     {

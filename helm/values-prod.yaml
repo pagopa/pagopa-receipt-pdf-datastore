@@ -4,7 +4,7 @@ microservice-chart: &microservice-chart
   fullnameOverride: "pagopa-receipt-pdf-datastore"
   image:
     repository: ghcr.io/pagopa/pagopa-receipt-pdf-datastore
-    tag: "1.17.3-1-rename-cart-id"
+    tag: "1.17.4"
     pullPolicy: Always
   # https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script.WebHost/Controllers/HostController.cs
   livenessProbe:
@@ -212,6 +212,7 @@ pagopa-receipt-pdf-datastore-helpdesk:
   autoscaling:
     !!merge <<: *autoscaling
     minReplica: 1
+    maxReplica: 3
   envConfig:
     !!merge <<: *envConfig
     WEBSITE_SITE_NAME: 'pagopareceiptpdfdatastorehelpdesk'
