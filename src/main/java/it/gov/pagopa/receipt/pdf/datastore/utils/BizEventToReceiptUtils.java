@@ -34,7 +34,7 @@ public class BizEventToReceiptUtils {
             "AUTHENTICATED_CHANNELS", "IO,CHECKOUT,WISP,CHECKOUT_CART").split(","));
     private static final List<String> UNWANTED_REMITTANCE_INFO = Arrays.asList(System.getenv().getOrDefault(
             "UNWANTED_REMITTANCE_INFO", "pagamento multibeneficiario,pagamento bpay").split(","));
-    private static final List<String> ECOMMERCE = List.of("CHECKOUT", "CHECKOUT_CART");
+    private static final List<String> ECOMMERCE = Arrays.asList("CHECKOUT", "CHECKOUT_CART");
 
 
     private BizEventToReceiptUtils() {
