@@ -21,10 +21,11 @@ services:
       AzureWebJobs.RecoverNotNotifiedCartReceiptMassive.Disabled: "false"
       AzureWebJobs.RecoverNotNotifiedReceipt.Disabled: "false"
       AzureWebJobs.RecoverNotNotifiedReceiptMassive.Disabled: "false"
-      AzureWebJobs.RecoverFailedCartReceiptScheduled.Disabled: "false"
-      AzureWebJobs.RecoverFailedReceiptScheduled.Disabled: "false"
-      AzureWebJobs.RecoverNotNotifiedCartTimerTriggerProcessor.Disabled: "false"
-      AzureWebJobs.RecoverNotNotifiedTimerTriggerProcessor.Disabled: "false"
+      # Disable cron job
+      AzureWebJobs.RecoverFailedCartReceiptScheduled.Disabled: "true"
+      AzureWebJobs.RecoverFailedReceiptScheduled.Disabled: "true"
+      AzureWebJobs.RecoverNotNotifiedCartTimerTriggerProcessor.Disabled: "true"
+      AzureWebJobs.RecoverNotNotifiedTimerTriggerProcessor.Disabled: "true"
     env_file:
       - ./.env
     ports:
