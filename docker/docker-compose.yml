@@ -8,6 +8,24 @@ services:
     build:
       dockerfile: Dockerfile
       context: ../
+    environment:
+      # override helm environment variables to enable all functions
+      AzureWebJobs.BizEventToReceiptProcessor.Disabled: "false"
+      AzureWebJobs.CartReceiptToReviewed.Disabled: "false"
+      AzureWebJobs.ReceiptToReviewed.Disabled: "false"
+      AzureWebJobs.RecoverFailedCartReceipt.Disabled: "false"
+      AzureWebJobs.RecoverFailedCartReceiptMassive.Disabled: "false"
+      AzureWebJobs.RecoverFailedReceipt.Disabled: "false"
+      AzureWebJobs.RecoverFailedReceiptMassive.Disabled: "false"
+      AzureWebJobs.RecoverNotNotifiedCartReceipt.Disabled: "false"
+      AzureWebJobs.RecoverNotNotifiedCartReceiptMassive.Disabled: "false"
+      AzureWebJobs.RecoverNotNotifiedReceipt.Disabled: "false"
+      AzureWebJobs.RecoverNotNotifiedReceiptMassive.Disabled: "false"
+      # Disable cron job
+      AzureWebJobs.RecoverFailedCartReceiptScheduled.Disabled: "true"
+      AzureWebJobs.RecoverFailedReceiptScheduled.Disabled: "true"
+      AzureWebJobs.RecoverNotNotifiedCartTimerTriggerProcessor.Disabled: "true"
+      AzureWebJobs.RecoverNotNotifiedTimerTriggerProcessor.Disabled: "true"
     env_file:
       - ./.env
     ports:

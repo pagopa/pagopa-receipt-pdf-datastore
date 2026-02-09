@@ -1,8 +1,5 @@
 package it.gov.pagopa.receipt.pdf.datastore.utils;
 
-import com.microsoft.azure.functions.HttpRequestMessage;
-import com.microsoft.azure.functions.HttpResponseMessage;
-import com.microsoft.azure.functions.HttpStatus;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
@@ -13,7 +10,6 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.CartItem;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.EventData;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
-import it.gov.pagopa.receipt.pdf.datastore.model.ProblemJson;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
 import lombok.Builder;
 import org.slf4j.Logger;
@@ -25,7 +21,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -39,7 +34,7 @@ public class BizEventToReceiptUtils {
             "AUTHENTICATED_CHANNELS", "IO,CHECKOUT,WISP,CHECKOUT_CART").split(","));
     private static final List<String> UNWANTED_REMITTANCE_INFO = Arrays.asList(System.getenv().getOrDefault(
             "UNWANTED_REMITTANCE_INFO", "pagamento multibeneficiario,pagamento bpay").split(","));
-    private static final String ECOMMERCE = "CHECKOUT";
+    private static final List<String> ECOMMERCE = Arrays.asList("CHECKOUT", "CHECKOUT_CART");
 
 
     private BizEventToReceiptUtils() {
@@ -118,7 +113,7 @@ public class BizEventToReceiptUtils {
         if (Boolean.TRUE.equals(ECOMMERCE_FILTER_ENABLED)
                 && bizEvent.getTransactionDetails() != null
                 && bizEvent.getTransactionDetails().getInfo() != null
-                && ECOMMERCE.equals(bizEvent.getTransactionDetails().getInfo().getClientId())
+                && ECOMMERCE.contains(bizEvent.getTransactionDetails().getInfo().getClientId())
         ) {
             return BizEventValidityCheck.builder()
                     .invalid(true)
@@ -294,30 +289,31 @@ public class BizEventToReceiptUtils {
     }
 
     public static boolean isValidChannelOrigin(BizEvent bizEvent) {
-        if (bizEvent.getTransactionDetails() == null) {
+        var details = bizEvent.getTransactionDetails();
+        if (details == null) {
             return false;
         }
 
-        var transactionDetails = bizEvent.getTransactionDetails();
-        var transaction = transactionDetails.getTransaction();
-        var info = transactionDetails.getInfo();
-        var user = transactionDetails.getUser();
+        String origin = details.getTransaction() != null
+                ? details.getTransaction().getOrigin()
+                : null;
 
-        String origin = (transaction != null) ? transaction.getOrigin() : null;
-        String clientId = (info != null) ? info.getClientId() : null;
-        UserType userType = (user != null) ? user.getType() : null;
+        String clientId = details.getInfo() != null
+                ? details.getInfo().getClientId()
+                : null;
 
-        boolean originMatches = origin != null && AUTHENTICATED_CHANNELS.contains(origin);
-        boolean clientIdMatches = clientId != null && AUTHENTICATED_CHANNELS.contains(clientId);
+        UserType userType = details.getUser() != null
+                ? details.getUser().getType()
+                : null;
 
-        boolean isCheckoutOrigin = ECOMMERCE.equalsIgnoreCase(origin);
-        boolean isCheckoutClientId = ECOMMERCE.equalsIgnoreCase(clientId);
+        boolean isAuthenticated = AUTHENTICATED_CHANNELS.contains(origin) || AUTHENTICATED_CHANNELS.contains(clientId);
+        boolean isCheckout = ECOMMERCE.contains(origin) || ECOMMERCE.contains(clientId);
         boolean isRegisteredUser = UserType.REGISTERED.equals(userType);
 
-        if ((isCheckoutOrigin || isCheckoutClientId) && !isRegisteredUser) {
+        if (isCheckout && !isRegisteredUser) {
             return false;
         }
 
-        return originMatches || clientIdMatches;
+        return isAuthenticated;
     }
 }
