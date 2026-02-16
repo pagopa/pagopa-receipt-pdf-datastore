@@ -126,7 +126,7 @@ microservice-chart: &microservice-chart
     RECOVER_FAILED_MASSIVE_MAX_DAYS: "0"
     RECOVER_NOT_NOTIFIED_MASSIVE_MAX_DAYS: "0"
     ECOMMERCE_FILTER_ENABLED: "false"
-    ENABLE_CART: "false"
+    ENABLE_CART: "true"
     AUTHENTICATED_CHANNELS: "IO,CHECKOUT,WISP,CHECKOUT_CART"
     UNWANTED_REMITTANCE_INFO: "pagamento multibeneficiario,pagamento bpay"
     AzureWebJobs.BizEventToReceiptProcessor.Disabled: "false"
