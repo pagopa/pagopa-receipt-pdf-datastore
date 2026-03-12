@@ -73,6 +73,8 @@ public class HelpdeskServiceImpl implements HelpdeskService {
         receipt.setId(existingReceipt.getId());
 
         if (isReceiptStatusValid(receipt)) {
+            receipt.setStatus(ReceiptStatusType.INSERTED);
+            receipt.setInserted_at(System.currentTimeMillis());
             receipt = this.bizEventToReceiptService.updateReceipt(receipt);
         }
 

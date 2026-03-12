@@ -181,8 +181,6 @@ public class BizEventToReceiptServiceImpl implements BizEventToReceiptService {
     public Receipt updateReceipt(Receipt receipt) {
         int statusCode;
         try {
-            receipt.setStatus(ReceiptStatusType.INSERTED);
-            receipt.setInserted_at(System.currentTimeMillis());
             CosmosItemResponse<Receipt> response = this.receiptCosmosClient.updateReceipts(receipt);
             statusCode = response.getStatusCode();
         } catch (Exception e) {
