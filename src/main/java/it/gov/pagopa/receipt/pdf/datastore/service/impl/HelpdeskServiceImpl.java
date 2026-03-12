@@ -13,6 +13,7 @@ import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventBadRequestException
 import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventUnprocessableEntityException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
+import it.gov.pagopa.receipt.pdf.datastore.exception.RecoverFailureException;
 import it.gov.pagopa.receipt.pdf.datastore.model.MassiveCartRecoverResult;
 import it.gov.pagopa.receipt.pdf.datastore.model.MassiveRecoverResult;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
@@ -156,7 +157,7 @@ public class HelpdeskServiceImpl implements HelpdeskService {
                         successCounter++;
                     } else {
                         failedReceipts.add(restored);
-                        errorCounter++;
+                        throw new RecoverFailureException("Expected error occurred");
                     }
                 } catch (Exception e) {
                     logger.warn("Recover for receipt {} failed", receipt.getEventId(), e);
@@ -201,7 +202,7 @@ public class HelpdeskServiceImpl implements HelpdeskService {
                         successCounter++;
                     } else {
                         failedCart.add(recoverCart);
-                        errorCounter++;
+                        throw new RecoverFailureException("Expected error occurred");
                     }
                 } catch (Exception e) {
                     logger.warn("Recover for cart {} failed", cart.getCartId(), e);
