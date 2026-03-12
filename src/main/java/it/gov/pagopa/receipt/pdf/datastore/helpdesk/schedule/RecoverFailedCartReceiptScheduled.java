@@ -53,7 +53,7 @@ public class RecoverFailedCartReceiptScheduled {
      */
     @FunctionName("RecoverFailedCartReceiptScheduled")
     public void run(
-            @TimerTrigger(name = "timerInfoFailed", schedule = "%RECOVER_CART_FAILED_CRON%") String timerInfo,
+            @TimerTrigger(name = "timerInfoCartFailed", schedule = "%RECOVER_CART_FAILED_CRON%") String timerInfo,
             @CosmosDBOutput(
                     name = "CartReceiptDatastore",
                     databaseName = "db",

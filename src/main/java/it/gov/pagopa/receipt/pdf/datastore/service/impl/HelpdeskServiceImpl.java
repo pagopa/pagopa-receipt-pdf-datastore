@@ -35,6 +35,8 @@ public class HelpdeskServiceImpl implements HelpdeskService {
 
     private final Logger logger = LoggerFactory.getLogger(HelpdeskServiceImpl.class);
 
+    private final int massiveOperationMaxProcessableItems = Integer.parseInt(System.getenv().getOrDefault("MASSIVE_OPERATION_MAX_PROCESSABLE_ITEMS", "5000"));
+
     private final ReceiptCosmosService receiptCosmosService;
     private final CartReceiptCosmosService cartReceiptCosmosService;
     private final BizEventToReceiptService bizEventToReceiptService;
@@ -134,30 +136,38 @@ public class HelpdeskServiceImpl implements HelpdeskService {
         List<Receipt> failedReceipts = new ArrayList<>();
         int successCounter = 0;
         int errorCounter = 0;
-        String continuationToken = null;
-        do {
-            Iterable<FeedResponse<Receipt>> feedResponseIterator =
-                    this.receiptCosmosService.getFailedReceiptByStatus(continuationToken, 100, status);
+        int processedItems = 0;
 
-            for (FeedResponse<Receipt> page : feedResponseIterator) {
-                for (Receipt receipt : page.getResults()) {
-                    try {
-                        Receipt restored = recoverFailedReceipt(receipt);
+        Iterable<FeedResponse<Receipt>> feedResponseIterator =
+                this.receiptCosmosService.getFailedReceiptByStatus(null, 100, status);
 
-                        if (isReceiptStatusValid(restored)) {
-                            successCounter++;
-                        } else {
-                            failedReceipts.add(restored);
-                            errorCounter++;
-                        }
-                    } catch (Exception e) {
-                        logger.warn("Recover for receipt {} failed", receipt.getEventId(), e);
+        for (FeedResponse<Receipt> page : feedResponseIterator) {
+            for (Receipt receipt : page.getResults()) {
+                if (processedItems >= massiveOperationMaxProcessableItems) {
+                    break;
+                }
+
+                try {
+                    Receipt restored = recoverFailedReceipt(receipt);
+
+                    if (isReceiptStatusValid(restored)) {
+                        successCounter++;
+                    } else {
+                        failedReceipts.add(restored);
                         errorCounter++;
                     }
+                } catch (Exception e) {
+                    logger.warn("Recover for receipt {} failed", receipt.getEventId(), e);
+                    errorCounter++;
+                } finally {
+                    processedItems++;
                 }
-                continuationToken = page.getContinuationToken();
             }
-        } while (continuationToken != null);
+            if (processedItems >= massiveOperationMaxProcessableItems) {
+                logger.warn("Max processable items reached ({}), the massive recovery will be interrupted", massiveOperationMaxProcessableItems);
+                break;
+            }
+        }
 
         return MassiveRecoverResult.builder()
                 .failedReceiptList(failedReceipts)
@@ -171,30 +181,38 @@ public class HelpdeskServiceImpl implements HelpdeskService {
         List<CartForReceipt> failedCart = new ArrayList<>();
         int successCounter = 0;
         int errorCounter = 0;
-        String continuationToken = null;
-        do {
-            Iterable<FeedResponse<CartForReceipt>> feedResponseIterator =
-                    this.cartReceiptCosmosService.getFailedCartReceiptByStatus(continuationToken, 100, status);
+        int processedItems = 0;
 
-            for (FeedResponse<CartForReceipt> page : feedResponseIterator) {
-                for (CartForReceipt cart : page.getResults()) {
-                    try {
-                        CartForReceipt recoverCart = recoverFailedCart(cart);
+        Iterable<FeedResponse<CartForReceipt>> feedResponseIterator =
+                this.cartReceiptCosmosService.getFailedCartReceiptByStatus(null, 100, status);
 
-                        if (isCartStatusValid(recoverCart)) {
-                            successCounter++;
-                        } else {
-                            failedCart.add(recoverCart);
-                            errorCounter++;
-                        }
-                    } catch (Exception e) {
-                        logger.warn("Recover for cart {} failed", cart.getCartId(), e);
+        for (FeedResponse<CartForReceipt> page : feedResponseIterator) {
+            for (CartForReceipt cart : page.getResults()) {
+                if (processedItems >= massiveOperationMaxProcessableItems) {
+                    break;
+                }
+
+                try {
+                    CartForReceipt recoverCart = recoverFailedCart(cart);
+
+                    if (isCartStatusValid(recoverCart)) {
+                        successCounter++;
+                    } else {
+                        failedCart.add(recoverCart);
                         errorCounter++;
                     }
+                } catch (Exception e) {
+                    logger.warn("Recover for cart {} failed", cart.getCartId(), e);
+                    errorCounter++;
+                } finally {
+                    processedItems++;
                 }
-                continuationToken = page.getContinuationToken();
             }
-        } while (continuationToken != null);
+            if (processedItems >= massiveOperationMaxProcessableItems) {
+                logger.warn("Max processable items reached ({}), the massive recovery will be interrupted", massiveOperationMaxProcessableItems);
+                break;
+            }
+        }
 
         return MassiveCartRecoverResult.builder()
                 .failedCartList(failedCart)
