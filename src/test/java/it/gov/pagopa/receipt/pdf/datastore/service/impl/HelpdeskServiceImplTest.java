@@ -562,11 +562,19 @@ class HelpdeskServiceImplTest {
         doReturn(createIteratorFeedResponse(status))
                 .when(receiptCosmosServiceMock).getNotNotifiedReceiptByStatus(null, 100, status);
         doReturn(Receipt.builder().status(ReceiptStatusType.GENERATED).build()).when(sut).recoverNoNotifiedReceipt(any());
+        doReturn(Receipt.builder().status(ReceiptStatusType.GENERATED).build()).when(sut).recoverNoNotifiedReceipt(any());
+        doReturn(Receipt.builder().status(ReceiptStatusType.GENERATED).build())
+                .when(bizEventToReceiptServiceMock).updateReceipt(any());
+        doReturn(Receipt.builder().status(ReceiptStatusType.FAILED).build())
+                .when(bizEventToReceiptServiceMock).updateReceipt(any());
 
-        List<Receipt> result = assertDoesNotThrow(() -> sut.massiveRecoverNoNotifiedReceipt(status));
+
+        MassiveRecoverResult result = assertDoesNotThrow(() -> sut.massiveRecoverNoNotifiedReceipt(status));
 
         assertNotNull(result);
-        assertEquals(1, result.size());
+        assertNotNull(result.getFailedReceiptList());
+        assertEquals(1, result.getSuccessCounter());
+        assertEquals(1, result.getErrorCounter());
     }
 
     @ParameterizedTest
@@ -576,11 +584,18 @@ class HelpdeskServiceImplTest {
         doReturn(createIterableFeedResponse(status))
                 .when(cartReceiptCosmosServiceMock).getNotNotifiedCartReceiptByStatus(null, 100, status);
         doReturn(CartForReceipt.builder().status(CartStatusType.GENERATED).build()).when(sut).recoverNoNotifiedCart(any());
+        doReturn(CartForReceipt.builder().status(CartStatusType.GENERATED).build()).when(sut).recoverNoNotifiedCart(any());
+        doReturn(CartForReceipt.builder().status(CartStatusType.GENERATED).build())
+                .when(bizEventToReceiptServiceMock).saveCartForReceiptWithoutRetry(any());
+        doReturn(CartForReceipt.builder().status(CartStatusType.FAILED).build())
+                .when(bizEventToReceiptServiceMock).saveCartForReceiptWithoutRetry(any());
 
-        List<CartForReceipt> result = assertDoesNotThrow(() -> sut.massiveRecoverNoNotifiedCart(status));
+        MassiveCartRecoverResult result = assertDoesNotThrow(() -> sut.massiveRecoverNoNotifiedCart(status));
 
         assertNotNull(result);
-        assertEquals(1, result.size());
+        assertNotNull(result.getFailedCartList());
+        assertEquals(1, result.getSuccessCounter());
+        assertEquals(1, result.getErrorCounter());
     }
 
     private BizEvent generateValidBizEvent(String totalNotice) {
@@ -671,14 +686,14 @@ class HelpdeskServiceImplTest {
     private Iterable<FeedResponse<CartForReceipt>> createIterableFeedResponse(CartStatusType failed) {
         return List.of(
                 ModelBridgeInternal.createFeedResponse(
-                        List.of(CartForReceipt.builder().status(failed).build()),
+                        List.of(CartForReceipt.builder().status(failed).build(), CartForReceipt.builder().status(failed).build()),
                         Collections.emptyMap()));
     }
 
     private List<FeedResponse<Receipt>> createIteratorFeedResponse(ReceiptStatusType failed) {
         return List.of(
                 ModelBridgeInternal.createFeedResponse(
-                        List.of(Receipt.builder().status(failed).build()),
+                        List.of(Receipt.builder().status(failed).build(), Receipt.builder().status(failed).build()),
                         Collections.emptyMap()));
     }
 }

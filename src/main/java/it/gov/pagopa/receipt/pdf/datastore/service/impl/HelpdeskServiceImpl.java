@@ -225,45 +225,77 @@ public class HelpdeskServiceImpl implements HelpdeskService {
     }
 
     @Override
-    public List<Receipt> massiveRecoverNoNotifiedReceipt(ReceiptStatusType status) {
-        List<Receipt> receiptList = new ArrayList<>();
-        String continuationToken = null;
-        do {
-            Iterable<FeedResponse<Receipt>> feedResponseIterator =
-                    this.receiptCosmosService.getNotNotifiedReceiptByStatus(continuationToken, 100, status);
+    public MassiveRecoverResult massiveRecoverNoNotifiedReceipt(ReceiptStatusType status) {
+        int successCounter = 0;
+        int errorCounter = 0;
+        int processedItems = 0;
 
-            for (FeedResponse<Receipt> page : feedResponseIterator) {
-                for (Receipt receipt : page.getResults()) {
-                    Receipt restoredReceipt = recoverNoNotifiedReceipt(receipt);
-                    receiptList.add(restoredReceipt);
+        Iterable<FeedResponse<Receipt>> feedResponseIterator =
+                this.receiptCosmosService.getNotNotifiedReceiptByStatus(null, 100, status);
+
+        for (FeedResponse<Receipt> page : feedResponseIterator) {
+            for (Receipt receipt : page.getResults()) {
+                if (processedItems >= massiveOperationMaxProcessableItems) {
+                    break;
                 }
-                continuationToken = page.getContinuationToken();
+                processedItems++;
 
+                Receipt restoredReceipt = recoverNoNotifiedReceipt(receipt);
+                restoredReceipt = this.bizEventToReceiptService.updateReceipt(restoredReceipt);
+                if (isReceiptStatusValid(restoredReceipt)) {
+                    successCounter++;
+                } else {
+                    logger.warn("Recover for receipt {} failed", receipt.getEventId());
+                    errorCounter++;
+                }
             }
-        } while (continuationToken != null);
+            if (processedItems >= massiveOperationMaxProcessableItems) {
+                logger.warn("Max processable items reached ({}), the massive recovery will be interrupted", massiveOperationMaxProcessableItems);
+                break;
+            }
+        }
 
-        return receiptList;
+        return MassiveRecoverResult.builder()
+                .successCounter(successCounter)
+                .errorCounter(errorCounter)
+                .build();
     }
 
     @Override
-    public List<CartForReceipt> massiveRecoverNoNotifiedCart(CartStatusType status) {
-        List<CartForReceipt> cartList = new ArrayList<>();
-        String continuationToken = null;
-        do {
-            Iterable<FeedResponse<CartForReceipt>> feedResponseIterator =
-                    this.cartReceiptCosmosService.getNotNotifiedCartReceiptByStatus(continuationToken, 100, status);
+    public MassiveCartRecoverResult massiveRecoverNoNotifiedCart(CartStatusType status) {
+        int successCounter = 0;
+        int errorCounter = 0;
+        int processedItems = 0;
 
-            for (FeedResponse<CartForReceipt> page : feedResponseIterator) {
-                for (CartForReceipt cart : page.getResults()) {
-                    CartForReceipt restoredCart = recoverNoNotifiedCart(cart);
-                    cartList.add(restoredCart);
+        Iterable<FeedResponse<CartForReceipt>> feedResponseIterator =
+                this.cartReceiptCosmosService.getNotNotifiedCartReceiptByStatus(null, 100, status);
+
+        for (FeedResponse<CartForReceipt> page : feedResponseIterator) {
+            for (CartForReceipt cart : page.getResults()) {
+                if (processedItems >= massiveOperationMaxProcessableItems) {
+                    break;
                 }
-                continuationToken = page.getContinuationToken();
+                processedItems++;
 
+                CartForReceipt restoredCart = recoverNoNotifiedCart(cart);
+                restoredCart = this.bizEventToReceiptService.saveCartForReceiptWithoutRetry(restoredCart);
+                if (isCartStatusValid(restoredCart)) {
+                    successCounter++;
+                } else {
+                    logger.warn("Recover for cart {} failed", cart.getCartId());
+                    errorCounter++;
+                }
             }
-        } while (continuationToken != null);
+            if (processedItems >= massiveOperationMaxProcessableItems) {
+                logger.warn("Max processable items reached ({}), the massive recovery will be interrupted", massiveOperationMaxProcessableItems);
+                break;
+            }
+        }
 
-        return cartList;
+        return MassiveCartRecoverResult.builder()
+                .successCounter(successCounter)
+                .errorCounter(errorCounter)
+                .build();
     }
 
     private void validateCartBizEvents(List<BizEvent> bizEvents) throws BizEventBadRequestException, BizEventUnprocessableEntityException {
