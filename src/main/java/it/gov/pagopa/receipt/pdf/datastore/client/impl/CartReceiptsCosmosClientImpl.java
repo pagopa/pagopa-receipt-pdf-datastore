@@ -10,6 +10,8 @@ import com.azure.cosmos.models.CosmosItemRequestOptions;
 import com.azure.cosmos.models.CosmosItemResponse;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.FeedResponse;
+import com.azure.cosmos.models.PartitionKey;
+import com.microsoft.azure.functions.HttpStatus;
 import it.gov.pagopa.receipt.pdf.datastore.client.CartReceiptsCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
@@ -20,7 +22,6 @@ import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Optional;
 
 public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
 
@@ -65,8 +66,17 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
 
     @Override
     public CartForReceipt getCartItem(String cartId) throws CartNotFoundException {
-        return getDocumentByFilter(cartForReceiptContainerName, "cartId", cartId, CartForReceipt.class)
-                .orElseThrow(() -> new CartNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG));
+        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
+        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(cartForReceiptContainerName);
+
+        CosmosItemResponse<CartForReceipt> response =
+                cosmosContainer.readItem(cartId, new PartitionKey(cartId), CartForReceipt.class);
+
+        if (response.getStatusCode() == HttpStatus.OK.value()) {
+            return response.getItem();
+        }
+
+        throw new CartNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG);
     }
 
     /**
@@ -88,8 +98,17 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
      */
     @Override
     public CartReceiptError getCartReceiptError(String cartId) throws CartNotFoundException {
-        return getDocumentByFilter(cartReceiptsMessageErrorsContainerName, "id", cartId, CartReceiptError.class)
-                .orElseThrow(() -> new CartNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG));
+        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
+        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(cartReceiptsMessageErrorsContainerName);
+
+        CosmosItemResponse<CartReceiptError> response =
+                cosmosContainer.readItem(cartId, new PartitionKey(cartId), CartReceiptError.class);
+
+        if (response.getStatusCode() == HttpStatus.OK.value()) {
+            return response.getItem();
+        }
+
+        throw new CartNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG);
     }
 
     /**
@@ -157,24 +176,6 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
     /**
      * PRIVATE METHODS
      */
-
-    private <T> Optional<T> getDocumentByFilter(
-            String containerId,
-            String propertyName,
-            String propertyValue,
-            Class<T> classType
-    ) {
-        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
-        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
-
-        String query = String.format("SELECT * FROM c WHERE c.%s = '%s'", propertyName, propertyValue);
-
-        // use stream() to convert iterable and find first element
-        return cosmosContainer
-                .queryItems(query, new CosmosQueryRequestOptions(), classType)
-                .stream()
-                .findFirst();
-    }
 
     private Iterable<FeedResponse<CartForReceipt>> executePagedQuery(
             String containerName,
