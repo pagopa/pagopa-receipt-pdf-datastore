@@ -13,7 +13,6 @@ import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventBadRequestException
 import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventUnprocessableEntityException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
-import it.gov.pagopa.receipt.pdf.datastore.exception.RecoverFailureException;
 import it.gov.pagopa.receipt.pdf.datastore.model.MassiveCartRecoverResult;
 import it.gov.pagopa.receipt.pdf.datastore.model.MassiveRecoverResult;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
@@ -34,6 +33,7 @@ import static it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils.i
 
 public class HelpdeskServiceImpl implements HelpdeskService {
 
+    public static final String RECOVERY_INTERRUPTED_MSG = "Max processable items reached ({}), the massive recovery will be interrupted";
     private final Logger logger = LoggerFactory.getLogger(HelpdeskServiceImpl.class);
 
     private final int massiveOperationMaxProcessableItems = Integer.parseInt(System.getenv().getOrDefault("MASSIVE_OPERATION_MAX_PROCESSABLE_ITEMS", "5000"));
@@ -157,7 +157,8 @@ public class HelpdeskServiceImpl implements HelpdeskService {
                         successCounter++;
                     } else {
                         failedReceipts.add(restored);
-                        throw new RecoverFailureException("Expected error occurred");
+                        errorCounter++;
+                        logger.warn("Recover for receipt {} failed, returned invalid status", restored.getEventId());
                     }
                 } catch (Exception e) {
                     logger.warn("Recover for receipt {} failed", receipt.getEventId(), e);
@@ -167,7 +168,7 @@ public class HelpdeskServiceImpl implements HelpdeskService {
                 }
             }
             if (processedItems >= massiveOperationMaxProcessableItems) {
-                logger.warn("Max processable items reached ({}), the massive recovery will be interrupted", massiveOperationMaxProcessableItems);
+                logger.warn(RECOVERY_INTERRUPTED_MSG, massiveOperationMaxProcessableItems);
                 break;
             }
         }
@@ -202,7 +203,8 @@ public class HelpdeskServiceImpl implements HelpdeskService {
                         successCounter++;
                     } else {
                         failedCart.add(recoverCart);
-                        throw new RecoverFailureException("Expected error occurred");
+                        errorCounter++;
+                        logger.warn("Recover for cart {} failed, returned invalid status", recoverCart.getCartId());
                     }
                 } catch (Exception e) {
                     logger.warn("Recover for cart {} failed", cart.getCartId(), e);
@@ -212,7 +214,7 @@ public class HelpdeskServiceImpl implements HelpdeskService {
                 }
             }
             if (processedItems >= massiveOperationMaxProcessableItems) {
-                logger.warn("Max processable items reached ({}), the massive recovery will be interrupted", massiveOperationMaxProcessableItems);
+                logger.warn(RECOVERY_INTERRUPTED_MSG, massiveOperationMaxProcessableItems);
                 break;
             }
         }
@@ -250,7 +252,7 @@ public class HelpdeskServiceImpl implements HelpdeskService {
                 }
             }
             if (processedItems >= massiveOperationMaxProcessableItems) {
-                logger.warn("Max processable items reached ({}), the massive recovery will be interrupted", massiveOperationMaxProcessableItems);
+                logger.warn(RECOVERY_INTERRUPTED_MSG, massiveOperationMaxProcessableItems);
                 break;
             }
         }
@@ -287,7 +289,7 @@ public class HelpdeskServiceImpl implements HelpdeskService {
                 }
             }
             if (processedItems >= massiveOperationMaxProcessableItems) {
-                logger.warn("Max processable items reached ({}), the massive recovery will be interrupted", massiveOperationMaxProcessableItems);
+                logger.warn(RECOVERY_INTERRUPTED_MSG, massiveOperationMaxProcessableItems);
                 break;
             }
         }
