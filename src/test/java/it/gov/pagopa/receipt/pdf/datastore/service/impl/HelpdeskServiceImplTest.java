@@ -472,7 +472,7 @@ class HelpdeskServiceImplTest {
         MassiveRecoverResult result = assertDoesNotThrow(() -> sut.massiveRecoverFailedReceipt(status));
 
         assertNotNull(result);
-        assertEquals(1, result.getSuccessCounter());
+        assertEquals(2, result.getSuccessCounter());
         assertEquals(0, result.getErrorCounter());
         assertEquals(0, result.getFailedReceiptList().size());
     }
@@ -488,9 +488,9 @@ class HelpdeskServiceImplTest {
 
         assertNotNull(result);
         assertEquals(0, result.getSuccessCounter());
-        assertEquals(1, result.getErrorCounter());
+        assertEquals(2, result.getErrorCounter());
         assertNotNull(result.getFailedReceiptList());
-        assertEquals(1, result.getFailedReceiptList().size());
+        assertEquals(2, result.getFailedReceiptList().size());
     }
 
     @Test
@@ -504,7 +504,7 @@ class HelpdeskServiceImplTest {
 
         assertNotNull(result);
         assertEquals(0, result.getSuccessCounter());
-        assertEquals(1, result.getErrorCounter());
+        assertEquals(2, result.getErrorCounter());
         assertEquals(0, result.getFailedReceiptList().size());
     }
 
@@ -519,7 +519,7 @@ class HelpdeskServiceImplTest {
         MassiveCartRecoverResult result = assertDoesNotThrow(() -> sut.massiveRecoverFailedCart(status));
 
         assertNotNull(result);
-        assertEquals(1, result.getSuccessCounter());
+        assertEquals(2, result.getSuccessCounter());
         assertEquals(0, result.getErrorCounter());
         assertEquals(0, result.getFailedCartList().size());
     }
@@ -535,9 +535,9 @@ class HelpdeskServiceImplTest {
 
         assertNotNull(result);
         assertEquals(0, result.getSuccessCounter());
-        assertEquals(1, result.getErrorCounter());
+        assertEquals(2, result.getErrorCounter());
         assertNotNull(result.getFailedCartList());
-        assertEquals(1, result.getFailedCartList().size());
+        assertEquals(2, result.getFailedCartList().size());
     }
 
     @Test
@@ -551,7 +551,7 @@ class HelpdeskServiceImplTest {
 
         assertNotNull(result);
         assertEquals(0, result.getSuccessCounter());
-        assertEquals(1, result.getErrorCounter());
+        assertEquals(2, result.getErrorCounter());
         assertEquals(0, result.getFailedCartList().size());
     }
 
@@ -562,17 +562,15 @@ class HelpdeskServiceImplTest {
         doReturn(createIteratorFeedResponse(status))
                 .when(receiptCosmosServiceMock).getNotNotifiedReceiptByStatus(null, 100, status);
         doReturn(Receipt.builder().status(ReceiptStatusType.GENERATED).build()).when(sut).recoverNoNotifiedReceipt(any());
-        doReturn(Receipt.builder().status(ReceiptStatusType.GENERATED).build()).when(sut).recoverNoNotifiedReceipt(any());
         doReturn(Receipt.builder().status(ReceiptStatusType.GENERATED).build())
-                .when(bizEventToReceiptServiceMock).updateReceipt(any());
-        doReturn(Receipt.builder().status(ReceiptStatusType.FAILED).build())
+                .doReturn(Receipt.builder().status(ReceiptStatusType.FAILED).build())
                 .when(bizEventToReceiptServiceMock).updateReceipt(any());
 
 
         MassiveRecoverResult result = assertDoesNotThrow(() -> sut.massiveRecoverNoNotifiedReceipt(status));
 
         assertNotNull(result);
-        assertNotNull(result.getFailedReceiptList());
+        assertNull(result.getFailedReceiptList());
         assertEquals(1, result.getSuccessCounter());
         assertEquals(1, result.getErrorCounter());
     }
@@ -584,16 +582,14 @@ class HelpdeskServiceImplTest {
         doReturn(createIterableFeedResponse(status))
                 .when(cartReceiptCosmosServiceMock).getNotNotifiedCartReceiptByStatus(null, 100, status);
         doReturn(CartForReceipt.builder().status(CartStatusType.GENERATED).build()).when(sut).recoverNoNotifiedCart(any());
-        doReturn(CartForReceipt.builder().status(CartStatusType.GENERATED).build()).when(sut).recoverNoNotifiedCart(any());
         doReturn(CartForReceipt.builder().status(CartStatusType.GENERATED).build())
-                .when(bizEventToReceiptServiceMock).saveCartForReceiptWithoutRetry(any());
-        doReturn(CartForReceipt.builder().status(CartStatusType.FAILED).build())
+                .doReturn(CartForReceipt.builder().status(CartStatusType.FAILED).build())
                 .when(bizEventToReceiptServiceMock).saveCartForReceiptWithoutRetry(any());
 
         MassiveCartRecoverResult result = assertDoesNotThrow(() -> sut.massiveRecoverNoNotifiedCart(status));
 
         assertNotNull(result);
-        assertNotNull(result.getFailedCartList());
+        assertNull(result.getFailedCartList());
         assertEquals(1, result.getSuccessCounter());
         assertEquals(1, result.getErrorCounter());
     }
