@@ -4,10 +4,9 @@ import com.azure.cosmos.CosmosClient;
 import com.azure.cosmos.CosmosClientBuilder;
 import com.azure.cosmos.CosmosContainer;
 import com.azure.cosmos.CosmosDatabase;
-import com.azure.cosmos.models.CosmosItemResponse;
+import com.azure.cosmos.CosmosException;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.PartitionKey;
-import com.microsoft.azure.functions.HttpStatus;
 import it.gov.pagopa.receipt.pdf.datastore.client.BizEventCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventNotFoundException;
@@ -57,15 +56,11 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
         CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
-        //Query the container
-        CosmosItemResponse<BizEvent> response = cosmosContainer
-                .readItem(bizEventId, new PartitionKey(bizEventId), BizEvent.class);
-
-        if (response.getStatusCode() == HttpStatus.OK.value()) {
-            return response.getItem();
+        try {
+            return cosmosContainer.readItem(bizEventId, new PartitionKey(bizEventId), BizEvent.class).getItem();
+        } catch (CosmosException e) {
+            throw new BizEventNotFoundException("Document not found in the defined container", e);
         }
-
-        throw new BizEventNotFoundException("Document not found in the defined container");
     }
 
     /**

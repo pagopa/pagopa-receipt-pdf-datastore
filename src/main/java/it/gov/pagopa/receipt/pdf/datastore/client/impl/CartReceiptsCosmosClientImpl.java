@@ -5,6 +5,7 @@ import com.azure.cosmos.CosmosClient;
 import com.azure.cosmos.CosmosClientBuilder;
 import com.azure.cosmos.CosmosContainer;
 import com.azure.cosmos.CosmosDatabase;
+import com.azure.cosmos.CosmosException;
 import com.azure.cosmos.implementation.PreconditionFailedException;
 import com.azure.cosmos.models.CosmosItemRequestOptions;
 import com.azure.cosmos.models.CosmosItemResponse;
@@ -69,14 +70,11 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
         CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(cartForReceiptContainerName);
 
-        CosmosItemResponse<CartForReceipt> response =
-                cosmosContainer.readItem(cartId, new PartitionKey(cartId), CartForReceipt.class);
-
-        if (response.getStatusCode() == HttpStatus.OK.value()) {
-            return response.getItem();
+        try {
+            return cosmosContainer.readItem(cartId, new PartitionKey(cartId), CartForReceipt.class).getItem();
+        } catch (CosmosException e) {
+            throw new CartNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG);
         }
-
-        throw new CartNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG);
     }
 
     /**

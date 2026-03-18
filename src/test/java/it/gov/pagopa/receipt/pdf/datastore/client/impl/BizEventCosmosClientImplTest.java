@@ -3,6 +3,7 @@ package it.gov.pagopa.receipt.pdf.datastore.client.impl;
 import com.azure.cosmos.CosmosClient;
 import com.azure.cosmos.CosmosContainer;
 import com.azure.cosmos.CosmosDatabase;
+import com.azure.cosmos.CosmosException;
 import com.azure.cosmos.models.CosmosItemResponse;
 import com.azure.cosmos.util.CosmosPagedIterable;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
@@ -85,7 +86,6 @@ class BizEventCosmosClientImplTest {
         when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
         when(mockContainer.readItem(anyString(), any(), eq(BizEvent.class))).thenReturn(mockResponse);
-        when(mockResponse.getStatusCode()).thenReturn(200);
         when(mockResponse.getItem()).thenReturn(new BizEvent());
 
         assertDoesNotThrow(() -> sut.getBizEventDocument("1"));
@@ -95,8 +95,7 @@ class BizEventCosmosClientImplTest {
     void getBizEventDocumentError() {
         when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
-        when(mockContainer.readItem(anyString(), any(), eq(BizEvent.class))).thenReturn(mockResponse);
-        when(mockResponse.getStatusCode()).thenReturn(404);
+        when(mockContainer.readItem(anyString(), any(), eq(BizEvent.class))).thenThrow(CosmosException.class);
 
         assertThrows(BizEventNotFoundException.class, () -> sut.getBizEventDocument("1"));
     }
