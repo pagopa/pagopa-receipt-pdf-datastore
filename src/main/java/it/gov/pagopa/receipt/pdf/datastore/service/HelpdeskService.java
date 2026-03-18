@@ -12,8 +12,6 @@ import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.datastore.model.MassiveCartRecoverResult;
 import it.gov.pagopa.receipt.pdf.datastore.model.MassiveRecoverResult;
 
-import java.util.List;
-
 /**
  * Service that hold receipt helpdesk logic
  */
@@ -92,7 +90,7 @@ public interface HelpdeskService {
      * @param status the status to be recovered
      * @return the recover result
      */
-    List<Receipt> massiveRecoverNoNotifiedReceipt(ReceiptStatusType status);
+    MassiveRecoverResult massiveRecoverNoNotifiedReceipt(ReceiptStatusType status);
 
     /**
      * Massive recover all not notified cart receipt with the specified status {@link CartStatusType}
@@ -100,5 +98,5 @@ public interface HelpdeskService {
      * @param status the status to be recovered
      * @return the recover result
      */
-    List<CartForReceipt> massiveRecoverNoNotifiedCart(CartStatusType status);
+    MassiveCartRecoverResult massiveRecoverNoNotifiedCart(CartStatusType status);
 }

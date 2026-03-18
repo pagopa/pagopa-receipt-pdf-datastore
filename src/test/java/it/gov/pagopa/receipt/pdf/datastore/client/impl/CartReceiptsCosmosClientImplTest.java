@@ -3,6 +3,8 @@ package it.gov.pagopa.receipt.pdf.datastore.client.impl;
 import com.azure.cosmos.CosmosClient;
 import com.azure.cosmos.CosmosContainer;
 import com.azure.cosmos.CosmosDatabase;
+import com.azure.cosmos.CosmosException;
+import com.azure.cosmos.models.CosmosItemResponse;
 import com.azure.cosmos.models.FeedResponse;
 import com.azure.cosmos.util.CosmosPagedIterable;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
@@ -13,10 +15,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.Iterator;
-import java.util.Optional;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,13 +45,9 @@ class CartReceiptsCosmosClientImplTest {
     @Mock
     private Iterable<FeedResponse<CartForReceipt>> mockCartIterableByPage;
     @Mock
-    private CosmosPagedIterable<CartReceiptError> mockCartErrorIterable;
+    private CosmosItemResponse<CartForReceipt> mockReceiptResponse;
     @Mock
-    private Iterator<CartForReceipt> mockIterator;
-    @Mock
-    private Stream<CartForReceipt> mockCartStream;
-    @Mock
-    private Stream<CartReceiptError> mockCartErrorStream;
+    private CosmosItemResponse<CartReceiptError> mockReceiptErrorResponse;
 
     @InjectMocks
     private CartReceiptsCosmosClientImpl sut;
@@ -76,10 +70,8 @@ class CartReceiptsCosmosClientImplTest {
 
         when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
-        when(mockContainer.queryItems(anyString(), any(), eq(CartForReceipt.class)))
-                .thenReturn(mockCartIterable);
-        when(mockCartIterable.stream()).thenReturn(mockCartStream);
-        when(mockCartStream.findFirst()).thenReturn(Optional.of(cartForReceipt));
+        when(mockContainer.readItem(anyString(), any(), eq(CartForReceipt.class))).thenReturn(mockReceiptResponse);
+        when(mockReceiptResponse.getItem()).thenReturn(cartForReceipt);
 
         CartForReceipt result = assertDoesNotThrow(() -> sut.getCartItem(CART_ID));
 
@@ -90,10 +82,7 @@ class CartReceiptsCosmosClientImplTest {
     void getCartItemFail() {
         when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
-        when(mockContainer.queryItems(anyString(), any(), eq(CartForReceipt.class)))
-                .thenReturn(mockCartIterable);
-        when(mockCartIterable.stream()).thenReturn(mockCartStream);
-        when(mockCartStream.findFirst()).thenReturn(Optional.empty());
+        when(mockContainer.readItem(anyString(), any(), eq(CartForReceipt.class))).thenThrow(CosmosException.class);
 
         assertThrows(CartNotFoundException.class, () -> sut.getCartItem("an invalid receipt id"));
     }
@@ -115,10 +104,9 @@ class CartReceiptsCosmosClientImplTest {
 
         when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
-        when(mockContainer.queryItems(anyString(), any(), eq(CartReceiptError.class)))
-                .thenReturn(mockCartErrorIterable);
-        when(mockCartErrorIterable.stream()).thenReturn(mockCartErrorStream);
-        when(mockCartErrorStream.findFirst()).thenReturn(Optional.of(receiptError));
+        when(mockContainer.readItem(anyString(), any(), eq(CartReceiptError.class))).thenReturn(mockReceiptErrorResponse);
+        when(mockReceiptErrorResponse.getStatusCode()).thenReturn(200);
+        when(mockReceiptErrorResponse.getItem()).thenReturn(receiptError);
 
         CartReceiptError result = assertDoesNotThrow(() -> sut.getCartReceiptError(CART_ID));
 

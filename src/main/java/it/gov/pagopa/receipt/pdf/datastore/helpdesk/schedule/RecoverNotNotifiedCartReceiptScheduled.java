@@ -1,20 +1,16 @@
 package it.gov.pagopa.receipt.pdf.datastore.helpdesk.schedule;
 
 import com.microsoft.azure.functions.ExecutionContext;
-import com.microsoft.azure.functions.OutputBinding;
-import com.microsoft.azure.functions.annotation.CosmosDBOutput;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.TimerTrigger;
-import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
+import it.gov.pagopa.receipt.pdf.datastore.model.MassiveCartRecoverResult;
 import it.gov.pagopa.receipt.pdf.datastore.service.HelpdeskService;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.HelpdeskServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 public class RecoverNotNotifiedCartReceiptScheduled {
 
@@ -48,31 +44,24 @@ public class RecoverNotNotifiedCartReceiptScheduled {
                     schedule = "%RECOVER_CART_FAILED_CRON%"
             )
             String timerInfo,
-            @CosmosDBOutput(
-                    name = "CartReceiptDatastore",
-                    databaseName = "db",
-                    containerName = "cart-for-receipts",
-                    connection = "COSMOS_RECEIPTS_CONN_STRING")
-            OutputBinding<List<CartForReceipt>> documentdb,
             final ExecutionContext context
     ) {
         if (isEnabled) {
             logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
 
-            List<CartForReceipt> receiptList = new ArrayList<>();
-            receiptList.addAll(process(context, CartStatusType.IO_ERROR_TO_NOTIFY));
-            receiptList.addAll(process(context, CartStatusType.GENERATED));
-
-            documentdb.setValue(receiptList);
+            process(CartStatusType.IO_ERROR_TO_NOTIFY);
+            process(CartStatusType.GENERATED);
         }
     }
 
-    private List<CartForReceipt> process(ExecutionContext context, CartStatusType statusType) {
-        List<CartForReceipt> receiptList = this.helpdeskService.massiveRecoverNoNotifiedCart(statusType);
+    private void process(CartStatusType status) {
+        MassiveCartRecoverResult recoverResult = this.helpdeskService.massiveRecoverNoNotifiedCart(status);
 
-        List<String> idList = receiptList.parallelStream().map(CartForReceipt::getId).toList();
-        logger.info("[{}] Recovered {} cart receipts for status {} with ids: {}",
-                context.getFunctionName(), receiptList.size(), statusType, idList);
-        return receiptList;
+        int successCounter = recoverResult.getSuccessCounter();
+        int errorCounter = recoverResult.getErrorCounter();
+
+        if (errorCounter > 0) {
+            logger.warn("Recovered {} cart receipts for status {} but {} encountered an error.", successCounter, status, errorCounter);
+        }
     }
 }
