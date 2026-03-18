@@ -89,7 +89,8 @@ public class BizEventToReceipt {
                     containerName = "cart-for-receipts",
                     connection = "COSMOS_RECEIPTS_CONN_STRING")
             OutputBinding<List<CartForReceipt>> cartDocumentdb,
-            final ExecutionContext context) {
+            final ExecutionContext context
+    ) {
 
         int itemsDone = 0;
         List<Receipt> receiptFailed = new ArrayList<>();
@@ -211,8 +212,15 @@ public class BizEventToReceipt {
                 // the receipt does not exist
             }
         } else {
+            if (bizEvent.getTransactionDetails() == null
+                    || bizEvent.getTransactionDetails().getTransaction() == null
+                    || bizEvent.getTransactionDetails().getTransaction().getTransactionId() == null) {
+                // a cart (totalNotice !=1) with cart identifier (transactionId) null should not happen,
+                // handled here to avoid code duplication. Return true to discard the event
+                return true;
+            }
+            String transactionId = bizEvent.getTransactionDetails().getTransaction().getTransactionId();
             try {
-                String transactionId = bizEvent.getTransactionDetails().getTransaction().getTransactionId();
                 CartForReceipt cart = this.bizEventToReceiptService.getCartForReceipt(transactionId);
                 if (isBizEventInCart(cart, bizEvent.getId())
                 ) {
