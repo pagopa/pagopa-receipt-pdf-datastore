@@ -122,7 +122,7 @@ public class BizEventToReceipt {
             logger.debug("[{}] function called at {} for event with id {} and status {}",
                     context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
 
-            Integer totalNotice = getTotalNotice(bizEvent, logger);
+            Integer totalNotice = getTotalNotice(bizEvent);
             if (totalNotice == 1) {
 
                 Receipt receipt = createReceipt(bizEvent, this.bizEventToReceiptService, logger);
@@ -201,7 +201,7 @@ public class BizEventToReceipt {
     }
 
     private boolean isBizEventAlreadyProcessed(ExecutionContext context, BizEvent bizEvent) {
-        Integer totalNotice = getTotalNotice(bizEvent, logger);
+        Integer totalNotice = getTotalNotice(bizEvent);
         if (totalNotice == 1) {
             try {
                 Receipt receipt = this.bizEventToReceiptService.getReceipt(bizEvent.getId());
@@ -212,18 +212,10 @@ public class BizEventToReceipt {
                 // the receipt does not exist
             }
         } else {
-            if (bizEvent.getTransactionDetails() == null
-                    || bizEvent.getTransactionDetails().getTransaction() == null
-                    || bizEvent.getTransactionDetails().getTransaction().getTransactionId() == null) {
-                // a cart (totalNotice !=1) with cart identifier (transactionId) null should not happen,
-                // handled here to avoid code duplication. Return true to discard the event
-                return true;
-            }
             String transactionId = bizEvent.getTransactionDetails().getTransaction().getTransactionId();
             try {
                 CartForReceipt cart = this.bizEventToReceiptService.getCartForReceipt(transactionId);
-                if (isBizEventInCart(cart, bizEvent.getId())
-                ) {
+                if (isBizEventInCart(cart, bizEvent.getId())) {
                     logger.debug("[{}] event with id {} discarded because already processed, cart-for-receipts already exist with id {}",
                             context.getFunctionName(), bizEvent.getId(), transactionId);
                     return true;

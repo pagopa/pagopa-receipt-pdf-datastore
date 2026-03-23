@@ -13,6 +13,7 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptSta
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
 import lombok.Builder;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -26,6 +27,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class BizEventToReceiptUtils {
+
+    private static final Logger logger = LoggerFactory.getLogger(BizEventToReceiptUtils.class);
 
     private static final String REMITTANCE_INFORMATION_REGEX = "/TXT/(.*)";
     private static final Boolean ECOMMERCE_FILTER_ENABLED = Boolean.parseBoolean(System.getenv().getOrDefault(
@@ -128,6 +131,18 @@ public class BizEventToReceiptUtils {
                     .build();
         }
 
+
+        Integer totalNotice = getTotalNotice(bizEvent);
+        if (totalNotice != 1 && bizEvent.getTransactionDetails() == null
+                || bizEvent.getTransactionDetails().getTransaction() == null
+                || bizEvent.getTransactionDetails().getTransaction().getTransactionId() == null) {
+            // a cart (totalNotice !=1) with cart identifier (transactionId) null should not happen,
+            return BizEventValidityCheck.builder()
+                    .invalid(true)
+                    .error("Biz event is in invalid because it represents a cart but has null cart identifier")
+                    .build();
+        }
+
         return new BizEventValidityCheck(false, null);
     }
 
@@ -153,7 +168,7 @@ public class BizEventToReceiptUtils {
         return isValidDebtor || isValidPayer;
     }
 
-    public static Integer getTotalNotice(BizEvent bizEvent, Logger logger) {
+    public static Integer getTotalNotice(BizEvent bizEvent) {
         if (bizEvent.getPaymentInfo() != null) {
             String totalNotice = bizEvent.getPaymentInfo().getTotalNotice();
 

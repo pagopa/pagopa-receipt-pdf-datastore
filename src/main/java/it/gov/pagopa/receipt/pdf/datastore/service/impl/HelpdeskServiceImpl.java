@@ -320,7 +320,7 @@ public class HelpdeskServiceImpl implements HelpdeskService {
         }
 
         // total notice check
-        Integer totalNotice = BizEventToReceiptUtils.getTotalNotice(bizEvent, logger);
+        Integer totalNotice = BizEventToReceiptUtils.getTotalNotice(bizEvent);
         if (totalNotice != expectedTotalNotice) {
             String errMsg = String.format("The expected total notice %s does not match the number of biz events %s",
                     totalNotice, expectedTotalNotice);
