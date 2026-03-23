@@ -133,9 +133,11 @@ public class BizEventToReceiptUtils {
 
 
         Integer totalNotice = getTotalNotice(bizEvent);
-        if (totalNotice != 1 && bizEvent.getTransactionDetails() == null
+        if (totalNotice != 1
+                && (bizEvent.getTransactionDetails() == null
                 || bizEvent.getTransactionDetails().getTransaction() == null
-                || bizEvent.getTransactionDetails().getTransaction().getTransactionId() == null) {
+                || bizEvent.getTransactionDetails().getTransaction().getTransactionId() == null)
+        ) {
             // a cart (totalNotice !=1) with cart identifier (transactionId) null should not happen,
             return BizEventValidityCheck.builder()
                     .invalid(true)
