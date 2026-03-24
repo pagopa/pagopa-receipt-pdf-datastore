@@ -5,21 +5,19 @@ import com.microsoft.azure.functions.HttpMethod;
 import com.microsoft.azure.functions.HttpRequestMessage;
 import com.microsoft.azure.functions.HttpResponseMessage;
 import com.microsoft.azure.functions.HttpStatus;
-import com.microsoft.azure.functions.OutputBinding;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;
-import com.microsoft.azure.functions.annotation.CosmosDBOutput;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
-import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.InvalidParameterException;
+import it.gov.pagopa.receipt.pdf.datastore.model.MassiveCartRecoverResult;
+import it.gov.pagopa.receipt.pdf.datastore.model.ProblemJson;
 import it.gov.pagopa.receipt.pdf.datastore.service.HelpdeskService;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.HelpdeskServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 import static it.gov.pagopa.receipt.pdf.datastore.utils.HelpdeskUtils.buildErrorResponse;
@@ -60,12 +58,6 @@ public class RecoverNotNotifiedCartReceiptMassive {
                     route = "cart-receipts/recover-not-notified",
                     authLevel = AuthorizationLevel.ANONYMOUS)
             HttpRequestMessage<Optional<String>> request,
-            @CosmosDBOutput(
-                    name = "CartReceiptDatastore",
-                    databaseName = "db",
-                    containerName = "cart-for-receipts",
-                    connection = "COSMOS_RECEIPTS_CONN_STRING")
-            OutputBinding<List<CartForReceipt>> documentdb,
             final ExecutionContext context
     ) {
         logger.info("[{}] function called at {}", context.getFunctionName(), LocalDateTime.now());
@@ -87,13 +79,26 @@ public class RecoverNotNotifiedCartReceiptMassive {
             return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, message);
         }
 
-        List<CartForReceipt> receiptList = this.helpdeskService.massiveRecoverNoNotifiedCart(status);
-        if (receiptList.isEmpty()) {
-            return request.createResponseBuilder(HttpStatus.OK).body("No receipts to be recovered").build();
-        }
+        MassiveCartRecoverResult recoverResult = this.helpdeskService.massiveRecoverNoNotifiedCart(status);
 
-        documentdb.setValue(receiptList);
-        String msg = String.format("Recovered %s receipt with success", receiptList.size());
-        return request.createResponseBuilder(HttpStatus.OK).body(msg).build();
+        int successCounter = recoverResult.getSuccessCounter();
+        int errorCounter = recoverResult.getErrorCounter();
+
+        if (errorCounter > 0) {
+            String msg = String.format("Recovered %s cart receipts but %s encountered an error.", successCounter, errorCounter);
+            logger.error("[{}] {}", context.getFunctionName(), msg);
+            return request
+                    .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ProblemJson.builder()
+                            .title("Partial OK")
+                            .detail(msg)
+                            .status(HttpStatus.MULTI_STATUS.value())
+                            .build())
+                    .build();
+        }
+        String responseMsg = String.format("Recovered %s cart receipts with success", successCounter);
+        return request.createResponseBuilder(HttpStatus.OK)
+                .body(responseMsg)
+                .build();
     }
 }
