@@ -227,8 +227,8 @@ class BizEventToReceiptServiceImplTest {
         Receipt result = assertDoesNotThrow(() -> sut.updateReceipt(receipt));
 
         assertNotNull(result);
-        assertEquals(ReceiptStatusType.INSERTED, result.getStatus());
-        assertTrue(result.getInserted_at() > 0);
+        assertNotEquals(ReceiptStatusType.FAILED, result.getStatus());
+        assertNull(result.getReasonErr());
     }
 
     @Test

@@ -63,7 +63,7 @@ public class RecoverFailedReceipt {
      * <ul>
      *      <li>try to retrieve the biz event -> if it doesn't find it, error</li>
      *      <li>check that it's a valid biz: {@link BizEventToReceiptUtils#isBizEventInvalid(BizEvent)} -> if invalid, error</li>
-     *      <li>check that it's not a cart biz: {@link BizEventToReceiptUtils#getTotalNotice(BizEvent, Logger)} == 1 -> if cart, error</li>
+     *      <li>check that it's not a cart biz: {@link BizEventToReceiptUtils#getTotalNotice(BizEvent)} == 1 -> if cart, error</li>
      *      <li>check that the receipt is in one of the 3 manageable states -> if not, error</li>
      *      <li>recreate the receipt from the biz: {@link BizEventToReceiptUtils#createReceipt(BizEvent, BizEventToReceiptService, Logger)} </li>
      *      <li>if everything is OK, it updates the receipt on the cosmos. {@link BizEventToReceiptService#handleSaveReceipt(Receipt)}</li>

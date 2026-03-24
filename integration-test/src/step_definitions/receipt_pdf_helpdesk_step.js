@@ -143,12 +143,12 @@ Given('a receipt with eventId {string} and status {string} stored into receipt d
     assert.strictEqual(receiptsStoreResponse.statusCode, 201);
 });
 
-Given('a biz event with id {string} and status {string} stored on biz-events datastore', async function (id, status) {
+Given('a biz event with id {string} and status DONE stored on biz-events datastore', async function (id) {
     helpdesk_eventId = id;
     // prior cancellation to avoid dirty cases
     await deleteDocumentFromBizEventsDatastore(helpdesk_eventId);
 
-    let bizEventStoreResponse = await createDocumentInBizEventsDatastore(helpdesk_eventId, status);
+    let bizEventStoreResponse = await createDocumentInBizEventsDatastore(helpdesk_eventId);
     assert.strictEqual(bizEventStoreResponse.statusCode, 201);
 });
 
@@ -180,13 +180,13 @@ Given("a list of {int} receipts in status {string} stored into receipt datastore
     }
 });
 
-Given("a list of {int} biz events in status {string} stored into biz-events datastore starting from eventId {string}", async function (numberOfEvents, status, startingId) {
+Given("a list of {int} biz events in status DONE stored into biz-events datastore starting from eventId {string}", async function (numberOfEvents, startingId) {
     for (let i = 0; i < numberOfEvents; i++) {
         let nextEventId = `${startingId}-${i}`;
         // prior cancellation to avoid dirty cases
         await deleteDocumentFromBizEventsDatastore(nextEventId);
 
-        let bizEventStoreResponse = await createDocumentInBizEventsDatastore(nextEventId, status);
+        let bizEventStoreResponse = await createDocumentInBizEventsDatastore(nextEventId);
         assert.strictEqual(bizEventStoreResponse.statusCode, 201);
     }
 });

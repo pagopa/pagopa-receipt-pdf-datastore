@@ -68,7 +68,7 @@ public class RecoverFailedCartReceipt {
      *     <li> check cart receipt {@link CartStatusType}-> if it is no among the processable ones, error</li>
      *     <li> try to retrieve the list of biz events -> if it doesn't find it, error</li>
      *     <li> check that the biz events are valid: {@link BizEventToReceiptUtils#isBizEventInvalid(BizEvent)} -> if invalid, error</li>
-     *     <li> check that the biz events are valid: {@link BizEventToReceiptUtils#getTotalNotice(BizEvent, Logger)} == biz event list size -> if not, error</li>
+     *     <li> check that the biz events are valid: {@link BizEventToReceiptUtils#getTotalNotice(BizEvent)} == biz event list size -> if not, error</li>
      *     <li> recreate the receipt from the biz</li>
      *     <li> if everything is OK, it updates the receipt on the cosmos</li>
      *     <li> if everything is OK, send it to the queue</li>
