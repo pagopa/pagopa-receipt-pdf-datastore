@@ -30,13 +30,19 @@ public class BizEventToReceiptUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(BizEventToReceiptUtils.class);
 
+    private static final String CF_REGEX = "^[A-Z]{6}[0-9LMNPQRSTUV]{2}[ABCDEHLMPRST][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]$";
+    private static final Pattern PATTERN_PIVA = Pattern.compile("^\\d{11}$");
     private static final String REMITTANCE_INFORMATION_REGEX = "/TXT/(.*)";
-    private static final Boolean ECOMMERCE_FILTER_ENABLED = Boolean.parseBoolean(System.getenv().getOrDefault(
-            "ECOMMERCE_FILTER_ENABLED", "true"));
-    private static final List<String> AUTHENTICATED_CHANNELS = Arrays.asList(System.getenv().getOrDefault(
-            "AUTHENTICATED_CHANNELS", "IO,CHECKOUT,WISP,CHECKOUT_CART").split(","));
-    private static final List<String> UNWANTED_REMITTANCE_INFO = Arrays.asList(System.getenv().getOrDefault(
-            "UNWANTED_REMITTANCE_INFO", "pagamento multibeneficiario,pagamento bpay").split(","));
+
+    private static final Pattern PATTERN_CF = Pattern.compile(CF_REGEX, Pattern.CASE_INSENSITIVE);
+    private static final Pattern PATTERN_REMITTANCE_INFO = Pattern.compile(REMITTANCE_INFORMATION_REGEX);
+
+    private static final Boolean ECOMMERCE_FILTER_ENABLED =
+            Boolean.parseBoolean(System.getenv().getOrDefault("ECOMMERCE_FILTER_ENABLED", "true"));
+    private static final List<String> AUTHENTICATED_CHANNELS =
+            Arrays.asList(System.getenv().getOrDefault("AUTHENTICATED_CHANNELS", "IO,CHECKOUT,WISP,CHECKOUT_CART").split(","));
+    private static final List<String> UNWANTED_REMITTANCE_INFO =
+            Arrays.asList(System.getenv().getOrDefault("UNWANTED_REMITTANCE_INFO", "pagamento multibeneficiario,pagamento bpay").split(","));
     private static final List<String> ECOMMERCE = Arrays.asList("CHECKOUT", "CHECKOUT_CART");
 
 
@@ -260,8 +266,7 @@ public class BizEventToReceiptUtils {
 
     private static String formatRemittanceInformation(String remittanceInformation) {
         if (remittanceInformation != null) {
-            Pattern pattern = Pattern.compile(REMITTANCE_INFORMATION_REGEX);
-            Matcher matcher = pattern.matcher(remittanceInformation);
+            Matcher matcher = PATTERN_REMITTANCE_INFO.matcher(remittanceInformation);
             if (matcher.find()) {
                 return matcher.group(1);
             }
@@ -279,10 +284,7 @@ public class BizEventToReceiptUtils {
 
     public static boolean isValidFiscalCode(String fiscalCode) {
         if (fiscalCode != null && !fiscalCode.isEmpty()) {
-            Pattern patternCF = Pattern.compile("^[A-Z]{6}[0-9LMNPQRSTUV]{2}[ABCDEHLMPRST][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]$", Pattern.CASE_INSENSITIVE);
-            Pattern patternPIVA = Pattern.compile("^\\d{11}$");
-
-            return patternCF.matcher(fiscalCode).find() || patternPIVA.matcher(fiscalCode).find();
+            return PATTERN_CF.matcher(fiscalCode).find() || PATTERN_PIVA.matcher(fiscalCode).find();
         }
 
         return false;
