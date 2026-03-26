@@ -284,7 +284,7 @@ public class BizEventToReceiptUtils {
 
     public static boolean isValidFiscalCode(String fiscalCode) {
         if (fiscalCode != null && !fiscalCode.isEmpty()) {
-            return PATTERN_CF.matcher(fiscalCode).find() || PATTERN_PIVA.matcher(fiscalCode).find();
+            return PATTERN_CF.matcher(fiscalCode).matches() || PATTERN_PIVA.matcher(fiscalCode).matches();
         }
 
         return false;
