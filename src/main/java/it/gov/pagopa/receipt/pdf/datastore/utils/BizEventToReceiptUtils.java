@@ -115,7 +115,7 @@ public class BizEventToReceiptUtils {
                     .build();
         }
 
-        if (!hasValidFiscalCode(bizEvent)) {
+        if (!hasAtLeastAValidFiscalCode(bizEvent)) {
             return BizEventValidityCheck.builder()
                     .invalid(true)
                     .error("Biz event is in invalid because debtor's and payer's identifiers are missing or not valid")
@@ -161,7 +161,7 @@ public class BizEventToReceiptUtils {
     public record BizEventValidityCheck(boolean invalid, String error) {
 
     }
-    private static boolean hasValidFiscalCode(BizEvent bizEvent) {
+    private static boolean hasAtLeastAValidFiscalCode(BizEvent bizEvent) {
         if (isBizEventDebtorFiscalCodeValid(bizEvent.getDebtor())) {
             return true;
         }
