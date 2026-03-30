@@ -5,7 +5,7 @@
 
     <groupId>it.gov.pagopa.receipt</groupId>
     <artifactId>receipt-pdf-datastore</artifactId>
-    <version>1.17.8</version>
+    <version>1.17.8-1-PIDM-1733-handle-lower-case-fiscal-code</version>
     <packaging>jar</packaging>
 
     <name>pagopa-receipt-pdf-datastore</name>
