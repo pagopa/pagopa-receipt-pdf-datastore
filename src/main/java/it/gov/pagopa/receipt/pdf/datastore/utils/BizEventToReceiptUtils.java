@@ -3,6 +3,9 @@ package it.gov.pagopa.receipt.pdf.datastore.utils;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
+import it.gov.pagopa.receipt.pdf.datastore.entity.event.Debtor;
+import it.gov.pagopa.receipt.pdf.datastore.entity.event.Payer;
+import it.gov.pagopa.receipt.pdf.datastore.entity.event.TransactionDetails;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.Transfer;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.enumeration.BizEventStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.enumeration.UserType;
@@ -30,13 +33,19 @@ public class BizEventToReceiptUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(BizEventToReceiptUtils.class);
 
+    private static final String CF_REGEX = "^[A-Z]{6}[0-9LMNPQRSTUV]{2}[ABCDEHLMPRST][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]$";
+    private static final Pattern PATTERN_PIVA = Pattern.compile("^\\d{11}$");
     private static final String REMITTANCE_INFORMATION_REGEX = "/TXT/(.*)";
-    private static final Boolean ECOMMERCE_FILTER_ENABLED = Boolean.parseBoolean(System.getenv().getOrDefault(
-            "ECOMMERCE_FILTER_ENABLED", "true"));
-    private static final List<String> AUTHENTICATED_CHANNELS = Arrays.asList(System.getenv().getOrDefault(
-            "AUTHENTICATED_CHANNELS", "IO,CHECKOUT,WISP,CHECKOUT_CART").split(","));
-    private static final List<String> UNWANTED_REMITTANCE_INFO = Arrays.asList(System.getenv().getOrDefault(
-            "UNWANTED_REMITTANCE_INFO", "pagamento multibeneficiario,pagamento bpay").split(","));
+
+    private static final Pattern PATTERN_CF = Pattern.compile(CF_REGEX, Pattern.CASE_INSENSITIVE);
+    private static final Pattern PATTERN_REMITTANCE_INFO = Pattern.compile(REMITTANCE_INFORMATION_REGEX);
+
+    private static final Boolean ECOMMERCE_FILTER_ENABLED =
+            Boolean.parseBoolean(System.getenv().getOrDefault("ECOMMERCE_FILTER_ENABLED", "true"));
+    private static final List<String> AUTHENTICATED_CHANNELS =
+            Arrays.asList(System.getenv().getOrDefault("AUTHENTICATED_CHANNELS", "IO,CHECKOUT,WISP,CHECKOUT_CART").split(","));
+    private static final List<String> UNWANTED_REMITTANCE_INFO =
+            Arrays.asList(System.getenv().getOrDefault("UNWANTED_REMITTANCE_INFO", "pagamento multibeneficiario,pagamento bpay").split(","));
     private static final List<String> ECOMMERCE = Arrays.asList("CHECKOUT", "CHECKOUT_CART");
 
 
@@ -106,7 +115,7 @@ public class BizEventToReceiptUtils {
                     .build();
         }
 
-        if (!hasValidFiscalCode(bizEvent)) {
+        if (!hasAtLeastAValidFiscalCode(bizEvent)) {
             return BizEventValidityCheck.builder()
                     .invalid(true)
                     .error("Biz event is in invalid because debtor's and payer's identifiers are missing or not valid")
@@ -150,24 +159,34 @@ public class BizEventToReceiptUtils {
 
     @Builder
     public record BizEventValidityCheck(boolean invalid, String error) {
+
     }
-
-    private static boolean hasValidFiscalCode(BizEvent bizEvent) {
-        boolean isValidDebtor = false;
-        boolean isValidPayer = false;
-
-        if (bizEvent.getDebtor() != null && isValidFiscalCode(bizEvent.getDebtor().getEntityUniqueIdentifierValue())) {
-            isValidDebtor = true;
+    private static boolean hasAtLeastAValidFiscalCode(BizEvent bizEvent) {
+        if (isBizEventDebtorFiscalCodeValid(bizEvent.getDebtor())) {
+            return true;
         }
         if (isValidChannelOrigin(bizEvent)) {
-            if (bizEvent.getTransactionDetails() != null && bizEvent.getTransactionDetails().getUser() != null && isValidFiscalCode(bizEvent.getTransactionDetails().getUser().getFiscalCode())) {
-                isValidPayer = true;
+            if (isBizEventUserFiscalCodeValid(bizEvent.getTransactionDetails())) {
+                return true;
             }
-            if (bizEvent.getPayer() != null && isValidFiscalCode(bizEvent.getPayer().getEntityUniqueIdentifierValue())) {
-                isValidPayer = true;
-            }
+
+            return isBizEventPayerFiscalCodeValid(bizEvent.getPayer());
         }
-        return isValidDebtor || isValidPayer;
+        return false;
+    }
+
+    public static boolean isBizEventDebtorFiscalCodeValid(Debtor debtor) {
+        return debtor != null && isValidFiscalCode(debtor.getEntityUniqueIdentifierValue());
+    }
+
+    public static boolean isBizEventPayerFiscalCodeValid(Payer payer) {
+        return payer != null && isValidFiscalCode(payer.getEntityUniqueIdentifierValue());
+    }
+
+    public static boolean isBizEventUserFiscalCodeValid(TransactionDetails transactionDetails) {
+        return transactionDetails != null
+                && transactionDetails.getUser() != null
+                && isValidFiscalCode(transactionDetails.getUser().getFiscalCode());
     }
 
     public static Integer getTotalNotice(BizEvent bizEvent) {
@@ -260,8 +279,7 @@ public class BizEventToReceiptUtils {
 
     private static String formatRemittanceInformation(String remittanceInformation) {
         if (remittanceInformation != null) {
-            Pattern pattern = Pattern.compile(REMITTANCE_INFORMATION_REGEX);
-            Matcher matcher = pattern.matcher(remittanceInformation);
+            Matcher matcher = PATTERN_REMITTANCE_INFO.matcher(remittanceInformation);
             if (matcher.find()) {
                 return matcher.group(1);
             }
@@ -279,10 +297,7 @@ public class BizEventToReceiptUtils {
 
     public static boolean isValidFiscalCode(String fiscalCode) {
         if (fiscalCode != null && !fiscalCode.isEmpty()) {
-            Pattern patternCF = Pattern.compile("^[A-Z]{6}[0-9LMNPQRSTUV]{2}[ABCDEHLMPRST][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]$");
-            Pattern patternPIVA = Pattern.compile("^[0-9]{11}$");
-
-            return patternCF.matcher(fiscalCode).find() || patternPIVA.matcher(fiscalCode).find();
+            return PATTERN_CF.matcher(fiscalCode).matches() || PATTERN_PIVA.matcher(fiscalCode).matches();
         }
 
         return false;
