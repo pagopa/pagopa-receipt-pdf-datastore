@@ -4,7 +4,9 @@ import com.azure.cosmos.CosmosClient;
 import com.azure.cosmos.CosmosClientBuilder;
 import com.azure.cosmos.CosmosContainer;
 import com.azure.cosmos.CosmosDatabase;
-import com.azure.cosmos.models.*;
+import com.azure.cosmos.models.CosmosItemResponse;
+import com.azure.cosmos.models.CosmosQueryRequestOptions;
+import com.azure.cosmos.models.FeedResponse;
 import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReceiptError;
@@ -65,22 +67,8 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      */
     @Override
     public Receipt getReceiptDocument(String eventId) throws ReceiptNotFoundException {
-        try {
-            CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
-            CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
-
-            CosmosItemResponse<Receipt> response = cosmosContainer.readItem(
-                    eventId,
-                    new PartitionKey(eventId),
-                    Receipt.class
-            );
-            return response.getItem();
-        } catch (com.azure.cosmos.CosmosException e) {
-            if (e.getStatusCode() == 404) {
-                throw new ReceiptNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG);
-            }
-            throw e;
-        }
+        return getDocumentByFilter(containerId, "eventId", eventId, Receipt.class)
+                .orElseThrow(() -> new ReceiptNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG));
     }
 
     /**
@@ -114,11 +102,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
 
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
-        return cosmosContainer.createItem(
-                receipt,
-                new PartitionKey(receipt.getEventId()),
-                new CosmosItemRequestOptions()
-        );
+        return cosmosContainer.createItem(receipt);
     }
 
     /**
@@ -129,11 +113,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
         CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
-        return cosmosContainer.upsertItem(
-                receipt,
-                new PartitionKey(receipt.getEventId()),
-                new CosmosItemRequestOptions()
-        );
+        return cosmosContainer.upsertItem(receipt);
     }
 
     /**
