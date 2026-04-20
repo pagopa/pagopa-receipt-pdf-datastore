@@ -3,6 +3,8 @@ package it.gov.pagopa.receipt.pdf.datastore.client.impl;
 import com.azure.cosmos.CosmosClient;
 import com.azure.cosmos.CosmosContainer;
 import com.azure.cosmos.CosmosDatabase;
+import com.azure.cosmos.CosmosException;
+import com.azure.cosmos.models.CosmosItemResponse;
 import com.azure.cosmos.models.FeedResponse;
 import com.azure.cosmos.util.CosmosPagedIterable;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
@@ -13,8 +15,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -50,6 +54,8 @@ class ReceiptCosmosClientImplTest {
     @Mock
     private Stream<Receipt> mockReceiptStream;
     @Mock
+    private CosmosItemResponse<Object> cosmosItemResponse;
+    @Mock
     private Stream<ReceiptError> mockReceiptErrorStream;
 
     @InjectMocks
@@ -73,9 +79,8 @@ class ReceiptCosmosClientImplTest {
 
         when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
-        when(mockContainer.queryItems(anyString(), any(), eq(Receipt.class))).thenReturn(mockIterable);
-        when(mockIterable.stream()).thenReturn(mockReceiptStream);
-        when(mockReceiptStream.findFirst()).thenReturn(Optional.of(receipt));
+        when(cosmosItemResponse.getItem()).thenReturn(receipt);
+        when(mockContainer.readItem(any(), any(), any())).thenReturn(cosmosItemResponse);
 
         Receipt result = assertDoesNotThrow(() -> sut.getReceiptDocument(RECEIPT_ID));
 
@@ -86,9 +91,10 @@ class ReceiptCosmosClientImplTest {
     void getReceiptDocumentKo() {
         when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
-        when(mockContainer.queryItems(anyString(), any(), eq(Receipt.class))).thenReturn(mockIterable);
-        when(mockIterable.stream()).thenReturn(mockReceiptStream);
-        when(mockReceiptStream.findFirst()).thenReturn(Optional.empty());
+        var mockException = Mockito.mock(CosmosException.class);
+        when(mockException.getStatusCode()).thenReturn(404);
+        when(cosmosItemResponse.getItem()).thenThrow(mockException);
+        when(mockContainer.readItem(any(), any(), any())).thenReturn(cosmosItemResponse);
 
         assertThrows(ReceiptNotFoundException.class, () -> sut.getReceiptDocument("an invalid receipt id"));
     }
@@ -116,7 +122,7 @@ class ReceiptCosmosClientImplTest {
 
         assertDoesNotThrow(() -> sut.saveReceipts(new Receipt()));
 
-        verify(mockContainer).createItem(any());
+        verify(mockContainer).createItem(any(), any(), any());
     }
 
     @Test
@@ -126,7 +132,7 @@ class ReceiptCosmosClientImplTest {
 
         assertDoesNotThrow(() -> sut.updateReceipts(new Receipt()));
 
-        verify(mockContainer).upsertItem(any());
+        verify(mockContainer).upsertItem(any(), any(), any());
     }
 
     @Test

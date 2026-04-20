@@ -98,7 +98,7 @@ microservice-chart: &microservice-chart
     COSMOS_RECEIPT_READ_REGION: "West Europe"
     COSMOS_RECEIPT_DB_NAME: "db"
     COSMOS_BIZ_EVENT_DB_NAME: "db"
-    COSMOS_RECEIPT_CONTAINER_NAME: "receipts"
+    COSMOS_RECEIPT_CONTAINER_NAME: "receipts-pk"
     CART_FOR_RECEIPT_CONTAINER_NAME: "cart-for-receipts"
     CART_RECEIPTS_MESSAGE_ERRORS_CONTAINER_NAME: "cart-receipts-message-errors"
     COSMOS_RECEIPT_ERROR_CONTAINER_NAME: "receipts-message-errors"
