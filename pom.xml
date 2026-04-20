@@ -5,7 +5,7 @@
 
     <groupId>it.gov.pagopa.receipt</groupId>
     <artifactId>receipt-pdf-datastore</artifactId>
-    <version>1.17.9-1-PAGOPA-3567-pr-aggiornamento-container-name</version>
+    <version>1.17.9-2-PAGOPA-3567-pr-aggiornamento-container-name</version>
     <packaging>jar</packaging>
 
     <name>pagopa-receipt-pdf-datastore</name>
