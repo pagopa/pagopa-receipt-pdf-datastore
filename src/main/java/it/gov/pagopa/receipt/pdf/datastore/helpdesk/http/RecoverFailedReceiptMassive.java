@@ -69,7 +69,7 @@ public class RecoverFailedReceiptMassive {
             @CosmosDBOutput(
                     name = "ReceiptDatastore",
                     databaseName = "db",
-                    containerName = "receipts",
+                    containerName = "receipts-pk",
                     connection = "COSMOS_RECEIPTS_CONN_STRING")
             OutputBinding<List<Receipt>> documentdb,
             final ExecutionContext context
