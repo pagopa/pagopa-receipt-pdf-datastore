@@ -1,5 +1,5 @@
-export const SIM_TEST_CF = "AAAAAA00A00A000A";
-export const TOKENIZED_SIM_TEST_CF = "cd07268c-73e8-4df4-8305-a35085e32eff";
+export const SIM_TEST_CF = "JHNDOE00A01B157N";
+export const TOKENIZED_SIM_TEST_CF = "4cdaa80f-fc52-45f5-a413-d6ebc4d0759e";
 
 export function randomString(length, charset) {
     let res = '';
@@ -33,42 +33,23 @@ export function createEvent(id, customCF) {
 			"officeName": "office"
 		},
 		"psp": {
-			"idPsp": "60000000001",
-			"idBrokerPsp": "60000000001",
-			"idChannel": "60000000001_08",
+			"idPsp": "ABI36935",
+			"idBrokerPsp": "03339200374",
+			"idChannel": "03339200374_01",
 			"psp": "PSP Paolo",
-			"pspFiscalCode": "CF60000000006",
-			"channelDescription": "app"
 		},
 		"debtor": {
-			"fullName": "paGetPaymentName",
+			"fullName": "Debtor name",
 			"entityUniqueIdentifierType": "G",
-			"entityUniqueIdentifierValue": customCF ? customCF : randomString(11, "0123456789"),
-			"streetName": "paGetPaymentStreet",
-			"civicNumber": "paGetPayment99",
-			"postalCode": "20155",
-			"city": "paGetPaymentCity",
-			"stateProvinceRegion": "paGetPaymentState",
-			"country": "IT",
-			"eMail": "paGetPayment@test.it"
+			"entityUniqueIdentifierValue": customCF ? customCF : randomString(11, "0123456789")
 		},
 		"payer": {
-			"fullName": "name",
+			"fullName": "Payer name",
 			"entityUniqueIdentifierType": "G",
-			"entityUniqueIdentifierValue": "JHNDOE00A01F205S",
-			"streetName": "street",
-			"civicNumber": "civic",
-			"postalCode": "postal",
-			"city": "city",
-			"stateProvinceRegion": "state",
-			"country": "IT",
-			"eMail": "prova@test.it"
+			"entityUniqueIdentifierValue": "JHNDOE00A01F205S"
 		},
 		"paymentInfo": {
-			"paymentDateTime": "2023-03-17T16:37:36.955813",
-			"applicationDate": "2021-12-12",
-			"transferDate": "2021-12-11",
-			"dueDate": "2021-12-12",
+			"paymentDateTime": getCurrentDateTime5Digits(),
 			"paymentToken": "9851395f09544a04b288202299193ca6",
 			"amount": "10.0",
 			"fee": "2.0",
@@ -76,13 +57,7 @@ export function createEvent(id, customCF) {
 			"paymentMethod": "creditCard",
 			"touchpoint": "app",
 			"remittanceInformation": "TARI 2021",
-			"description": "TARI 2021",
-			"metadata": [
-				{
-					"key": "1",
-					"value": "22"
-				}
-			]
+			"description": "TARI 2021"
 		},
 		"transferList": [
 			{
@@ -97,8 +72,10 @@ export function createEvent(id, customCF) {
 		"transactionDetails": {
 			"user": {
 				"fullName": "John Doe",
+				"name": "John",
+				"surname": "Doe",
 				"type": "F",
-				"fiscalCode": "JHNDOE00A01F205N",
+				"fiscalCode": "JHNDOE00A01F205S",
 				"notificationEmail": "john.doe@mail.it",
 				"userId": "1234",
 				"userStatus": "11",
@@ -107,9 +84,30 @@ export function createEvent(id, customCF) {
 			"transaction": {
 				"idTransaction": "123456",
 				"transactionId": "123456",
-				"grandTotal": 0,
+				"grandTotal": 1200,
 				"amount": 1000,
-				"fee": 0
+				"fee": 200,
+				"creationDate": getCurrentDateTime9DigitsZ(),
+				"origin": "IO"
+			},
+			"wallet": {
+				"idWallet": 125714007,
+				"walletType": "Card",
+				"enableableFunctions": ["pagoPA", "BPD", "FA"],
+				"pagoPa": true,
+				"onboardingChannel": "IO",
+				"favourite": false,
+				"createDate": "2022-12-22T13:07:25Z",
+				"info": {
+					"type": "CP",
+					"holder": "Card Holder name",
+					"blurredNumber": "0403",
+					"hashPan": "e88aadfd9f40e1482615fd3c8c44f05c53f93aed1bcea69e82b3e5e27668f822",
+					"expireMonth": "06",
+					"expireYear": "2026",
+					"brand": "MASTERCARD",
+					"brandLogo": "https://wisp2.pagopa.gov.it/wallet/assets/img/creditcard/carta_visa.png"
+				}
 			}
 		},
 		"timestamp": 1679067463501,
@@ -121,4 +119,58 @@ export function createEvent(id, customCF) {
 		"eventRetryEnrichmentCount": 0
 	}
 	return json_event
+}
+
+/ Utility per padding con zeri a sinistra
+function padLeft(num, size) {
+	return String(num).padStart(size, '0');
+}
+
+/**
+ * Formato locale:
+ * "YYYY-MM-DDTHH:mm:ss.SSSSS"
+ * Esempio: "2025-11-02T11:14:57.16758"
+ */
+function getCurrentDateTime5Digits() {
+	const now = new Date();
+
+	const year = now.getFullYear();
+	const month = padLeft(now.getMonth() + 1, 2);
+	const day = padLeft(now.getDate(), 2);
+	const hour = padLeft(now.getHours(), 2);
+	const minute = padLeft(now.getMinutes(), 2);
+	const second = padLeft(now.getSeconds(), 2);
+
+	const millis = padLeft(now.getMilliseconds(), 3); // "SSS"
+
+	// 2 cifre extra semplici: riuso delle prime 2 cifre dei ms
+	const extra = millis.slice(0, 2); // es. "167" -> "16"
+
+	const fraction5 = millis + extra; // "SSSSS"
+
+	return `${year}-${month}-${day}T${hour}:${minute}:${second}.${fraction5}`;
+}
+
+/**
+ * Formato UTC:
+ * "YYYY-MM-DDTHH:mm:ss.SSSSSSSSSZ"
+ * Esempio: "2025-11-02T10:14:57.218496702Z"
+ */
+function getCurrentDateTime9DigitsZ() {
+	const now = new Date();
+
+	const year = now.getUTCFullYear();
+	const month = padLeft(now.getUTCMonth() + 1, 2);
+	const day = padLeft(now.getUTCDate(), 2);
+	const hour = padLeft(now.getUTCHours(), 2);
+	const minute = padLeft(now.getUTCMinutes(), 2);
+	const second = padLeft(now.getUTCSeconds(), 2);
+
+	const millis = padLeft(now.getUTCMilliseconds(), 3); // "SSS"
+
+	// Ripetiamo i ms finché non arriviamo a 9 cifre
+	// es. "218" -> "218218218" (9 cifre)
+	const fraction9 = (millis + millis + millis).slice(0, 9);
+
+	return `${year}-${month}-${day}T${hour}:${minute}:${second}.${fraction9}Z`;
 }
