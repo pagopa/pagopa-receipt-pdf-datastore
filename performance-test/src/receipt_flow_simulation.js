@@ -40,11 +40,15 @@ export default function () {
 	// publish event
 	let tag = { eventHubMethod: "SaveBizEvent" };
 	const id = randomString(15, "abcdefghijklmnopqrstuvwxyz0123456789");
+	console.log("timestamp ", testExecutionTimestamp);
 	let event = createEvent(`receipts-flow-perf-test-${testExecutionTimestamp}-${id}`, SIM_TEST_CF);
 
 	let r = createDocument(bizEventCosmosDBURI, bizEventDatabaseID, bizEventContainerID, bizEventCosmosDBPrimaryKey, event, id);
 
 	console.log("PublishEvent call, Status " + r.status);
+	if (r.status !== 201) {
+		console.log("PublishEvent call failed, " + r);
+	}
 
 	check(r, {
 		'PublishEvent status is 201': (_response) => r.status === 201,
