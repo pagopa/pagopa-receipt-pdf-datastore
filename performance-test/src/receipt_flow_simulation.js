@@ -47,7 +47,7 @@ export default function () {
 
 	console.log("PublishEvent call, Status " + r.status);
 	if (r.status !== 201) {
-		console.log("PublishEvent call failed, " + r);
+		console.log("PublishEvent call failed, " + r.data());
 	}
 
 	check(r, {
