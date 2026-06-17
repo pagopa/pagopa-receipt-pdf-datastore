@@ -121,7 +121,7 @@ export function createEvent(id, customCF) {
 	return json_event
 }
 
-/ Utility per padding con zeri a sinistra
+// Utility per padding con zeri a sinistra
 function padLeft(num, size) {
 	return String(num).padStart(size, '0');
 }
