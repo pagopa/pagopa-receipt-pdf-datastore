@@ -1,5 +1,7 @@
 import { bizeventContainer, receiptContainer } from "./scripts_common.js";
-import { TOKENIZED_SIM_TEST_CF } from '../modules/common.js';
+
+const testExecutionTimestamp = process.env.PERF_TEST_TIMESTAMP;
+const idPrefix = `receipts-flow-perf-test-${testExecutionTimestamp}`;
 
 function calculatePercentile(array, percentile, suffix) {
     const currentIndex = 0;
@@ -37,8 +39,8 @@ const reviewReceiptsTimeToProcess = async () => {
     let receiptsCompleted = 0;
 
     let { resources } = await receiptContainer.items.query({
-        query: "SELECT * from c WHERE c.eventData.debtorFiscalCode = @fiscalCode",
-        parameters: [{ name: "@fiscalCode", value: TOKENIZED_SIM_TEST_CF }]
+        query: "SELECT * from c WHERE STARTWITH(c.eventId, @idPrefix)",
+        parameters: [{ name: "@idPrefix", value: idPrefix }]
     }).fetchAll();
 
     for (const el of resources) {

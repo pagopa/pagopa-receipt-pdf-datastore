@@ -18,7 +18,7 @@ const bizEventCosmosDBURI = `${vars.bizEventCosmosDBURI}`;
 const bizEventDatabaseID = `${vars.bizEventDatabaseID}`;
 const bizEventContainerID = `${vars.bizEventContainerID}`;
 const bizEventCosmosDBPrimaryKey = `${__ENV.BIZEVENT_COSMOS_DB_SUBSCRIPTION_KEY}`;
-const testExecutionTimestamp = Date.now();
+const testExecutionTimestamp = `${__ENV.PERF_TEST_TIMESTAMP}`;
 
 export function setup() {
 	// 2. setup code (once)

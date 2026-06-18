@@ -8,6 +8,7 @@ services:
     environment:
       - BIZEVENT_COSMOS_DB_SUBSCRIPTION_KEY=${biz_event_cosmos_key}
       - RECEIPT_COSMOS_DB_SUBSCRIPTION_KEY=${receipts_cosmos_key}
+      - PERF_TEST_TIMESTAMP=${run_performance_test_timestamp}
       - VARS=${env}.environment.json
       - TEST_TYPE=/scripts/test-types/${type}.json
       - K6_OUT=influxdb=http://nginx:8086/${db_name}
