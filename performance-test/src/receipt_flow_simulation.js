@@ -39,16 +39,14 @@ export function teardown(data) {
 export default function () {
 	// publish event
 	let tag = { eventHubMethod: "SaveBizEvent" };
-	const id = randomString(15, "abcdefghijklmnopqrstuvwxyz0123456789");
-	console.log("timestamp ", testExecutionTimestamp);
-	let event = createEvent(`receipts-flow-perf-test-${testExecutionTimestamp}-${id}`, SIM_TEST_CF);
+	const randomSuffix = randomString(15, "abcdefghijklmnopqrstuvwxyz0123456789");
+	const id = `receipts-flow-perf-test-${testExecutionTimestamp}-${randomSuffix}`;
+
+	let event = createEvent(id, SIM_TEST_CF);
 
 	let r = createDocument(bizEventCosmosDBURI, bizEventDatabaseID, bizEventContainerID, bizEventCosmosDBPrimaryKey, event, id);
 
 	console.log("PublishEvent call, Status " + r.status);
-	if (r.status !== 201) {
-		console.log("PublishEvent call failed, " + r.data());
-	}
 
 	check(r, {
 		'PublishEvent status is 201': (_response) => r.status === 201,
