@@ -75,8 +75,6 @@ const reviewReceiptsTimeToProcess = async () => {
                     minTimeToGenerate = minTimeToGenerate === null || timeToGenerate < minTimeToGenerate ? timeToGenerate : minTimeToGenerate;
                     maxTimeToGenerate = maxTimeToGenerate === null || timeToGenerate > maxTimeToGenerate ? timeToGenerate : maxTimeToGenerate;
 
-
-
                     if (el.notified_at) {
                         let timeToNotify = el.notified_at - el.generated_at;
 
@@ -92,7 +90,6 @@ const reviewReceiptsTimeToProcess = async () => {
 
                 } else {
                     notGenerated += 1;
-                    notNotified += 1;
                 }
 
             } else {
@@ -106,7 +103,7 @@ const reviewReceiptsTimeToProcess = async () => {
     console.log("/////////////////////////////////");
     console.log(`total receipts...................: ${totalReceipts}`);
     console.log(`receipts processed completely....: ${receiptsCompleted}`);
-    console.log(`receipts failed to complete......: ${notNotified}`);
+    console.log(`receipts failed to complete......: ${notInserted + notGenerated+ notNotified}`);
     console.log("--------------------------------");
     console.log(`receipts inserted................: ${arrayTimeToInsert.length}`);
     console.log(`receipts generated...............: ${arrayTimeToGenerate.length}`);
