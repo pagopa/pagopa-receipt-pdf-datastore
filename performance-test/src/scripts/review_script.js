@@ -2,7 +2,7 @@ import { bizeventContainer, receiptContainer } from "./scripts_common.js";
 
 const testExecutionTimestamp = process.env.PERF_TEST_TIMESTAMP;
 const idPrefix = `receipts-flow-perf-test-${testExecutionTimestamp}`;
-
+const PAGE_SIZE = 100;
 function calculatePercentile(array, percentile, suffix) {
     const currentIndex = 0;
     const totalCount = array.reduce((count, currentValue) => {
@@ -37,65 +37,74 @@ const reviewReceiptsTimeToProcess = async () => {
     let maxTimeToNotify = null;
 
     let receiptsCompleted = 0;
+    let totalReceipts = 0;
 
-    let { resources } = await receiptContainer.items.query({
-        query: "SELECT * from c WHERE STARTWITH(c.eventId, @idPrefix)",
-        parameters: [{ name: "@idPrefix", value: idPrefix }]
-    }).fetchAll();
+    const queryIterator = receiptContainer.items.query(
+        {
+            query: "SELECT * from c WHERE STARTSWITH(c.eventId, @idPrefix)",
+            parameters: [{ name: "@idPrefix", value: idPrefix }]
+        },
+        { maxItemCount: PAGE_SIZE }
+    );
 
-    for (const el of resources) {
-        console.log("Processing receipt with id: " + el.id);
-        if (el.inserted_at) {
-            let bizEventResponse = await bizeventContainer.item(el.eventId, el.eventId).read();
-            let bizEvent = bizEventResponse.resource;
+    while (queryIterator.hasMoreResults()) {
+        const { resources } = await queryIterator.fetchNext();
+        totalReceipts += resources?.length ?? 0;
 
-            if (bizEvent?._ts > 0) {
-                //BizEvent ts is in seconds
-                let timeToInsert = el.inserted_at - (bizEvent._ts * 1000);
+        for (const el of resources) {
+            console.log("Processing receipt with id: " + el.id);
+            if (el.inserted_at) {
+                let bizEventResponse = await bizeventContainer.item(el.eventId, el.eventId).read();
+                let bizEvent = bizEventResponse.resource;
 
-                arrayTimeToInsert.push(timeToInsert);
-                totalTimeToInsert += timeToInsert;
-                minTimeToInsert = minTimeToInsert === null || timeToInsert < minTimeToInsert ? timeToInsert : minTimeToInsert;
-                maxTimeToInsert = maxTimeToInsert === null || timeToInsert > maxTimeToInsert ? timeToInsert : maxTimeToInsert;
-            }
+                if (bizEvent?._ts > 0) {
+                    //BizEvent ts is in seconds
+                    let timeToInsert = el.inserted_at - (bizEvent._ts * 1000);
 
-            if (el.generated_at) {
-                let timeToGenerate = el.generated_at - el.inserted_at;
+                    arrayTimeToInsert.push(timeToInsert);
+                    totalTimeToInsert += timeToInsert;
+                    minTimeToInsert = minTimeToInsert === null || timeToInsert < minTimeToInsert ? timeToInsert : minTimeToInsert;
+                    maxTimeToInsert = maxTimeToInsert === null || timeToInsert > maxTimeToInsert ? timeToInsert : maxTimeToInsert;
+                }
 
-                arrayTimeToGenerate.push(timeToGenerate);
-                totalTimeToGenerate += timeToGenerate;
-                minTimeToGenerate = minTimeToGenerate === null || timeToGenerate < minTimeToGenerate ? timeToGenerate : minTimeToGenerate;
-                maxTimeToGenerate = maxTimeToGenerate === null || timeToGenerate > maxTimeToGenerate ? timeToGenerate : maxTimeToGenerate;
+                if (el.generated_at) {
+                    let timeToGenerate = el.generated_at - el.inserted_at;
+
+                    arrayTimeToGenerate.push(timeToGenerate);
+                    totalTimeToGenerate += timeToGenerate;
+                    minTimeToGenerate = minTimeToGenerate === null || timeToGenerate < minTimeToGenerate ? timeToGenerate : minTimeToGenerate;
+                    maxTimeToGenerate = maxTimeToGenerate === null || timeToGenerate > maxTimeToGenerate ? timeToGenerate : maxTimeToGenerate;
 
 
 
-                if (el.notified_at) {
-                    let timeToNotify = el.notified_at - el.generated_at;
+                    if (el.notified_at) {
+                        let timeToNotify = el.notified_at - el.generated_at;
 
-                    arrayTimeToNotify.push(timeToNotify);
-                    totalTimeToNotify += timeToNotify;
-                    minTimeToNotify = minTimeToNotify === null || timeToNotify < minTimeToNotify ? timeToNotify : minTimeToNotify;
-                    maxTimeToNotify = maxTimeToNotify === null || timeToNotify > maxTimeToNotify ? timeToNotify : maxTimeToNotify;
+                        arrayTimeToNotify.push(timeToNotify);
+                        totalTimeToNotify += timeToNotify;
+                        minTimeToNotify = minTimeToNotify === null || timeToNotify < minTimeToNotify ? timeToNotify : minTimeToNotify;
+                        maxTimeToNotify = maxTimeToNotify === null || timeToNotify > maxTimeToNotify ? timeToNotify : maxTimeToNotify;
 
-                    receiptsCompleted += 1;
+                        receiptsCompleted += 1;
+                    } else {
+                        notNotified += 1;
+                    }
+
                 } else {
+                    notGenerated += 1;
                     notNotified += 1;
                 }
 
             } else {
-                notGenerated += 1;
-                notNotified += 1;
+                notInserted += 1;
             }
-
-        } else {
-            notInserted += 1;
         }
     }
 
     console.log("/////////////////////////////////");
     console.log("/----------- METRICS -----------/");
     console.log("/////////////////////////////////");
-    console.log(`total receipts...................: ${resources?.length ?? 0}`);
+    console.log(`total receipts...................: ${totalReceipts}`);
     console.log(`receipts processed completely....: ${receiptsCompleted}`);
     console.log(`receipts failed to complete......: ${notNotified}`);
     console.log("--------------------------------");
