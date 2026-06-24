@@ -113,10 +113,10 @@ microservice-chart: &microservice-chart
     OTEL_LOGS_EXPORTER: none
     OTEL_TRACES_SAMPLER: "always_on"
     AZURE_FUNCTIONS_MESH_JAVA_OPTS: "-javaagent:/home/site/wwwroot/jmx_prometheus_javaagent-0.19.0.jar=12345:/home/site/wwwroot/config.yaml -Xmx768m -XX:+UseG1GC"
-    RECOVER_NOT_NOTIFY_SCHEDULE: "0 30 */2 * * *"
-    RECOVER_NOT_NOTIFY_CART_SCHEDULE: "0 30 */2 * * *"
-    RECOVER_FAILED_CRON: "0 0 */2 * * *"
-    RECOVER_CART_FAILED_CRON: "0 0 */2 * * *"
+    RECOVER_NOT_NOTIFY_SCHEDULE: "0 30 0,2,4,6,16,18,20,22 * * *" # Runs every 2 hours at minute 30, every day, excluding 08:00-15:59
+    RECOVER_NOT_NOTIFY_CART_SCHEDULE: "0 30 0,2,4,6,16,18,20,22 * * *" # Runs every 2 hours at minute 30, every day, excluding 08:00-15:59
+    RECOVER_FAILED_CRON: "0 0 0,2,4,6,16,18,20,22 * * *" # Runs every 2 hours on the hour, every day, excluding 08:00-15:59
+    RECOVER_CART_FAILED_CRON: "0 0 0,2,4,6,16,18,20,22 * * *" # Runs every 2 hours on the hour, every day, excluding 08:00-15:59
     FAILED_AUTORECOVER_ENABLED: "true"
     FAILED_CART_AUTORECOVER_ENABLED: "true"
     NOT_NOTIFIED_AUTORECOVER_ENABLED: "true"
