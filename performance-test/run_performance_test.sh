@@ -6,6 +6,7 @@ SCRIPT=$3
 DB_NAME=$4
 BIZEVENT_COSMOS_DB_SUBSCRIPTION_KEY=$5
 RECEIPT_COSMOS_DB_SUBSCRIPTION_KEY=$6
+PERF_TEST_TIMESTAMP=$7
 
 if [ -z "$ENVIRONMENT" ]
 then
@@ -30,6 +31,7 @@ export script=${SCRIPT}
 export db_name=${DB_NAME}
 export biz_event_cosmos_key=${BIZEVENT_COSMOS_DB_SUBSCRIPTION_KEY}
 export receipts_cosmos_key=${RECEIPT_COSMOS_DB_SUBSCRIPTION_KEY}
+export run_performance_test_timestamp=${PERF_TEST_TIMESTAMP}
 
 stack_name=$(cd .. && basename "$PWD")
 docker compose -p "${stack_name}-k6" up -d --remove-orphans --force-recreate --build

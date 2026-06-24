@@ -37,6 +37,7 @@ parameters:
       - pagopa_receipt_pdf_datastorek6
 
 variables:
+  runTimestamp: $[ format('{0:yyyyMMddHHmm}', pipeline.startTime) ]
   ${{ if eq(parameters['ENVIRONMENT'], 'dev') }}:
     receiptCosmosSubscriptionKey: "$(DEV_RECEIPT_COSMOS_DB_SUBSCRIPTION_KEY)"
     bizEventCosmosSubscriptionKey: "$(DEV_BIZEVENT_COSMOS_DB_SUBSCRIPTION_KEY)"
@@ -62,11 +63,12 @@ steps:
     displayName: Pull k6 image
   - script: |
       cd ./performance-test
-      sh ./run_performance_test.sh ${{ parameters.ENVIRONMENT }} ${{ parameters.TEST_TYPE }} ${{ parameters.SCRIPT }} ${{ parameters.DB_NAME }} $BIZEVENT_COSMOS_SUBSCRIPTION_KEY $RECEIPT_COSMOS_SUBSCRIPTION_KEY
+      sh ./run_performance_test.sh ${{ parameters.ENVIRONMENT }} ${{ parameters.TEST_TYPE }} ${{ parameters.SCRIPT }} ${{ parameters.DB_NAME }} $BIZEVENT_COSMOS_SUBSCRIPTION_KEY $RECEIPT_COSMOS_SUBSCRIPTION_KEY $PERF_TEST_TIMESTAMP
     displayName: Run k6 ${{ parameters.SCRIPT }} on ${{ parameters.ENVIRONMENT }}
     env:
-      RECEIPT_COSMOS_SUBSCRIPTION_KEY: ${{ variables.receiptCosmosSubscriptionKey }}
-      BIZEVENT_COSMOS_SUBSCRIPTION_KEY: ${{ variables.bizEventCosmosSubscriptionKey }}
+      RECEIPT_COSMOS_SUBSCRIPTION_KEY: $(receiptCosmosSubscriptionKey)
+      BIZEVENT_COSMOS_SUBSCRIPTION_KEY: $(bizEventCosmosSubscriptionKey)
+      PERF_TEST_TIMESTAMP: $(runTimestamp)
   - script: |
       sleep ${{ parameters.SLEEP_INTERVAL}}
     displayName: Wait receipt to be processed
@@ -79,14 +81,16 @@ steps:
       -e RECEIPT_COSMOS_CONN_STRING=${RECEIPT_COSMOS_CONN_STRING} \
       -e BIZEVENT_COSMOS_CONN_STRING=${BIZEVENT_COSMOS_CONN_STRING} \
       -e ENVIRONMENT_STRING="${ENVIRONMENT_STRING}" \
+      -e PERF_TEST_TIMESTAMP="${PERF_TEST_TIMESTAMP}" \
       exec-node
     displayName: Run Receipts Timestamp Review
     condition: ${{ eq(parameters['SCRIPT'], 'receipt_flow_simulation') }}
     env:
-      RECEIPT_COSMOS_CONN_STRING: ${{ variables.receiptCosmosConnectionString }}
-      BIZEVENT_COSMOS_CONN_STRING: ${{ variables.bizeventCosmosConnectionString }}
-      BLOB_STORAGE_CONN_STRING: ${{ variables.blobStorageConnectionString }}
+      RECEIPT_COSMOS_CONN_STRING: $(receiptCosmosConnectionString)
+      BIZEVENT_COSMOS_CONN_STRING: $(bizeventCosmosConnectionString)
+      BLOB_STORAGE_CONN_STRING: $(blobStorageConnectionString)
       ENVIRONMENT_STRING: ${{ parameters.ENVIRONMENT }}
+      PERF_TEST_TIMESTAMP: $(runTimestamp)
 #  - script: |
 #      cd ./performance-test/src
 #      docker build -f ./DockerfileTeardown -t exec-node .

@@ -80,7 +80,7 @@ public class BizEventToReceipt {
             @CosmosDBOutput(
                     name = "ReceiptDatastore",
                     databaseName = "db",
-                    containerName = "receipts",
+                    containerName = "receipts-index",
                     connection = "COSMOS_RECEIPTS_CONN_STRING")
             OutputBinding<List<Receipt>> documentdb,
             @CosmosDBOutput(

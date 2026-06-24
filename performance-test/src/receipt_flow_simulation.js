@@ -18,6 +18,7 @@ const bizEventCosmosDBURI = `${vars.bizEventCosmosDBURI}`;
 const bizEventDatabaseID = `${vars.bizEventDatabaseID}`;
 const bizEventContainerID = `${vars.bizEventContainerID}`;
 const bizEventCosmosDBPrimaryKey = `${__ENV.BIZEVENT_COSMOS_DB_SUBSCRIPTION_KEY}`;
+const testExecutionTimestamp = `${__ENV.PERF_TEST_TIMESTAMP}`;
 
 export function setup() {
 	// 2. setup code (once)
@@ -38,10 +39,11 @@ export function teardown(data) {
 export default function () {
 	// publish event
 	let tag = { eventHubMethod: "SaveBizEvent" };
-	const id = randomString(15, "abcdefghijklmnopqrstuvwxyz0123456789");
+	const randomSuffix = randomString(15, "abcdefghijklmnopqrstuvwxyz0123456789");
+	const id = `receipts-flow-perf-test-${testExecutionTimestamp}-${randomSuffix}`;
+
 	let event = createEvent(id, SIM_TEST_CF);
 
-	//	let r = createDocument(bizEventCosmosDBURI, bizEventDatabaseID, bizEventContainerID, bizEventCosmosDBPrimaryKey, event, id);
 	let r = createDocument(bizEventCosmosDBURI, bizEventDatabaseID, bizEventContainerID, bizEventCosmosDBPrimaryKey, event, id);
 
 	console.log("PublishEvent call, Status " + r.status);
