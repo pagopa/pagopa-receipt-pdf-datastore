@@ -7,6 +7,8 @@ import com.azure.cosmos.CosmosDatabase;
 import com.azure.cosmos.CosmosException;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.PartitionKey;
+import com.azure.cosmos.models.SqlParameter;
+import com.azure.cosmos.models.SqlQuerySpec;
 import it.gov.pagopa.receipt.pdf.datastore.client.BizEventCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventNotFoundException;
@@ -72,12 +74,14 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
         //Build query
-        String query = String.format("SELECT * FROM c WHERE c.transactionDetails.transaction.transactionId = '%s'",
-                transactionId);
+        SqlQuerySpec querySpec = new SqlQuerySpec(
+                "SELECT * FROM c WHERE c.transactionDetails.transaction.transactionId = @transactionId",
+                List.of(new SqlParameter("@transactionId", transactionId))
+        );
 
         //Query the container
         return cosmosContainer
-                .queryItems(query, new CosmosQueryRequestOptions(), BizEvent.class)
+                .queryItems(querySpec, new CosmosQueryRequestOptions(), BizEvent.class)
                 .stream().limit(6)
                 .toList();
     }

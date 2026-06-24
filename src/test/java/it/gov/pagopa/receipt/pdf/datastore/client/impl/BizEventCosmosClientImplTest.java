@@ -5,6 +5,7 @@ import com.azure.cosmos.CosmosContainer;
 import com.azure.cosmos.CosmosDatabase;
 import com.azure.cosmos.CosmosException;
 import com.azure.cosmos.models.CosmosItemResponse;
+import com.azure.cosmos.models.SqlQuerySpec;
 import com.azure.cosmos.util.CosmosPagedIterable;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventNotFoundException;
@@ -59,7 +60,7 @@ class BizEventCosmosClientImplTest {
     void getAllCartBizEventDocumentsSuccess() {
         when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
-        when(mockContainer.queryItems(anyString(), any(), eq(BizEvent.class))).thenReturn(mockIterable);
+        when(mockContainer.queryItems(any(SqlQuerySpec.class), any(), eq(BizEvent.class))).thenReturn(mockIterable);
         when(mockIterable.stream()).thenReturn(Stream.of(new BizEvent()));
 
         List<BizEvent> result = assertDoesNotThrow(() -> sut.getAllCartBizEventDocument(""));
@@ -72,7 +73,7 @@ class BizEventCosmosClientImplTest {
     void getAllCartBizEventDocumentsSuccessQueryResultTruncated() {
         when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
-        when(mockContainer.queryItems(anyString(), any(), eq(BizEvent.class))).thenReturn(mockIterable);
+        when(mockContainer.queryItems(any(SqlQuerySpec.class), any(), eq(BizEvent.class))).thenReturn(mockIterable);
         when(mockIterable.stream()).thenReturn(Stream.of(new BizEvent(), new BizEvent(), new BizEvent(), new BizEvent(), new BizEvent(), new BizEvent(), new BizEvent()));
 
         List<BizEvent> result = assertDoesNotThrow(() -> sut.getAllCartBizEventDocument(""));
