@@ -4,6 +4,7 @@ import com.azure.cosmos.CosmosClient;
 import com.azure.cosmos.CosmosContainer;
 import com.azure.cosmos.CosmosDatabase;
 import com.azure.cosmos.models.FeedResponse;
+import com.azure.cosmos.models.SqlQuerySpec;
 import com.azure.cosmos.util.CosmosPagedIterable;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReceiptError;
@@ -23,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -73,7 +73,7 @@ class ReceiptCosmosClientImplTest {
 
         when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
-        when(mockContainer.queryItems(anyString(), any(), eq(Receipt.class))).thenReturn(mockIterable);
+        when(mockContainer.queryItems(any(SqlQuerySpec.class), any(), eq(Receipt.class))).thenReturn(mockIterable);
         when(mockIterable.stream()).thenReturn(mockReceiptStream);
         when(mockReceiptStream.findFirst()).thenReturn(Optional.of(receipt));
 
@@ -86,7 +86,7 @@ class ReceiptCosmosClientImplTest {
     void getReceiptDocumentKo() {
         when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
-        when(mockContainer.queryItems(anyString(), any(), eq(Receipt.class))).thenReturn(mockIterable);
+        when(mockContainer.queryItems(any(SqlQuerySpec.class), any(), eq(Receipt.class))).thenReturn(mockIterable);
         when(mockIterable.stream()).thenReturn(mockReceiptStream);
         when(mockReceiptStream.findFirst()).thenReturn(Optional.empty());
 
@@ -100,7 +100,7 @@ class ReceiptCosmosClientImplTest {
 
         when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
-        when(mockContainer.queryItems(anyString(), any(), eq(ReceiptError.class))).thenReturn(mockReceiptErrorIterable);
+        when(mockContainer.queryItems(any(SqlQuerySpec.class), any(), eq(ReceiptError.class))).thenReturn(mockReceiptErrorIterable);
         when(mockReceiptErrorIterable.stream()).thenReturn(mockReceiptErrorStream);
         when(mockReceiptErrorStream.findFirst()).thenReturn(Optional.of(receiptError));
 
@@ -133,7 +133,7 @@ class ReceiptCosmosClientImplTest {
     void runOk_FailedQueryClient() {
         when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
-        when(mockContainer.queryItems(anyString(), any(), eq(Receipt.class))).thenReturn(mockIterable);
+        when(mockContainer.queryItems(any(SqlQuerySpec.class), any(), eq(Receipt.class))).thenReturn(mockIterable);
         when(mockIterable.iterableByPage(null, 1)).thenReturn(mockReceiptIterableByPage);
 
         Iterable<FeedResponse<Receipt>> result =
@@ -146,7 +146,7 @@ class ReceiptCosmosClientImplTest {
     void getGeneratedReceiptDocuments_Success() {
         when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
-        when(mockContainer.queryItems(anyString(), any(), eq(Receipt.class))).thenReturn(mockIterable);
+        when(mockContainer.queryItems(any(SqlQuerySpec.class), any(), eq(Receipt.class))).thenReturn(mockIterable);
         when(mockIterable.iterableByPage(null, 1)).thenReturn(mockReceiptIterableByPage);
 
         Iterable<FeedResponse<Receipt>> result =
@@ -159,7 +159,7 @@ class ReceiptCosmosClientImplTest {
     void getIOErrorToNotifyReceiptDocuments_Success() {
         when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
-        when(mockContainer.queryItems(anyString(), any(), eq(Receipt.class))).thenReturn(mockIterable);
+        when(mockContainer.queryItems(any(SqlQuerySpec.class), any(), eq(Receipt.class))).thenReturn(mockIterable);
         when(mockIterable.iterableByPage(null, 1)).thenReturn(mockReceiptIterableByPage);
 
         Iterable<FeedResponse<Receipt>> result =
@@ -172,7 +172,7 @@ class ReceiptCosmosClientImplTest {
     void getInsertedReceiptDocuments_Success() {
         when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
-        when(mockContainer.queryItems(anyString(), any(), eq(Receipt.class))).thenReturn(mockIterable);
+        when(mockContainer.queryItems(any(SqlQuerySpec.class), any(), eq(Receipt.class))).thenReturn(mockIterable);
         when(mockIterable.iterableByPage(null, 1)).thenReturn(mockReceiptIterableByPage);
 
         Iterable<FeedResponse<Receipt>> result =
