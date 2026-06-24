@@ -6,6 +6,7 @@ import com.azure.cosmos.CosmosDatabase;
 import com.azure.cosmos.CosmosException;
 import com.azure.cosmos.models.CosmosItemResponse;
 import com.azure.cosmos.models.FeedResponse;
+import com.azure.cosmos.models.SqlQuerySpec;
 import com.azure.cosmos.util.CosmosPagedIterable;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.CartReceiptError;
@@ -117,7 +118,7 @@ class CartReceiptsCosmosClientImplTest {
     void getFailedCartReceiptDocumentsSuccess() {
         when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
-        when(mockContainer.queryItems(anyString(), any(), eq(CartForReceipt.class)))
+        when(mockContainer.queryItems(any(SqlQuerySpec.class), any(), eq(CartForReceipt.class)))
                 .thenReturn(mockCartIterable);
         when(mockCartIterable.iterableByPage(anyString(), anyInt())).thenReturn(mockCartIterableByPage);
 
@@ -131,7 +132,7 @@ class CartReceiptsCosmosClientImplTest {
     void getInsertedCartReceiptDocumentsSuccess() {
         when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
-        when(mockContainer.queryItems(anyString(), any(), eq(CartForReceipt.class)))
+        when(mockContainer.queryItems(any(SqlQuerySpec.class), any(), eq(CartForReceipt.class)))
                 .thenReturn(mockCartIterable);
         when(mockCartIterable.iterableByPage(anyString(), anyInt())).thenReturn(mockCartIterableByPage);
 
@@ -145,7 +146,7 @@ class CartReceiptsCosmosClientImplTest {
     void getIOErrorToNotifyCartReceiptDocumentsSuccess() {
         when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
-        when(mockContainer.queryItems(anyString(), any(), eq(CartForReceipt.class)))
+        when(mockContainer.queryItems(any(SqlQuerySpec.class), any(), eq(CartForReceipt.class)))
                 .thenReturn(mockCartIterable);
         when(mockCartIterable.iterableByPage(anyString(), anyInt())).thenReturn(mockCartIterableByPage);
 
@@ -159,7 +160,7 @@ class CartReceiptsCosmosClientImplTest {
     void getGeneratedCartReceiptDocumentsSuccess() {
         when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
-        when(mockContainer.queryItems(anyString(), any(), eq(CartForReceipt.class)))
+        when(mockContainer.queryItems(any(SqlQuerySpec.class), any(), eq(CartForReceipt.class)))
                 .thenReturn(mockCartIterable);
         when(mockCartIterable.iterableByPage(anyString(), anyInt())).thenReturn(mockCartIterableByPage);
 

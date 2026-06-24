@@ -12,6 +12,8 @@ import com.azure.cosmos.models.CosmosItemResponse;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.FeedResponse;
 import com.azure.cosmos.models.PartitionKey;
+import com.azure.cosmos.models.SqlParameter;
+import com.azure.cosmos.models.SqlQuerySpec;
 import com.microsoft.azure.functions.HttpStatus;
 import it.gov.pagopa.receipt.pdf.datastore.client.CartReceiptsCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
@@ -22,6 +24,7 @@ import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
 
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.List;
 
 public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
@@ -33,8 +36,8 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
 
     private static final String DOCUMENT_NOT_FOUND_ERR_MSG = "Document not found in the defined container";
 
-    private final String millisDiff = System.getenv("MAX_DATE_DIFF_MILLIS");
-    private final String millisNotifyDif = System.getenv("MAX_DATE_DIFF_NOTIFY_MILLIS");
+    private final String millisDiff = System.getenv().getOrDefault("MAX_DATE_DIFF_MILLIS", "1800000");
+    private final String millisNotifyDif = System.getenv().getOrDefault("MAX_DATE_DIFF_NOTIFY_MILLIS", "1800000");
     private final String numDaysRecoverFailed = System.getenv().getOrDefault("RECOVER_FAILED_MASSIVE_MAX_DAYS", "0");
     private final String numDaysRecoverNotNotified = System.getenv().getOrDefault("RECOVER_NOT_NOTIFIED_MASSIVE_MAX_DAYS", "0");
 
@@ -117,11 +120,24 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
             String continuationToken,
             Integer pageSize
     ) {
-        String query = String.format("SELECT * FROM c WHERE (c.status = '%s' or c.status = '%s') AND c.inserted_at >= %s",
-                CartStatusType.FAILED, CartStatusType.NOT_QUEUE_SENT,
-                OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(
-                        Long.parseLong(numDaysRecoverFailed)).toInstant().toEpochMilli());
-        return executePagedQuery(cartForReceiptContainerName, query, continuationToken, pageSize);
+        long daysAgo = OffsetDateTime.now()
+                .truncatedTo(ChronoUnit.DAYS)
+                .minusDays(Long.parseLong(numDaysRecoverFailed))
+                .toInstant()
+                .toEpochMilli();
+
+        SqlQuerySpec querySpec = new SqlQuerySpec(
+                "SELECT * FROM c " +
+                        "WHERE (c.status = @statusFailed OR c.status = @statusNotQueueSent) " +
+                        "   AND c.inserted_at >= @minInsertedAt ",
+                Arrays.asList(
+                        new SqlParameter("@statusFailed", CartStatusType.FAILED.name()),
+                        new SqlParameter("@statusNotQueueSent", CartStatusType.NOT_QUEUE_SENT.name()),
+                        new SqlParameter("@minInsertedAt", daysAgo)
+                )
+        );
+
+        return executePagedQuery(cartForReceiptContainerName, querySpec, continuationToken, pageSize);
     }
 
     /**
@@ -133,14 +149,29 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
             Integer pageSize
     ) {
         OffsetDateTime currentDateTime = OffsetDateTime.now();
-        long now = currentDateTime.toInstant().toEpochMilli();
-        long daysAgo = currentDateTime.truncatedTo(ChronoUnit.DAYS).minusDays(Long.parseLong(numDaysRecoverFailed)).toInstant().toEpochMilli();
+        long daysAgo = currentDateTime
+                .truncatedTo(ChronoUnit.DAYS)
+                .minusDays(Long.parseLong(numDaysRecoverFailed))
+                .toInstant()
+                .toEpochMilli();
 
-        String query = String.format(
-                "SELECT * FROM c WHERE (c.status = '%s' or c.status = '%s') AND c.inserted_at >= %s AND ( %s - c.inserted_at) >= %s",
-                CartStatusType.INSERTED, CartStatusType.WAITING_FOR_BIZ_EVENT, daysAgo, now, millisDiff);
+        // (now - c.inserted_at) >= millisDiff  <=>  c.inserted_at <= now - millisDiff
+        long maxInsertedAt = currentDateTime.toInstant().toEpochMilli() - Long.parseLong(millisDiff);
 
-        return executePagedQuery(cartForReceiptContainerName, query, continuationToken, pageSize);
+        SqlQuerySpec querySpec = new SqlQuerySpec(
+                "SELECT * FROM c " +
+                        "WHERE (c.status = @statusInserted OR c.status = @statusWaitingForBizEvent) " +
+                        "  AND c.inserted_at >= @minInsertedAt " +
+                        "  AND c.inserted_at <= @maxInsertedAt",
+                Arrays.asList(
+                        new SqlParameter("@statusInserted", CartStatusType.INSERTED.name()),
+                        new SqlParameter("@statusWaitingForBizEvent", CartStatusType.WAITING_FOR_BIZ_EVENT.name()),
+                        new SqlParameter("@minInsertedAt", daysAgo),
+                        new SqlParameter("@maxInsertedAt", maxInsertedAt)
+                )
+        );
+
+        return executePagedQuery(cartForReceiptContainerName, querySpec, continuationToken, pageSize);
     }
 
     @Override
@@ -148,12 +179,23 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
             String continuationToken,
             Integer pageSize
     ) {
-        long daysAgo = OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(Long.parseLong(numDaysRecoverNotNotified)).toInstant().toEpochMilli();
+        long daysAgo = OffsetDateTime.now()
+                .truncatedTo(ChronoUnit.DAYS)
+                .minusDays(Long.parseLong(numDaysRecoverNotNotified))
+                .toInstant()
+                .toEpochMilli();
 
-        String query = String.format("SELECT * FROM c WHERE c.status = '%s' AND c.generated_at >= %s",
-                CartStatusType.IO_ERROR_TO_NOTIFY, daysAgo);
+        SqlQuerySpec querySpec = new SqlQuerySpec(
+                "SELECT * FROM c " +
+                        "WHERE c.status = @statusIoErrorToNotify " +
+                        "  AND c.generated_at >= @generatedAt",
+                Arrays.asList(
+                        new SqlParameter("@statusIoErrorToNotify", CartStatusType.IO_ERROR_TO_NOTIFY.name()),
+                        new SqlParameter("@generatedAt", daysAgo)
+                )
+        );
 
-        return executePagedQuery(cartForReceiptContainerName, query, continuationToken, pageSize);
+        return executePagedQuery(cartForReceiptContainerName, querySpec, continuationToken, pageSize);
     }
 
     @Override
@@ -162,13 +204,28 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
             Integer pageSize
     ) {
         OffsetDateTime currentDateTime = OffsetDateTime.now();
-        long now = currentDateTime.toInstant().toEpochMilli();
-        long daysAgo = currentDateTime.truncatedTo(ChronoUnit.DAYS).minusDays(Long.parseLong(numDaysRecoverNotNotified)).toInstant().toEpochMilli();
+        long daysAgo = currentDateTime
+                .truncatedTo(ChronoUnit.DAYS)
+                .minusDays(Long.parseLong(numDaysRecoverNotNotified))
+                .toInstant()
+                .toEpochMilli();
 
-        String query = String.format("SELECT * FROM c WHERE (c.status = '%s' AND c.generated_at >= %s AND ( %s - c.generated_at) >= %s)",
-                CartStatusType.GENERATED, daysAgo, now, millisNotifyDif);
+        // (now - c.generated_at) >= millisNotifyDif  <=>  c.generated_at <= now - millisNotifyDif
+        long maxGeneratedAt = currentDateTime.toInstant().toEpochMilli() - Long.parseLong(millisNotifyDif);
 
-        return executePagedQuery(cartForReceiptContainerName, query, continuationToken, pageSize);
+        SqlQuerySpec querySpec = new SqlQuerySpec(
+                "SELECT * FROM c " +
+                        "WHERE c.status = @statusGenerated " +
+                        "  AND c.generated_at >= @minGeneratedAt " +
+                        "  AND c.generated_at <= @maxGeneratedAt",
+                Arrays.asList(
+                        new SqlParameter("@statusGenerated", CartStatusType.GENERATED.name()),
+                        new SqlParameter("@minGeneratedAt", daysAgo),
+                        new SqlParameter("@maxGeneratedAt", maxGeneratedAt)
+                )
+        );
+
+        return executePagedQuery(cartForReceiptContainerName, querySpec, continuationToken, pageSize);
     }
 
     /**
@@ -177,13 +234,13 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
 
     private Iterable<FeedResponse<CartForReceipt>> executePagedQuery(
             String containerName,
-            String query,
+            SqlQuerySpec querySpec,
             String continuationToken,
             Integer pageSize
     ) {
         CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
         return cosmosDatabase.getContainer(containerName)
-                .queryItems(query, new CosmosQueryRequestOptions(), CartForReceipt.class)
+                .queryItems(querySpec, new CosmosQueryRequestOptions(), CartForReceipt.class)
                 .iterableByPage(continuationToken, pageSize);
     }
 }
