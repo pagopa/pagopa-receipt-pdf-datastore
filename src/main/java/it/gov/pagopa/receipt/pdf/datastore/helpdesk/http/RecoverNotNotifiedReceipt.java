@@ -68,7 +68,7 @@ public class RecoverNotNotifiedReceipt {
             @CosmosDBOutput(
                     name = "ReceiptDatastore",
                     databaseName = "db",
-                    containerName = "receipts",
+                    containerName = "receipts-pk",
                     connection = "COSMOS_RECEIPTS_CONN_STRING")
             OutputBinding<Receipt> documentReceipts,
             final ExecutionContext context
