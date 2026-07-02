@@ -64,7 +64,7 @@ public class BizEventToReceiptUtils {
         Receipt receipt = new Receipt();
 
         // Insert biz-event data into receipt
-        receipt.setId(bizEvent.getId() + UUID.randomUUID());
+        receipt.setId(bizEvent.getId());
         receipt.setEventId(bizEvent.getId());
 
         EventData eventData = new EventData();
