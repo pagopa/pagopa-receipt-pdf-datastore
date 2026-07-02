@@ -1,12 +1,10 @@
 package it.gov.pagopa.receipt.pdf.datastore.client.impl;
 
-import com.azure.cosmos.CosmosClient;
-import com.azure.cosmos.CosmosClientBuilder;
-import com.azure.cosmos.CosmosContainer;
-import com.azure.cosmos.CosmosDatabase;
+import com.azure.cosmos.*;
 import com.azure.cosmos.models.CosmosItemResponse;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.FeedResponse;
+import com.azure.cosmos.models.PartitionKey;
 import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReceiptError;
@@ -67,15 +65,14 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      */
     @Override
     public Receipt getReceiptDocument(String eventId) throws ReceiptNotFoundException {
-        return getDocumentByFilter(containerId, "eventId", eventId, Receipt.class)
-                .orElseThrow(() -> new ReceiptNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG));
+        return getReceiptById(eventId);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public ReceiptError getReceiptError(String bizEventId) throws  ReceiptNotFoundException {
+    public ReceiptError getReceiptError(String bizEventId) throws ReceiptNotFoundException {
         return getDocumentByFilter(containerReceiptErrorId, "bizEventId", bizEventId, ReceiptError.class)
                 .orElseThrow(() -> new ReceiptNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG));
     }
@@ -120,7 +117,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      * {@inheritDoc}
      */
     @Override
-    public Iterable<FeedResponse<Receipt>> getGeneratedReceiptDocuments(String continuationToken, Integer pageSize)  {
+    public Iterable<FeedResponse<Receipt>> getGeneratedReceiptDocuments(String continuationToken, Integer pageSize) {
         OffsetDateTime currentDateTime = OffsetDateTime.now();
         long now = currentDateTime.toInstant().toEpochMilli();
         long daysAgo = currentDateTime.truncatedTo(ChronoUnit.DAYS).minusDays(Long.parseLong(numDaysRecoverNotNotified)).toInstant().toEpochMilli();
@@ -135,7 +132,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      * {@inheritDoc}
      */
     @Override
-    public Iterable<FeedResponse<Receipt>> getIOErrorToNotifyReceiptDocuments(String continuationToken, Integer pageSize)  {
+    public Iterable<FeedResponse<Receipt>> getIOErrorToNotifyReceiptDocuments(String continuationToken, Integer pageSize) {
         long daysAgo = OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(Long.parseLong(numDaysRecoverNotNotified)).toInstant().toEpochMilli();
 
         String query = String.format("SELECT * FROM c WHERE c.status = '%s' AND c.generated_at >= %s",
@@ -163,6 +160,30 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
     /**
      * PRIVATE METHODS
      */
+
+    private Receipt getReceiptById(String id) throws ReceiptNotFoundException {
+        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
+        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
+
+        try {
+            CosmosItemResponse<Receipt> itemResponse = cosmosContainer
+                    .readItem(id, new PartitionKey(id), Receipt.class);
+
+            if (itemResponse != null) {
+                return itemResponse.getItem();
+            }
+        } catch (CosmosException ce) {
+            if (ce.getStatusCode() != 404) {
+                // if not found use fallback query
+                throw ce;
+            }
+        }
+
+        // fallback use eventId for old receipts
+        return getDocumentByFilter(containerId, "eventId", id, Receipt.class)
+                .orElseThrow(() -> new ReceiptNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG));
+    }
+
 
     private <T> Optional<T> getDocumentByFilter(String containerId, String propertyName, String propertyValue, Class<T> classType) {
         CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
