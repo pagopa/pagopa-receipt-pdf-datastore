@@ -18,7 +18,6 @@ import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -135,7 +134,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
                 "SELECT * FROM c " +
                         "WHERE (c.status = @statusFailed OR c.status = @statusNotQueueSent) " +
                         "   AND c.inserted_at >= @minInsertedAt ",
-                Arrays.asList(
+                List.of(
                         new SqlParameter("@statusFailed", ReceiptStatusType.FAILED.name()),
                         new SqlParameter("@statusNotQueueSent", ReceiptStatusType.NOT_QUEUE_SENT.name()),
                         new SqlParameter("@minInsertedAt", daysAgo)
@@ -181,7 +180,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
                         "WHERE c.status = @statusGenerated " +
                         "  AND c.generated_at >= @minGeneratedAt " +
                         "  AND c.generated_at <= @maxGeneratedAt",
-                Arrays.asList(
+                List.of(
                         new SqlParameter("@statusGenerated", ReceiptStatusType.GENERATED.name()),
                         new SqlParameter("@minGeneratedAt", daysAgo),
                         new SqlParameter("@maxGeneratedAt", maxGeneratedAt)
@@ -209,7 +208,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
                 "SELECT * FROM c " +
                         "WHERE c.status = @statusIoErrorToNotify " +
                         "  AND c.generated_at >= @generatedAt",
-                Arrays.asList(
+                List.of(
                         new SqlParameter("@statusIoErrorToNotify", ReceiptStatusType.IO_ERROR_TO_NOTIFY.name()),
                         new SqlParameter("@generatedAt", daysAgo)
                 )
@@ -238,7 +237,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
                         "WHERE c.status = @statusInserted " +
                         "  AND c.inserted_at >= @minInsertedAt " +
                         "  AND c.inserted_at <= @maxInsertedAt",
-                Arrays.asList(
+                List.of(
                         new SqlParameter("@statusInserted", ReceiptStatusType.INSERTED.name()),
                         new SqlParameter("@minInsertedAt", daysAgo),
                         new SqlParameter("@maxInsertedAt", maxInsertedAt)

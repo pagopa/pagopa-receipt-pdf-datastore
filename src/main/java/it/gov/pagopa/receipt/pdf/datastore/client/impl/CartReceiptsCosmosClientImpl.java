@@ -22,7 +22,6 @@ import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
 
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
 import java.util.List;
 
 public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
@@ -140,7 +139,7 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
                 "SELECT * FROM c " +
                         "WHERE (c.status = @statusFailed OR c.status = @statusNotQueueSent) " +
                         "   AND c.inserted_at >= @minInsertedAt ",
-                Arrays.asList(
+                List.of(
                         new SqlParameter("@statusFailed", CartStatusType.FAILED.name()),
                         new SqlParameter("@statusNotQueueSent", CartStatusType.NOT_QUEUE_SENT.name()),
                         new SqlParameter("@minInsertedAt", daysAgo)
@@ -173,7 +172,7 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
                         "WHERE (c.status = @statusInserted OR c.status = @statusWaitingForBizEvent) " +
                         "  AND c.inserted_at >= @minInsertedAt " +
                         "  AND c.inserted_at <= @maxInsertedAt",
-                Arrays.asList(
+                List.of(
                         new SqlParameter("@statusInserted", CartStatusType.INSERTED.name()),
                         new SqlParameter("@statusWaitingForBizEvent", CartStatusType.WAITING_FOR_BIZ_EVENT.name()),
                         new SqlParameter("@minInsertedAt", daysAgo),
@@ -199,7 +198,7 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
                 "SELECT * FROM c " +
                         "WHERE c.status = @statusIoErrorToNotify " +
                         "  AND c.generated_at >= @generatedAt",
-                Arrays.asList(
+                List.of(
                         new SqlParameter("@statusIoErrorToNotify", CartStatusType.IO_ERROR_TO_NOTIFY.name()),
                         new SqlParameter("@generatedAt", daysAgo)
                 )
@@ -228,7 +227,7 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
                         "WHERE c.status = @statusGenerated " +
                         "  AND c.generated_at >= @minGeneratedAt " +
                         "  AND c.generated_at <= @maxGeneratedAt",
-                Arrays.asList(
+                List.of(
                         new SqlParameter("@statusGenerated", CartStatusType.GENERATED.name()),
                         new SqlParameter("@minGeneratedAt", daysAgo),
                         new SqlParameter("@maxGeneratedAt", maxGeneratedAt)
