@@ -4,11 +4,14 @@ import com.azure.cosmos.CosmosClient;
 import com.azure.cosmos.CosmosClientBuilder;
 import com.azure.cosmos.CosmosContainer;
 import com.azure.cosmos.CosmosDatabase;
+import com.azure.cosmos.CosmosException;
+import com.azure.cosmos.implementation.NotFoundException;
 import com.azure.cosmos.models.CosmosItemResponse;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.FeedResponse;
 import com.azure.cosmos.models.SqlParameter;
 import com.azure.cosmos.models.SqlQuerySpec;
+import com.azure.cosmos.models.PartitionKey;
 import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReceiptError;
@@ -70,13 +73,22 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      */
     @Override
     public Receipt getReceiptDocument(String eventId) throws ReceiptNotFoundException {
-        SqlQuerySpec querySpec = new SqlQuerySpec(
-                "SELECT * FROM c WHERE c.eventId = @eventId",
-                List.of(new SqlParameter("@eventId", eventId))
-        );
+        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
+        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
-        return getDocumentByFilter(containerId, querySpec, Receipt.class)
-                .orElseThrow(() -> new ReceiptNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG));
+        try {
+            return cosmosContainer.readItem(eventId, new PartitionKey(eventId), Receipt.class)
+                    .getItem();
+        } catch (NotFoundException e) {
+            // if not found use fallback query
+            SqlQuerySpec querySpec = new SqlQuerySpec(
+                    "SELECT * FROM c WHERE c.eventId = @eventId",
+                    List.of(new SqlParameter("@eventId", eventId))
+            );
+
+            return getDocumentByFilter(containerId, querySpec, Receipt.class)
+                    .orElseThrow(() -> new ReceiptNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG));
+        }
     }
 
     /**
