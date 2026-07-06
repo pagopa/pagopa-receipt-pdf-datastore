@@ -88,6 +88,9 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
         try {
             return cartForReceiptContainer.readItem(cartId, new PartitionKey(cartId), CartForReceipt.class).getItem();
         } catch (CosmosException e) {
+            if (e.getStatusCode() != 404) {
+                throw e;
+            }
             throw new CartNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG, e);
         }
     }
@@ -112,6 +115,9 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
         try {
             return cartReceiptsErrorsContainer.readItem(cartId, new PartitionKey(cartId), CartReceiptError.class).getItem();
         } catch (CosmosException e) {
+            if (e.getStatusCode() != 404) {
+                throw e;
+            }
             throw new CartNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG, e);
         }
     }

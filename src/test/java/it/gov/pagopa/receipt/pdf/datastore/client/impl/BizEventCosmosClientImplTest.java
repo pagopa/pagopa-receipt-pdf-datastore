@@ -35,6 +35,8 @@ class BizEventCosmosClientImplTest {
     private CosmosPagedIterable<BizEvent> mockIterable;
     @Mock
     private CosmosItemResponse<BizEvent> mockResponse;
+    @Mock
+    private CosmosException mockCosmosException;
 
     @InjectMocks
     private BizEventCosmosClientImpl sut;
@@ -81,9 +83,18 @@ class BizEventCosmosClientImplTest {
     }
 
     @Test
-    void getBizEventDocumentError() {
-        when(mockContainer.readItem(anyString(), any(), eq(BizEvent.class))).thenThrow(CosmosException.class);
+    void getBizEventDocument_KO_notFound() {
+        when(mockCosmosException.getStatusCode()).thenReturn(404);
+        when(mockContainer.readItem(anyString(), any(), eq(BizEvent.class))).thenThrow(mockCosmosException);
 
         assertThrows(BizEventNotFoundException.class, () -> sut.getBizEventDocument("1"));
+    }
+
+    @Test
+    void getBizEventDocument_KO() {
+        when(mockCosmosException.getStatusCode()).thenReturn(500);
+        when(mockContainer.readItem(anyString(), any(), eq(BizEvent.class))).thenThrow(mockCosmosException);
+
+        assertThrows(CosmosException.class, () -> sut.getBizEventDocument("1"));
     }
 }

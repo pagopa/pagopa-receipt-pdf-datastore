@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -51,7 +50,7 @@ class ReceiptCosmosClientImplTest {
     @Mock
     private Stream<ReceiptError> mockReceiptErrorStream;
     @Mock
-    private CosmosItemResponse<Receipt> mockCosmosItemResponse;
+    private CosmosException mockCosmosException;
 
     @InjectMocks
     private ReceiptCosmosClientImpl sut;
@@ -87,10 +86,8 @@ class ReceiptCosmosClientImplTest {
         Receipt receipt = new Receipt();
         receipt.setId(RECEIPT_ID);
 
-        CosmosException notFound = mock(CosmosException.class);
-        when(notFound.getStatusCode()).thenReturn(404);
-
-        when(mockContainer.readItem(any(), any(), eq(Receipt.class))).thenThrow(notFound);
+        when(mockCosmosException.getStatusCode()).thenReturn(404);
+        when(mockContainer.readItem(any(), any(), eq(Receipt.class))).thenThrow(mockCosmosException);
         when(mockContainer.queryItems(any(SqlQuerySpec.class), any(), eq(Receipt.class))).thenReturn(mockIterable);
         when(mockIterable.stream()).thenReturn(mockReceiptStream);
         when(mockReceiptStream.findFirst()).thenReturn(Optional.of(receipt));
@@ -104,17 +101,15 @@ class ReceiptCosmosClientImplTest {
     void getReceiptDocument_KO() {
         when(mockContainer.readItem(any(), any(), eq(Receipt.class))).thenThrow(CosmosException.class);
 
-        assertThrows(ReceiptNotFoundException.class, () -> sut.getReceiptDocument("an invalid receipt id"));
+        assertThrows(CosmosException.class, () -> sut.getReceiptDocument("an invalid receipt id"));
 
         verify(mockContainer, never()).queryItems(any(SqlQuerySpec.class), any(), eq(Receipt.class));
     }
 
     @Test
     void getReceiptDocument_KO_notFountOnBothQuery() {
-        CosmosException notFound = mock(CosmosException.class);
-        when(notFound.getStatusCode()).thenReturn(404);
-
-        when(mockContainer.readItem(any(), any(), eq(Receipt.class))).thenThrow(notFound);
+        when(mockCosmosException.getStatusCode()).thenReturn(404);
+        when(mockContainer.readItem(any(), any(), eq(Receipt.class))).thenThrow(mockCosmosException);
         when(mockContainer.queryItems(any(SqlQuerySpec.class), any(), eq(Receipt.class))).thenReturn(mockIterable);
         when(mockIterable.stream()).thenReturn(mockReceiptStream);
         when(mockReceiptStream.findFirst()).thenReturn(Optional.empty());

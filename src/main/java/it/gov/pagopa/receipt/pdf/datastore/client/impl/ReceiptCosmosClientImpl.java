@@ -93,17 +93,17 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
                     .getItem();
         } catch (CosmosException e) {
             if (e.getStatusCode() != 404) {
-                throw new ReceiptNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG, e);
+                throw e;
             }
-            // if not found use fallback query
-            SqlQuerySpec querySpec = new SqlQuerySpec(
-                    "SELECT * FROM c WHERE c.eventId = @eventId",
-                    List.of(new SqlParameter("@eventId", eventId))
-            );
-
-            return getDocumentByFilter(receiptContainer, querySpec, Receipt.class)
-                    .orElseThrow(() -> new ReceiptNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG));
         }
+        // if not found use fallback query
+        SqlQuerySpec querySpec = new SqlQuerySpec(
+                "SELECT * FROM c WHERE c.eventId = @eventId",
+                List.of(new SqlParameter("@eventId", eventId))
+        );
+
+        return getDocumentByFilter(receiptContainer, querySpec, Receipt.class)
+                .orElseThrow(() -> new ReceiptNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG));
     }
 
     /**
@@ -269,5 +269,4 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
                 .queryItems(querySpec, new CosmosQueryRequestOptions(), Receipt.class)
                 .iterableByPage(continuationToken, pageSize);
     }
-
 }

@@ -42,6 +42,8 @@ class CartReceiptsCosmosClientImplTest {
     private CosmosItemResponse<CartForReceipt> mockReceiptResponse;
     @Mock
     private CosmosItemResponse<CartReceiptError> mockReceiptErrorResponse;
+    @Mock
+    private CosmosException mockCosmosException;
 
     @InjectMocks
     private CartReceiptsCosmosClientImpl sut;
@@ -71,10 +73,19 @@ class CartReceiptsCosmosClientImplTest {
     }
 
     @Test
-    void getCartItemFail() {
-        when(mockContainer.readItem(anyString(), any(), eq(CartForReceipt.class))).thenThrow(CosmosException.class);
+    void getCartItem_KO_notFound() {
+        when(mockCosmosException.getStatusCode()).thenReturn(404);
+        when(mockContainer.readItem(anyString(), any(), eq(CartForReceipt.class))).thenThrow(mockCosmosException);
 
         assertThrows(CartNotFoundException.class, () -> sut.getCartItem("an invalid receipt id"));
+    }
+
+    @Test
+    void getCartItem_KO() {
+        when(mockCosmosException.getStatusCode()).thenReturn(500);
+        when(mockContainer.readItem(anyString(), any(), eq(CartForReceipt.class))).thenThrow(mockCosmosException);
+
+        assertThrows(CosmosException.class, () -> sut.getCartItem("an invalid receipt id"));
     }
 
     @Test
