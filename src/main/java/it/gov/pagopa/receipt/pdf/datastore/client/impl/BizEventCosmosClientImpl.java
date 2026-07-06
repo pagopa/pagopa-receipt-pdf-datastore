@@ -1,8 +1,8 @@
 package it.gov.pagopa.receipt.pdf.datastore.client.impl;
 
-import com.azure.cosmos.CosmosClient;
 import com.azure.cosmos.CosmosClientBuilder;
 import com.azure.cosmos.CosmosContainer;
+import com.azure.cosmos.CosmosDatabase;
 import com.azure.cosmos.CosmosException;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.PartitionKey;
@@ -19,32 +19,32 @@ import java.util.List;
  */
 public class BizEventCosmosClientImpl implements BizEventCosmosClient {
 
-    private final CosmosClient cosmosClient;
     private final CosmosContainer bizEventContainer;
 
+    @SuppressWarnings("resource") // CosmosClient lifecycle == singleton lifecycle; never closed on purpose
     private BizEventCosmosClientImpl() {
         String azureKey = System.getenv("COSMOS_BIZ_EVENT_KEY");
         String serviceEndpoint = System.getenv("COSMOS_BIZ_EVENT_SERVICE_ENDPOINT");
         String readRegion = System.getenv("COSMOS_BIZ_EVENT_READ_REGION");
 
-        this.cosmosClient = new CosmosClientBuilder()
-                .endpoint(serviceEndpoint)
-                .key(azureKey)
-                .preferredRegions(List.of(readRegion))
-                .buildClient();
-
         String databaseId = System.getenv("COSMOS_BIZ_EVENT_DB_NAME");
         String containerId = System.getenv("COSMOS_BIZ_EVENT_CONTAINER_NAME");
 
-        this.bizEventContainer = this.cosmosClient.getDatabase(databaseId).getContainer(containerId);
+        CosmosDatabase database = new CosmosClientBuilder()
+                .endpoint(serviceEndpoint)
+                .key(azureKey)
+                .preferredRegions(List.of(readRegion))
+                .buildClient()
+                .getDatabase(databaseId);
+
+        this.bizEventContainer = database.getContainer(containerId);
     }
 
     /**
      * Test-only constructor. Package-private visibility so it is only reachable from tests
      * in the same package.
      */
-    BizEventCosmosClientImpl(CosmosClient cosmosClient, CosmosContainer bizEventContainer) {
-        this.cosmosClient = cosmosClient;
+    BizEventCosmosClientImpl(CosmosContainer bizEventContainer) {
         this.bizEventContainer = bizEventContainer;
     }
 

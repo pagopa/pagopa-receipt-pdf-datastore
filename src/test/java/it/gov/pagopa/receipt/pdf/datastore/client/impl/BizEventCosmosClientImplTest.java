@@ -1,8 +1,6 @@
 package it.gov.pagopa.receipt.pdf.datastore.client.impl;
 
-import com.azure.cosmos.CosmosClient;
 import com.azure.cosmos.CosmosContainer;
-import com.azure.cosmos.CosmosDatabase;
 import com.azure.cosmos.CosmosException;
 import com.azure.cosmos.models.CosmosItemResponse;
 import com.azure.cosmos.models.SqlQuerySpec;
@@ -31,11 +29,6 @@ import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariables
 @ExtendWith(MockitoExtension.class)
 class BizEventCosmosClientImplTest {
 
-    @Mock
-    private CosmosClient cosmosClientMock;
-
-    @Mock
-    private CosmosDatabase mockDatabase;
     @Mock
     private CosmosContainer mockContainer;
     @Mock

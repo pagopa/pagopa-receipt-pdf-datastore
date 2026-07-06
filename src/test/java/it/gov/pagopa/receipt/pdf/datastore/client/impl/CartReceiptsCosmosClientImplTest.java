@@ -1,8 +1,6 @@
 package it.gov.pagopa.receipt.pdf.datastore.client.impl;
 
-import com.azure.cosmos.CosmosClient;
 import com.azure.cosmos.CosmosContainer;
-import com.azure.cosmos.CosmosDatabase;
 import com.azure.cosmos.CosmosException;
 import com.azure.cosmos.models.CosmosItemResponse;
 import com.azure.cosmos.models.FeedResponse;
@@ -34,11 +32,6 @@ class CartReceiptsCosmosClientImplTest {
 
     private static final String CART_ID = "1";
 
-    @Mock
-    private CosmosClient cosmosClientMock;
-
-    @Mock
-    private CosmosDatabase mockDatabase;
     @Mock
     private CosmosContainer mockContainer;
     @Mock

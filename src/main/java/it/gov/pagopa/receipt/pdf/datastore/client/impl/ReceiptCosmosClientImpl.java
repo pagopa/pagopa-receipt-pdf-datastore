@@ -1,6 +1,5 @@
 package it.gov.pagopa.receipt.pdf.datastore.client.impl;
 
-import com.azure.cosmos.CosmosClient;
 import com.azure.cosmos.CosmosClientBuilder;
 import com.azure.cosmos.CosmosContainer;
 import com.azure.cosmos.CosmosDatabase;
@@ -35,27 +34,27 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
     private final String numDaysRecoverFailed = System.getenv().getOrDefault("RECOVER_FAILED_MASSIVE_MAX_DAYS", "0");
     private final String numDaysRecoverNotNotified = System.getenv().getOrDefault("RECOVER_NOT_NOTIFIED_MASSIVE_MAX_DAYS", "0");
 
-    private final CosmosClient cosmosClient;
     private final CosmosContainer receiptContainer;
     private final CosmosContainer receiptErrorContainer;
 
+    @SuppressWarnings("resource") // CosmosClient lifecycle == singleton lifecycle; never closed on purpose
     private ReceiptCosmosClientImpl() {
         String azureKey = System.getenv("COSMOS_RECEIPT_KEY");
         String serviceEndpoint = System.getenv("COSMOS_RECEIPT_SERVICE_ENDPOINT");
         String readRegion = System.getenv("COSMOS_RECEIPT_READ_REGION");
-
-        this.cosmosClient = new CosmosClientBuilder()
-                .endpoint(serviceEndpoint)
-                .key(azureKey)
-                .preferredRegions(List.of(readRegion))
-                .buildClient();
 
         String databaseId = System.getenv("COSMOS_RECEIPT_DB_NAME");
         String containerId = System.getenv("COSMOS_RECEIPT_CONTAINER_NAME");
         String containerReceiptErrorId = System.getenv()
                 .getOrDefault("COSMOS_RECEIPT_ERROR_CONTAINER_NAME", "receipts-message-errors");
 
-        CosmosDatabase database = this.cosmosClient.getDatabase(databaseId);
+        CosmosDatabase database = new CosmosClientBuilder()
+                .endpoint(serviceEndpoint)
+                .key(azureKey)
+                .preferredRegions(List.of(readRegion))
+                .buildClient()
+                .getDatabase(databaseId);
+
         this.receiptContainer = database.getContainer(containerId);
         this.receiptErrorContainer = database.getContainer(containerReceiptErrorId);
     }
@@ -65,11 +64,9 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      * in the same package.
      */
     ReceiptCosmosClientImpl(
-            CosmosClient cosmosClient,
             CosmosContainer receiptContainer,
             CosmosContainer receiptErrorContainer
     ) {
-        this.cosmosClient = cosmosClient;
         this.receiptContainer = receiptContainer;
         this.receiptErrorContainer = receiptErrorContainer;
     }
