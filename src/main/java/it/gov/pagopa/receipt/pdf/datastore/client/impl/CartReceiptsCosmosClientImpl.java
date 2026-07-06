@@ -27,7 +27,6 @@ import java.util.List;
 
 public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
 
-
     private static final String DOCUMENT_NOT_FOUND_ERR_MSG = "Document not found in the defined container";
 
     private final String millisDiff = System.getenv().getOrDefault("MAX_DATE_DIFF_MILLIS", "1800000");
