@@ -8,9 +8,9 @@ import com.azure.cosmos.CosmosException;
 import com.azure.cosmos.models.CosmosItemResponse;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.FeedResponse;
+import com.azure.cosmos.models.PartitionKey;
 import com.azure.cosmos.models.SqlParameter;
 import com.azure.cosmos.models.SqlQuerySpec;
-import com.azure.cosmos.models.PartitionKey;
 import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReceiptError;
@@ -30,10 +30,6 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
 
     private static ReceiptCosmosClientImpl instance;
 
-    private final String databaseId = System.getenv("COSMOS_RECEIPT_DB_NAME");
-    private final String containerId = System.getenv("COSMOS_RECEIPT_CONTAINER_NAME");
-    private final String containerReceiptErrorId = System.getenv().getOrDefault("COSMOS_RECEIPT_ERROR_CONTAINER_NAME", "receipts-message-errors");
-
     private static final String DOCUMENT_NOT_FOUND_ERR_MSG = "Document not found in the defined container";
 
     private final String millisDiff = System.getenv().getOrDefault("MAX_DATE_DIFF_MILLIS", "1800000");
@@ -42,6 +38,8 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
     private final String numDaysRecoverNotNotified = System.getenv().getOrDefault("RECOVER_NOT_NOTIFIED_MASSIVE_MAX_DAYS", "0");
 
     private final CosmosClient cosmosClient;
+    private final CosmosContainer receiptContainer;
+    private final CosmosContainer receiptErrorContainer;
 
     private ReceiptCosmosClientImpl() {
         String azureKey = System.getenv("COSMOS_RECEIPT_KEY");
@@ -53,10 +51,29 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
                 .key(azureKey)
                 .preferredRegions(List.of(readRegion))
                 .buildClient();
+
+        String databaseId = System.getenv("COSMOS_RECEIPT_DB_NAME");
+        String containerId = System.getenv("COSMOS_RECEIPT_CONTAINER_NAME");
+        String containerReceiptErrorId = System.getenv()
+                .getOrDefault("COSMOS_RECEIPT_ERROR_CONTAINER_NAME", "receipts-message-errors");
+
+        CosmosDatabase database = this.cosmosClient.getDatabase(databaseId);
+        this.receiptContainer = database.getContainer(containerId);
+        this.receiptErrorContainer = database.getContainer(containerReceiptErrorId);
     }
 
-    public ReceiptCosmosClientImpl(CosmosClient cosmosClient) {
+    /**
+     * Test-only constructor. Package-private visibility so it is only reachable from tests
+     * in the same package.
+     */
+    ReceiptCosmosClientImpl(
+            CosmosClient cosmosClient,
+            CosmosContainer receiptContainer,
+            CosmosContainer receiptErrorContainer
+    ) {
         this.cosmosClient = cosmosClient;
+        this.receiptContainer = receiptContainer;
+        this.receiptErrorContainer = receiptErrorContainer;
     }
 
     public static ReceiptCosmosClientImpl getInstance() {
@@ -72,11 +89,8 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      */
     @Override
     public Receipt getReceiptDocument(String eventId) throws ReceiptNotFoundException {
-        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
-        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
-
         try {
-            return cosmosContainer.readItem(eventId, new PartitionKey(eventId), Receipt.class)
+            return receiptContainer.readItem(eventId, new PartitionKey(eventId), Receipt.class)
                     .getItem();
         } catch (CosmosException e) {
             if (e.getStatusCode() != 404) {
@@ -88,7 +102,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
                     List.of(new SqlParameter("@eventId", eventId))
             );
 
-            return getDocumentByFilter(containerId, querySpec, Receipt.class)
+            return getDocumentByFilter(receiptContainer, querySpec, Receipt.class)
                     .orElseThrow(() -> new ReceiptNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG));
         }
     }
@@ -103,7 +117,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
                 List.of(new SqlParameter("@bizEventId", bizEventId))
         );
 
-        return getDocumentByFilter(containerReceiptErrorId, querySpec, ReceiptError.class)
+        return getDocumentByFilter(receiptErrorContainer, querySpec, ReceiptError.class)
                 .orElseThrow(() -> new ReceiptNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG));
     }
 
@@ -129,7 +143,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
                 )
         );
 
-        return executePagedQuery(containerId, querySpec, continuationToken, pageSize);
+        return executePagedQuery(querySpec, continuationToken, pageSize);
     }
 
     /**
@@ -137,11 +151,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      */
     @Override
     public CosmosItemResponse<Receipt> saveReceipts(Receipt receipt) {
-        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
-
-        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
-
-        return cosmosContainer.createItem(receipt);
+        return receiptContainer.createItem(receipt);
     }
 
     /**
@@ -149,10 +159,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      */
     @Override
     public CosmosItemResponse<Receipt> updateReceipts(Receipt receipt) {
-        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
-        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
-
-        return cosmosContainer.upsertItem(receipt);
+        return receiptContainer.upsertItem(receipt);
     }
 
     /**
@@ -182,7 +189,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
                 )
         );
 
-        return executePagedQuery(containerId, querySpec, continuationToken, pageSize);
+        return executePagedQuery(querySpec, continuationToken, pageSize);
     }
 
     /**
@@ -209,7 +216,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
                 )
         );
 
-        return executePagedQuery(containerId, querySpec, continuationToken, pageSize);
+        return executePagedQuery(querySpec, continuationToken, pageSize);
     }
 
     /**
@@ -239,32 +246,27 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
                 )
         );
 
-        return executePagedQuery(containerId, querySpec, continuationToken, pageSize);
+        return executePagedQuery(querySpec, continuationToken, pageSize);
     }
 
     /**
      * PRIVATE METHODS
      */
 
-    private <T> Optional<T> getDocumentByFilter(String containerId, SqlQuerySpec querySpec, Class<T> classType) {
-        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
-        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
-
+    private <T> Optional<T> getDocumentByFilter(CosmosContainer container, SqlQuerySpec querySpec, Class<T> classType) {
         // use stream() to convert iterable and find first element
-        return cosmosContainer
+        return container
                 .queryItems(querySpec, new CosmosQueryRequestOptions(), classType)
                 .stream()
                 .findFirst();
     }
 
     private Iterable<FeedResponse<Receipt>> executePagedQuery(
-            String containerName,
             SqlQuerySpec querySpec,
             String continuationToken,
             Integer pageSize
     ) {
-        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
-        return cosmosDatabase.getContainer(containerName)
+        return receiptContainer
                 .queryItems(querySpec, new CosmosQueryRequestOptions(), Receipt.class)
                 .iterableByPage(continuationToken, pageSize);
     }

@@ -46,6 +46,7 @@ class BizEventCosmosClientImplTest {
     @InjectMocks
     private BizEventCosmosClientImpl sut;
 
+
     @Test
     void testSingletonConnectionError() throws Exception {
         String mockKey = "mockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeyMK==";
@@ -58,8 +59,6 @@ class BizEventCosmosClientImplTest {
 
     @Test
     void getAllCartBizEventDocumentsSuccess() {
-        when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
-        when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
         when(mockContainer.queryItems(any(SqlQuerySpec.class), any(), eq(BizEvent.class))).thenReturn(mockIterable);
         when(mockIterable.stream()).thenReturn(Stream.of(new BizEvent()));
 
@@ -71,8 +70,6 @@ class BizEventCosmosClientImplTest {
 
     @Test
     void getAllCartBizEventDocumentsSuccessQueryResultTruncated() {
-        when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
-        when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
         when(mockContainer.queryItems(any(SqlQuerySpec.class), any(), eq(BizEvent.class))).thenReturn(mockIterable);
         when(mockIterable.stream()).thenReturn(Stream.of(new BizEvent(), new BizEvent(), new BizEvent(), new BizEvent(), new BizEvent(), new BizEvent(), new BizEvent()));
 
@@ -84,8 +81,6 @@ class BizEventCosmosClientImplTest {
 
     @Test
     void getBizEventDocumentSuccess() {
-        when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
-        when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
         when(mockContainer.readItem(anyString(), any(), eq(BizEvent.class))).thenReturn(mockResponse);
         when(mockResponse.getItem()).thenReturn(new BizEvent());
 
@@ -94,8 +89,6 @@ class BizEventCosmosClientImplTest {
 
     @Test
     void getBizEventDocumentError() {
-        when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
-        when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
         when(mockContainer.readItem(anyString(), any(), eq(BizEvent.class))).thenThrow(CosmosException.class);
 
         assertThrows(BizEventNotFoundException.class, () -> sut.getBizEventDocument("1"));

@@ -29,9 +29,6 @@ import java.util.List;
 public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
 
     private static CartReceiptsCosmosClientImpl instance;
-    private final String databaseId = System.getenv("COSMOS_RECEIPT_DB_NAME");
-    private final String cartForReceiptContainerName = System.getenv("CART_FOR_RECEIPT_CONTAINER_NAME");
-    private final String cartReceiptsMessageErrorsContainerName = System.getenv("CART_RECEIPTS_MESSAGE_ERRORS_CONTAINER_NAME");
 
     private static final String DOCUMENT_NOT_FOUND_ERR_MSG = "Document not found in the defined container";
 
@@ -41,6 +38,8 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
     private final String numDaysRecoverNotNotified = System.getenv().getOrDefault("RECOVER_NOT_NOTIFIED_MASSIVE_MAX_DAYS", "0");
 
     private final CosmosClient cosmosClient;
+    private final CosmosContainer cartForReceiptContainer;
+    private final CosmosContainer cartReceiptsErrorsContainer;
 
     private CartReceiptsCosmosClientImpl() {
         String azureKey = System.getenv("COSMOS_RECEIPT_KEY");
@@ -53,10 +52,28 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
                 .consistencyLevel(ConsistencyLevel.BOUNDED_STALENESS)
                 .preferredRegions(List.of(readRegion))
                 .buildClient();
+
+        String databaseId = System.getenv("COSMOS_RECEIPT_DB_NAME");
+        String cartForReceiptContainerName = System.getenv("CART_FOR_RECEIPT_CONTAINER_NAME");
+        String cartReceiptsMessageErrorsContainerName = System.getenv("CART_RECEIPTS_MESSAGE_ERRORS_CONTAINER_NAME");
+
+        CosmosDatabase database = this.cosmosClient.getDatabase(databaseId);
+        this.cartForReceiptContainer = database.getContainer(cartForReceiptContainerName);
+        this.cartReceiptsErrorsContainer = database.getContainer(cartReceiptsMessageErrorsContainerName);
     }
 
-    public CartReceiptsCosmosClientImpl(CosmosClient cosmosClient) {
+    /**
+     * Test-only constructor. Package-private visibility so it is only reachable from tests
+     * in the same package.
+     */
+    CartReceiptsCosmosClientImpl(
+            CosmosClient cosmosClient,
+            CosmosContainer cartForReceiptContainer,
+            CosmosContainer cartReceiptsErrorsContainer
+    ) {
         this.cosmosClient = cosmosClient;
+        this.cartForReceiptContainer = cartForReceiptContainer;
+        this.cartReceiptsErrorsContainer = cartReceiptsErrorsContainer;
     }
 
     public static CartReceiptsCosmosClientImpl getInstance() {
@@ -69,11 +86,8 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
 
     @Override
     public CartForReceipt getCartItem(String cartId) throws CartNotFoundException {
-        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
-        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(cartForReceiptContainerName);
-
         try {
-            return cosmosContainer.readItem(cartId, new PartitionKey(cartId), CartForReceipt.class).getItem();
+            return cartForReceiptContainer.readItem(cartId, new PartitionKey(cartId), CartForReceipt.class).getItem();
         } catch (CosmosException e) {
             throw new CartNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG, e);
         }
@@ -84,10 +98,8 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
      */
     @Override
     public CosmosItemResponse<CartForReceipt> updateCart(CartForReceipt receipt) throws CartConcurrentUpdateException {
-        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
-        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(cartForReceiptContainerName);
         try {
-            return cosmosContainer.upsertItem(receipt, new CosmosItemRequestOptions().setIfMatchETag(receipt.get_etag()));
+            return cartForReceiptContainer.upsertItem(receipt, new CosmosItemRequestOptions().setIfMatchETag(receipt.get_etag()));
         } catch (PreconditionFailedException e) {
             throw new CartConcurrentUpdateException("The cart has been updated since the last fetch", e);
         }
@@ -98,11 +110,8 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
      */
     @Override
     public CartReceiptError getCartReceiptError(String cartId) throws CartNotFoundException {
-        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
-        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(cartReceiptsMessageErrorsContainerName);
-
         try {
-            return cosmosContainer.readItem(cartId, new PartitionKey(cartId), CartReceiptError.class).getItem();
+            return cartReceiptsErrorsContainer.readItem(cartId, new PartitionKey(cartId), CartReceiptError.class).getItem();
         } catch (CosmosException e) {
             throw new CartNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG, e);
         }
@@ -133,7 +142,7 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
                 )
         );
 
-        return executePagedQuery(cartForReceiptContainerName, querySpec, continuationToken, pageSize);
+        return executePagedQuery(querySpec, continuationToken, pageSize);
     }
 
     /**
@@ -167,7 +176,7 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
                 )
         );
 
-        return executePagedQuery(cartForReceiptContainerName, querySpec, continuationToken, pageSize);
+        return executePagedQuery(querySpec, continuationToken, pageSize);
     }
 
     @Override
@@ -191,7 +200,7 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
                 )
         );
 
-        return executePagedQuery(cartForReceiptContainerName, querySpec, continuationToken, pageSize);
+        return executePagedQuery(querySpec, continuationToken, pageSize);
     }
 
     @Override
@@ -221,7 +230,7 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
                 )
         );
 
-        return executePagedQuery(cartForReceiptContainerName, querySpec, continuationToken, pageSize);
+        return executePagedQuery(querySpec, continuationToken, pageSize);
     }
 
     /**
@@ -229,13 +238,11 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
      */
 
     private Iterable<FeedResponse<CartForReceipt>> executePagedQuery(
-            String containerName,
             SqlQuerySpec querySpec,
             String continuationToken,
             Integer pageSize
     ) {
-        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
-        return cosmosDatabase.getContainer(containerName)
+        return cartForReceiptContainer
                 .queryItems(querySpec, new CosmosQueryRequestOptions(), CartForReceipt.class)
                 .iterableByPage(continuationToken, pageSize);
     }
