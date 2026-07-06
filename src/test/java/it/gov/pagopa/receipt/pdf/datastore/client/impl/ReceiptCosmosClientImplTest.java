@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariables;
@@ -46,6 +47,8 @@ class ReceiptCosmosClientImplTest {
     private CosmosContainer mockContainer;
     @Mock
     private CosmosPagedIterable<Receipt> mockIterable;
+    @Mock
+    private CosmosItemResponse<Receipt> mockReceiptResponse;
     @Mock
     private CosmosPagedIterable<ReceiptError> mockReceiptErrorIterable;
     @Mock
@@ -72,12 +75,33 @@ class ReceiptCosmosClientImplTest {
     }
 
     @Test
-    void getReceiptDocumentOk() {
+    void getReceiptDocument_OK_pointRead() {
         Receipt receipt = new Receipt();
         receipt.setId(RECEIPT_ID);
 
         when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
+        when(mockContainer.readItem(any(), any(), eq(Receipt.class))).thenReturn(mockReceiptResponse);
+        when(mockReceiptResponse.getItem()).thenReturn(receipt);
+
+        Receipt result = assertDoesNotThrow(() -> sut.getReceiptDocument(RECEIPT_ID));
+
+        assertEquals(RECEIPT_ID, result.getId());
+
+        verify(mockContainer, never()).queryItems(any(SqlQuerySpec.class), any(), eq(Receipt.class));
+    }
+
+    @Test
+    void getReceiptDocument_OK_fallbackOnIterate() {
+        Receipt receipt = new Receipt();
+        receipt.setId(RECEIPT_ID);
+
+        CosmosException notFound = mock(CosmosException.class);
+        when(notFound.getStatusCode()).thenReturn(404);
+
+        when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
+        when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
+        when(mockContainer.readItem(any(), any(), eq(Receipt.class))).thenThrow(notFound);
         when(mockContainer.queryItems(any(SqlQuerySpec.class), any(), eq(Receipt.class))).thenReturn(mockIterable);
         when(mockIterable.stream()).thenReturn(mockReceiptStream);
         when(mockReceiptStream.findFirst()).thenReturn(Optional.of(receipt));
@@ -88,9 +112,24 @@ class ReceiptCosmosClientImplTest {
     }
 
     @Test
-    void getReceiptDocumentKo() {
+    void getReceiptDocument_KO() {
         when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
+        when(mockContainer.readItem(any(), any(), eq(Receipt.class))).thenThrow(CosmosException.class);
+
+        assertThrows(ReceiptNotFoundException.class, () -> sut.getReceiptDocument("an invalid receipt id"));
+
+        verify(mockContainer, never()).queryItems(any(SqlQuerySpec.class), any(), eq(Receipt.class));
+    }
+
+    @Test
+    void getReceiptDocument_KO_notFountOnBothQuery() {
+        CosmosException notFound = mock(CosmosException.class);
+        when(notFound.getStatusCode()).thenReturn(404);
+
+        when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
+        when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
+        when(mockContainer.readItem(any(), any(), eq(Receipt.class))).thenThrow(notFound);
         when(mockContainer.queryItems(any(SqlQuerySpec.class), any(), eq(Receipt.class))).thenReturn(mockIterable);
         when(mockIterable.stream()).thenReturn(mockReceiptStream);
         when(mockReceiptStream.findFirst()).thenReturn(Optional.empty());
@@ -184,34 +223,5 @@ class ReceiptCosmosClientImplTest {
                 assertDoesNotThrow(() -> sut.getInsertedReceiptDocuments(null, 1));
 
         assertNotNull(result);
-    }
-
-    @Test
-    void getReceiptDocument_SuccessWithReadItem() {
-        Receipt receipt = new Receipt();
-        receipt.setId(RECEIPT_ID);
-
-        when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
-        when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
-        when(mockContainer.readItem(eq(RECEIPT_ID), any(), eq(Receipt.class)))
-                .thenReturn(mockCosmosItemResponse);
-        when(mockCosmosItemResponse.getItem()).thenReturn(receipt);
-
-        Receipt result = assertDoesNotThrow(() -> sut.getReceiptDocument(RECEIPT_ID));
-
-        assertEquals(RECEIPT_ID, result.getId());
-    }
-
-    @Test
-    void getReceiptDocument_CosmosExceptionNon404() {
-        CosmosException cosmosException = mock(CosmosException.class);
-        when(cosmosException.getStatusCode()).thenReturn(500);
-
-        when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
-        when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
-        when(mockContainer.readItem(eq(RECEIPT_ID), any(), eq(Receipt.class)))
-                .thenThrow(cosmosException);
-
-        assertThrows(CosmosException.class, () -> sut.getReceiptDocument(RECEIPT_ID));
     }
 }

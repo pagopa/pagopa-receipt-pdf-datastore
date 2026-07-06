@@ -14,7 +14,6 @@ import com.azure.cosmos.models.FeedResponse;
 import com.azure.cosmos.models.PartitionKey;
 import com.azure.cosmos.models.SqlParameter;
 import com.azure.cosmos.models.SqlQuerySpec;
-import com.microsoft.azure.functions.HttpStatus;
 import it.gov.pagopa.receipt.pdf.datastore.client.CartReceiptsCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartForReceipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
@@ -76,7 +75,7 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
         try {
             return cosmosContainer.readItem(cartId, new PartitionKey(cartId), CartForReceipt.class).getItem();
         } catch (CosmosException e) {
-            throw new CartNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG);
+            throw new CartNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG, e);
         }
     }
 
@@ -102,14 +101,11 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
         CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(cartReceiptsMessageErrorsContainerName);
 
-        CosmosItemResponse<CartReceiptError> response =
-                cosmosContainer.readItem(cartId, new PartitionKey(cartId), CartReceiptError.class);
-
-        if (response.getStatusCode() == HttpStatus.OK.value()) {
-            return response.getItem();
+        try {
+            return cosmosContainer.readItem(cartId, new PartitionKey(cartId), CartReceiptError.class).getItem();
+        } catch (CosmosException e) {
+            throw new CartNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG, e);
         }
-
-        throw new CartNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG);
     }
 
     /**

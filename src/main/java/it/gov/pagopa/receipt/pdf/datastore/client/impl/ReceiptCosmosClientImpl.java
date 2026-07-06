@@ -5,7 +5,6 @@ import com.azure.cosmos.CosmosClientBuilder;
 import com.azure.cosmos.CosmosContainer;
 import com.azure.cosmos.CosmosDatabase;
 import com.azure.cosmos.CosmosException;
-import com.azure.cosmos.implementation.NotFoundException;
 import com.azure.cosmos.models.CosmosItemResponse;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.FeedResponse;
@@ -79,7 +78,10 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
         try {
             return cosmosContainer.readItem(eventId, new PartitionKey(eventId), Receipt.class)
                     .getItem();
-        } catch (NotFoundException e) {
+        } catch (CosmosException e) {
+            if (e.getStatusCode() != 404) {
+                throw new ReceiptNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG, e);
+            }
             // if not found use fallback query
             SqlQuerySpec querySpec = new SqlQuerySpec(
                     "SELECT * FROM c WHERE c.eventId = @eventId",
