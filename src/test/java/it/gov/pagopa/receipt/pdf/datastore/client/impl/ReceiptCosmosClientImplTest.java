@@ -11,7 +11,6 @@ import com.azure.cosmos.util.CosmosPagedIterable;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReceiptError;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -70,9 +69,8 @@ class ReceiptCosmosClientImplTest {
         withEnvironmentVariables(
                 "COSMOS_RECEIPT_KEY", mockKey,
                 "COSMOS_RECEIPT_SERVICE_ENDPOINT", "",
-                "COSMOS_RECEIPT_READ_REGION", ""
-        ).execute(() -> Assertions.assertThrows(IllegalArgumentException.class, ReceiptCosmosClientImpl::getInstance)
-        );
+                "COSMOS_RECEIPT_READ_REGION", "")
+                .execute(() -> assertThrows(ExceptionInInitializerError.class, ReceiptCosmosClientImpl::getInstance));
     }
 
     @Test

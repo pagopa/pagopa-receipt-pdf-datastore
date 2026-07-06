@@ -54,7 +54,7 @@ class BizEventCosmosClientImplTest {
                 "COSMOS_BIZ_EVENT_KEY", mockKey,
                 "COSMOS_BIZ_EVENT_SERVICE_ENDPOINT", "",
                 "COSMOS_BIZ_EVENT_READ_REGION", "")
-                .execute(() -> assertThrows(IllegalArgumentException.class, BizEventCosmosClientImpl::getInstance));
+                .execute(() -> assertThrows(ExceptionInInitializerError.class, BizEventCosmosClientImpl::getInstance));
     }
 
     @Test

@@ -28,8 +28,6 @@ import java.util.Optional;
  */
 public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
 
-    private static ReceiptCosmosClientImpl instance;
-
     private static final String DOCUMENT_NOT_FOUND_ERR_MSG = "Document not found in the defined container";
 
     private final String millisDiff = System.getenv().getOrDefault("MAX_DATE_DIFF_MILLIS", "1800000");
@@ -77,11 +75,15 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
     }
 
     public static ReceiptCosmosClientImpl getInstance() {
-        if (instance == null) {
-            instance = new ReceiptCosmosClientImpl();
-        }
+        return SingletonHelper.INSTANCE;
+    }
 
-        return instance;
+    /**
+     * Bill Pugh singleton holder: the JVM guarantees that the class is loaded
+     * (and therefore INSTANCE initialized) lazily and in a thread-safe way.
+     */
+    private static class SingletonHelper {
+        private static final ReceiptCosmosClientImpl INSTANCE = new ReceiptCosmosClientImpl();
     }
 
     /**

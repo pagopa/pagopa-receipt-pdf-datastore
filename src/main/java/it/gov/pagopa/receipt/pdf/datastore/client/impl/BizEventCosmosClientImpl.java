@@ -19,8 +19,6 @@ import java.util.List;
  */
 public class BizEventCosmosClientImpl implements BizEventCosmosClient {
 
-    private static BizEventCosmosClientImpl instance;
-
     private final CosmosClient cosmosClient;
     private final CosmosContainer bizEventContainer;
 
@@ -35,8 +33,8 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
                 .preferredRegions(List.of(readRegion))
                 .buildClient();
 
-        String containerId = System.getenv("COSMOS_BIZ_EVENT_CONTAINER_NAME");
         String databaseId = System.getenv("COSMOS_BIZ_EVENT_DB_NAME");
+        String containerId = System.getenv("COSMOS_BIZ_EVENT_CONTAINER_NAME");
 
         this.bizEventContainer = this.cosmosClient.getDatabase(databaseId).getContainer(containerId);
     }
@@ -51,10 +49,15 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
     }
 
     public static BizEventCosmosClientImpl getInstance() {
-        if (instance == null) {
-            instance = new BizEventCosmosClientImpl();
-        }
-        return instance;
+        return SingletonHelper.INSTANCE;
+    }
+
+    /**
+     * Bill Pugh singleton holder: the JVM guarantees that the class is loaded
+     * (and therefore INSTANCE initialized) lazily and in a thread-safe way.
+     */
+    private static class SingletonHelper {
+        private static final BizEventCosmosClientImpl INSTANCE = new BizEventCosmosClientImpl();
     }
 
     /**

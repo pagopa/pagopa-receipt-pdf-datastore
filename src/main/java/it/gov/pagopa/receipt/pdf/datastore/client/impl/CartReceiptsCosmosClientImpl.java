@@ -28,7 +28,6 @@ import java.util.List;
 
 public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
 
-    private static CartReceiptsCosmosClientImpl instance;
 
     private static final String DOCUMENT_NOT_FOUND_ERR_MSG = "Document not found in the defined container";
 
@@ -77,11 +76,15 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
     }
 
     public static CartReceiptsCosmosClientImpl getInstance() {
-        if (instance == null) {
-            instance = new CartReceiptsCosmosClientImpl();
-        }
+        return SingletonHelper.INSTANCE;
+    }
 
-        return instance;
+    /**
+     * Bill Pugh singleton holder: the JVM guarantees that the class is loaded
+     * (and therefore INSTANCE initialized) lazily and in a thread-safe way.
+     */
+    private static class SingletonHelper {
+        private static final CartReceiptsCosmosClientImpl INSTANCE = new CartReceiptsCosmosClientImpl();
     }
 
     @Override
