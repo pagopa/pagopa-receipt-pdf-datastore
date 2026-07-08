@@ -1,10 +1,15 @@
 package it.gov.pagopa.receipt.pdf.datastore.client.impl;
 
-import com.azure.cosmos.*;
+import com.azure.cosmos.CosmosClientBuilder;
+import com.azure.cosmos.CosmosContainer;
+import com.azure.cosmos.CosmosDatabase;
+import com.azure.cosmos.CosmosException;
 import com.azure.cosmos.models.CosmosItemResponse;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.FeedResponse;
 import com.azure.cosmos.models.PartitionKey;
+import com.azure.cosmos.models.SqlParameter;
+import com.azure.cosmos.models.SqlQuerySpec;
 import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReceiptError;
@@ -21,43 +26,60 @@ import java.util.Optional;
  */
 public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
 
-    private static ReceiptCosmosClientImpl instance;
-
-    private final String databaseId = System.getenv("COSMOS_RECEIPT_DB_NAME");
-    private final String containerId = System.getenv("COSMOS_RECEIPT_CONTAINER_NAME");
-    private final String containerReceiptErrorId = System.getenv().getOrDefault("COSMOS_RECEIPT_ERROR_CONTAINER_NAME", "receipts-message-errors");
-
     private static final String DOCUMENT_NOT_FOUND_ERR_MSG = "Document not found in the defined container";
 
-    private final String millisDiff = System.getenv("MAX_DATE_DIFF_MILLIS");
-    private final String millisNotifyDif = System.getenv("MAX_DATE_DIFF_NOTIFY_MILLIS");
+    private final String millisDiff = System.getenv().getOrDefault("MAX_DATE_DIFF_MILLIS", "1800000");
+    private final String millisNotifyDif = System.getenv().getOrDefault("MAX_DATE_DIFF_NOTIFY_MILLIS", "1800000");
     private final String numDaysRecoverFailed = System.getenv().getOrDefault("RECOVER_FAILED_MASSIVE_MAX_DAYS", "0");
     private final String numDaysRecoverNotNotified = System.getenv().getOrDefault("RECOVER_NOT_NOTIFIED_MASSIVE_MAX_DAYS", "0");
 
-    private final CosmosClient cosmosClient;
+    private final CosmosContainer receiptContainer;
+    private final CosmosContainer receiptErrorContainer;
 
+    @SuppressWarnings("resource") // CosmosClient lifecycle == singleton lifecycle; never closed on purpose
     private ReceiptCosmosClientImpl() {
         String azureKey = System.getenv("COSMOS_RECEIPT_KEY");
         String serviceEndpoint = System.getenv("COSMOS_RECEIPT_SERVICE_ENDPOINT");
         String readRegion = System.getenv("COSMOS_RECEIPT_READ_REGION");
 
-        this.cosmosClient = new CosmosClientBuilder()
+        String databaseId = System.getenv("COSMOS_RECEIPT_DB_NAME");
+        String containerId = System.getenv("COSMOS_RECEIPT_CONTAINER_NAME");
+        String containerReceiptErrorId = System.getenv()
+                .getOrDefault("COSMOS_RECEIPT_ERROR_CONTAINER_NAME", "receipts-message-errors");
+
+        CosmosDatabase database = new CosmosClientBuilder()
                 .endpoint(serviceEndpoint)
                 .key(azureKey)
                 .preferredRegions(List.of(readRegion))
-                .buildClient();
+                .buildClient()
+                .getDatabase(databaseId);
+
+        this.receiptContainer = database.getContainer(containerId);
+        this.receiptErrorContainer = database.getContainer(containerReceiptErrorId);
     }
 
-    public ReceiptCosmosClientImpl(CosmosClient cosmosClient) {
-        this.cosmosClient = cosmosClient;
+    /**
+     * Test-only constructor. Package-private visibility so it is only reachable from tests
+     * in the same package.
+     */
+    ReceiptCosmosClientImpl(
+            CosmosContainer receiptContainer,
+            CosmosContainer receiptErrorContainer
+    ) {
+        this.receiptContainer = receiptContainer;
+        this.receiptErrorContainer = receiptErrorContainer;
     }
 
     public static ReceiptCosmosClientImpl getInstance() {
-        if (instance == null) {
-            instance = new ReceiptCosmosClientImpl();
-        }
+        return SingletonHelper.INSTANCE;
+    }
 
-        return instance;
+    /**
+     * Bill Pugh singleton holder: the JVM guarantees that the class is loaded
+     * (and therefore INSTANCE initialized) lazily and in a thread-safe way.
+     */
+    private static class SingletonHelper {
+        private static final ReceiptCosmosClientImpl INSTANCE = new ReceiptCosmosClientImpl();
     }
 
     /**
@@ -65,7 +87,22 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      */
     @Override
     public Receipt getReceiptDocument(String eventId) throws ReceiptNotFoundException {
-        return getReceiptById(eventId);
+        try {
+            return receiptContainer.readItem(eventId, new PartitionKey(eventId), Receipt.class)
+                    .getItem();
+        } catch (CosmosException e) {
+            if (e.getStatusCode() != 404) {
+                throw e;
+            }
+        }
+        // if not found use fallback query
+        SqlQuerySpec querySpec = new SqlQuerySpec(
+                "SELECT * FROM c WHERE c.eventId = @eventId",
+                List.of(new SqlParameter("@eventId", eventId))
+        );
+
+        return getDocumentByFilter(receiptContainer, querySpec, Receipt.class)
+                .orElseThrow(() -> new ReceiptNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG));
     }
 
     /**
@@ -73,7 +110,12 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      */
     @Override
     public ReceiptError getReceiptError(String bizEventId) throws ReceiptNotFoundException {
-        return getDocumentByFilter(containerReceiptErrorId, "bizEventId", bizEventId, ReceiptError.class)
+        SqlQuerySpec querySpec = new SqlQuerySpec(
+                "SELECT * FROM c WHERE c.bizEventId = @bizEventId",
+                List.of(new SqlParameter("@bizEventId", bizEventId))
+        );
+
+        return getDocumentByFilter(receiptErrorContainer, querySpec, ReceiptError.class)
                 .orElseThrow(() -> new ReceiptNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG));
     }
 
@@ -82,12 +124,24 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      */
     @Override
     public Iterable<FeedResponse<Receipt>> getFailedReceiptDocuments(String continuationToken, Integer pageSize) {
-        String query = String.format("SELECT * FROM c WHERE (c.status = '%s' or c.status = '%s') AND c.inserted_at >= %s",
-                ReceiptStatusType.FAILED, ReceiptStatusType.NOT_QUEUE_SENT,
-                OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(
-                        Long.parseLong(numDaysRecoverFailed)).toInstant().toEpochMilli());
+        long daysAgo = OffsetDateTime.now()
+                .truncatedTo(ChronoUnit.DAYS)
+                .minusDays(Long.parseLong(numDaysRecoverFailed))
+                .toInstant()
+                .toEpochMilli();
 
-        return executePagedQuery(containerId, query, Receipt.class, continuationToken, pageSize);
+        SqlQuerySpec querySpec = new SqlQuerySpec(
+                "SELECT * FROM c " +
+                        "WHERE (c.status = @statusFailed OR c.status = @statusNotQueueSent) " +
+                        "   AND c.inserted_at >= @minInsertedAt ",
+                List.of(
+                        new SqlParameter("@statusFailed", ReceiptStatusType.FAILED.name()),
+                        new SqlParameter("@statusNotQueueSent", ReceiptStatusType.NOT_QUEUE_SENT.name()),
+                        new SqlParameter("@minInsertedAt", daysAgo)
+                )
+        );
+
+        return executePagedQuery(querySpec, continuationToken, pageSize);
     }
 
     /**
@@ -95,11 +149,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      */
     @Override
     public CosmosItemResponse<Receipt> saveReceipts(Receipt receipt) {
-        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
-
-        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
-
-        return cosmosContainer.createItem(receipt);
+        return receiptContainer.createItem(receipt);
     }
 
     /**
@@ -107,10 +157,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      */
     @Override
     public CosmosItemResponse<Receipt> updateReceipts(Receipt receipt) {
-        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
-        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
-
-        return cosmosContainer.upsertItem(receipt);
+        return receiptContainer.upsertItem(receipt);
     }
 
     /**
@@ -119,26 +166,55 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
     @Override
     public Iterable<FeedResponse<Receipt>> getGeneratedReceiptDocuments(String continuationToken, Integer pageSize) {
         OffsetDateTime currentDateTime = OffsetDateTime.now();
-        long now = currentDateTime.toInstant().toEpochMilli();
-        long daysAgo = currentDateTime.truncatedTo(ChronoUnit.DAYS).minusDays(Long.parseLong(numDaysRecoverNotNotified)).toInstant().toEpochMilli();
+        long daysAgo = currentDateTime
+                .truncatedTo(ChronoUnit.DAYS)
+                .minusDays(Long.parseLong(numDaysRecoverNotNotified))
+                .toInstant()
+                .toEpochMilli();
 
-        String query = String.format("SELECT * FROM c WHERE (c.status = '%s' AND c.generated_at >= %s AND ( %s - c.generated_at) >= %s)",
-                ReceiptStatusType.GENERATED, daysAgo, now, millisNotifyDif);
+        // (now - c.generated_at) >= millisNotifyDif  <=>  c.generated_at <= now - millisNotifyDif
+        long maxGeneratedAt = currentDateTime.toInstant().toEpochMilli() - Long.parseLong(millisNotifyDif);
 
-        return executePagedQuery(containerId, query, Receipt.class, continuationToken, pageSize);
+        SqlQuerySpec querySpec = new SqlQuerySpec(
+                "SELECT * FROM c " +
+                        "WHERE c.status = @statusGenerated " +
+                        "  AND c.generated_at >= @minGeneratedAt " +
+                        "  AND c.generated_at <= @maxGeneratedAt",
+                List.of(
+                        new SqlParameter("@statusGenerated", ReceiptStatusType.GENERATED.name()),
+                        new SqlParameter("@minGeneratedAt", daysAgo),
+                        new SqlParameter("@maxGeneratedAt", maxGeneratedAt)
+                )
+        );
+
+        return executePagedQuery(querySpec, continuationToken, pageSize);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public Iterable<FeedResponse<Receipt>> getIOErrorToNotifyReceiptDocuments(String continuationToken, Integer pageSize) {
-        long daysAgo = OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(Long.parseLong(numDaysRecoverNotNotified)).toInstant().toEpochMilli();
+    public Iterable<FeedResponse<Receipt>> getIOErrorToNotifyReceiptDocuments(
+            String continuationToken,
+            Integer pageSize
+    ) {
+        long daysAgo = OffsetDateTime.now()
+                .truncatedTo(ChronoUnit.DAYS)
+                .minusDays(Long.parseLong(numDaysRecoverNotNotified))
+                .toInstant()
+                .toEpochMilli();
 
-        String query = String.format("SELECT * FROM c WHERE c.status = '%s' AND c.generated_at >= %s",
-                ReceiptStatusType.IO_ERROR_TO_NOTIFY, daysAgo);
+        SqlQuerySpec querySpec = new SqlQuerySpec(
+                "SELECT * FROM c " +
+                        "WHERE c.status = @statusIoErrorToNotify " +
+                        "  AND c.generated_at >= @generatedAt",
+                List.of(
+                        new SqlParameter("@statusIoErrorToNotify", ReceiptStatusType.IO_ERROR_TO_NOTIFY.name()),
+                        new SqlParameter("@generatedAt", daysAgo)
+                )
+        );
 
-        return executePagedQuery(containerId, query, Receipt.class, continuationToken, pageSize);
+        return executePagedQuery(querySpec, continuationToken, pageSize);
     }
 
     /**
@@ -147,62 +223,49 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
     @Override
     public Iterable<FeedResponse<Receipt>> getInsertedReceiptDocuments(String continuationToken, Integer pageSize) {
         OffsetDateTime currentDateTime = OffsetDateTime.now();
-        long now = currentDateTime.toInstant().toEpochMilli();
-        long daysAgo = currentDateTime.truncatedTo(ChronoUnit.DAYS).minusDays(Long.parseLong(numDaysRecoverFailed)).toInstant().toEpochMilli();
+        long daysAgo = currentDateTime
+                .truncatedTo(ChronoUnit.DAYS)
+                .minusDays(Long.parseLong(numDaysRecoverFailed))
+                .toInstant()
+                .toEpochMilli();
 
-        String query = String.format(
-                "SELECT * FROM c WHERE (c.status = '%s' AND c.inserted_at >= %s AND ( %s - c.inserted_at) >= %s)",
-                ReceiptStatusType.INSERTED, daysAgo, now, millisDiff);
+        // (now - c.inserted_at) >= millisDiff  <=>  c.inserted_at <= now - millisDiff
+        long maxInsertedAt = currentDateTime.toInstant().toEpochMilli() - Long.parseLong(millisDiff);
 
-        return executePagedQuery(containerId, query, Receipt.class, continuationToken, pageSize);
+        SqlQuerySpec querySpec = new SqlQuerySpec(
+                "SELECT * FROM c " +
+                        "WHERE c.status = @statusInserted " +
+                        "  AND c.inserted_at >= @minInsertedAt " +
+                        "  AND c.inserted_at <= @maxInsertedAt",
+                List.of(
+                        new SqlParameter("@statusInserted", ReceiptStatusType.INSERTED.name()),
+                        new SqlParameter("@minInsertedAt", daysAgo),
+                        new SqlParameter("@maxInsertedAt", maxInsertedAt)
+                )
+        );
+
+        return executePagedQuery(querySpec, continuationToken, pageSize);
     }
 
     /**
      * PRIVATE METHODS
      */
 
-    private Receipt getReceiptById(String id) throws ReceiptNotFoundException {
-        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
-        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
-
-        try {
-            CosmosItemResponse<Receipt> itemResponse = cosmosContainer
-                    .readItem(id, new PartitionKey(id), Receipt.class);
-
-            if (itemResponse != null) {
-                return itemResponse.getItem();
-            }
-        } catch (CosmosException ce) {
-            if (ce.getStatusCode() != 404) {
-                // if not found use fallback query
-                throw ce;
-            }
-        }
-
-        // fallback use eventId for old receipts
-        return getDocumentByFilter(containerId, "eventId", id, Receipt.class)
-                .orElseThrow(() -> new ReceiptNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG));
-    }
-
-
-    private <T> Optional<T> getDocumentByFilter(String containerId, String propertyName, String propertyValue, Class<T> classType) {
-        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
-        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
-
-        String query = String.format("SELECT * FROM c WHERE c.%s = '%s'", propertyName, propertyValue);
-
+    private <T> Optional<T> getDocumentByFilter(CosmosContainer container, SqlQuerySpec querySpec, Class<T> classType) {
         // use stream() to convert iterable and find first element
-        return cosmosContainer
-                .queryItems(query, new CosmosQueryRequestOptions(), classType)
+        return container
+                .queryItems(querySpec, new CosmosQueryRequestOptions(), classType)
                 .stream()
                 .findFirst();
     }
 
-    private <T> Iterable<FeedResponse<T>> executePagedQuery(String containerName, String query, Class<T> classType, String continuationToken, Integer pageSize) {
-        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
-        return cosmosDatabase.getContainer(containerName)
-                .queryItems(query, new CosmosQueryRequestOptions(), classType)
+    private Iterable<FeedResponse<Receipt>> executePagedQuery(
+            SqlQuerySpec querySpec,
+            String continuationToken,
+            Integer pageSize
+    ) {
+        return receiptContainer
+                .queryItems(querySpec, new CosmosQueryRequestOptions(), Receipt.class)
                 .iterableByPage(continuationToken, pageSize);
     }
-
 }
