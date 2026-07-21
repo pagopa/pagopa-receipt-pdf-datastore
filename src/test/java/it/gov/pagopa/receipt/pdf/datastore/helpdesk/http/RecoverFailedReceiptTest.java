@@ -37,6 +37,8 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -84,7 +86,7 @@ class RecoverFailedReceiptTest {
         Receipt recovered = Receipt.builder().status(ReceiptStatusType.INSERTED).build();
 
         doReturn(failedReceipt).when(receiptCosmosServiceMock).getReceipt(EVENT_ID);
-        doReturn(recovered).when(helpdeskServiceMock).recoverFailedReceipt(failedReceipt);
+        doReturn(recovered).when(helpdeskServiceMock).recoverFailedReceipt(eq(failedReceipt), anyBoolean());
 
         // test execution
         HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, EVENT_ID, documentdb, contextMock));
@@ -110,7 +112,7 @@ class RecoverFailedReceiptTest {
         assertEquals(HttpStatus.NOT_FOUND, response.getStatus());
         assertNotNull(response.getBody());
 
-        verify(helpdeskServiceMock, never()).recoverFailedReceipt(any());
+        verify(helpdeskServiceMock, never()).recoverFailedReceipt(any(), anyBoolean());
         verify(documentdb, never()).setValue(receiptCaptor.capture());
     }
 
@@ -131,7 +133,7 @@ class RecoverFailedReceiptTest {
         assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, response.getStatus());
         assertNotNull(response.getBody());
 
-        verify(helpdeskServiceMock, never()).recoverFailedReceipt(any());
+        verify(helpdeskServiceMock, never()).recoverFailedReceipt(any(), anyBoolean());
         verify(documentdb, never()).setValue(receiptCaptor.capture());
     }
 
@@ -141,7 +143,7 @@ class RecoverFailedReceiptTest {
         Receipt failedReceipt = createFailedReceipt();
 
         doReturn(failedReceipt).when(receiptCosmosServiceMock).getReceipt(EVENT_ID);
-        doThrow(BizEventUnprocessableEntityException.class).when(helpdeskServiceMock).recoverFailedReceipt(failedReceipt);
+        doThrow(BizEventUnprocessableEntityException.class).when(helpdeskServiceMock).recoverFailedReceipt(eq(failedReceipt), anyBoolean());
 
         // test execution
         HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, EVENT_ID, documentdb, contextMock));
@@ -160,7 +162,7 @@ class RecoverFailedReceiptTest {
         Receipt failedReceipt = createFailedReceipt();
 
         doReturn(failedReceipt).when(receiptCosmosServiceMock).getReceipt(EVENT_ID);
-        doThrow(BizEventNotFoundException.class).when(helpdeskServiceMock).recoverFailedReceipt(failedReceipt);
+        doThrow(BizEventNotFoundException.class).when(helpdeskServiceMock).recoverFailedReceipt(eq(failedReceipt), anyBoolean());
 
         // test execution
         HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, EVENT_ID, documentdb, contextMock));
@@ -179,7 +181,7 @@ class RecoverFailedReceiptTest {
         Receipt failedReceipt = createFailedReceipt();
 
         doReturn(failedReceipt).when(receiptCosmosServiceMock).getReceipt(EVENT_ID);
-        doThrow(BizEventBadRequestException.class).when(helpdeskServiceMock).recoverFailedReceipt(failedReceipt);
+        doThrow(BizEventBadRequestException.class).when(helpdeskServiceMock).recoverFailedReceipt(eq(failedReceipt), anyBoolean());
 
         // test execution
         HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, EVENT_ID, documentdb, contextMock));
@@ -199,7 +201,7 @@ class RecoverFailedReceiptTest {
         Receipt recovered = Receipt.builder().status(ReceiptStatusType.FAILED).build();
 
         doReturn(failedReceipt).when(receiptCosmosServiceMock).getReceipt(EVENT_ID);
-        doReturn(recovered).when(helpdeskServiceMock).recoverFailedReceipt(failedReceipt);
+        doReturn(recovered).when(helpdeskServiceMock).recoverFailedReceipt(eq(failedReceipt), anyBoolean());
 
         // test execution
         HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, EVENT_ID, documentdb, contextMock));
@@ -211,6 +213,49 @@ class RecoverFailedReceiptTest {
 
         verify(documentdb).setValue(receiptCaptor.capture());
         assertNotNull(receiptCaptor.getValue());
+    }
+
+    @Test
+    @SneakyThrows
+    void recoverFailedReceiptWithSendNotificationFalse() {
+        Receipt failedReceipt = createFailedReceipt();
+        Receipt recovered = Receipt.builder().status(ReceiptStatusType.INSERTED).build();
+
+        doReturn(Collections.singletonMap("sendNotification", "false")).when(requestMock).getQueryParameters();
+        doReturn(failedReceipt).when(receiptCosmosServiceMock).getReceipt(EVENT_ID);
+        doReturn(recovered).when(helpdeskServiceMock).recoverFailedReceipt(eq(failedReceipt), eq(false));
+
+        // test execution
+        HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, EVENT_ID, documentdb, contextMock));
+
+        // test assertion
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatus());
+        assertNotNull(response.getBody());
+
+        verify(helpdeskServiceMock).recoverFailedReceipt(eq(failedReceipt), eq(false));
+        verify(documentdb, never()).setValue(receiptCaptor.capture());
+    }
+
+    @Test
+    @SneakyThrows
+    void recoverFailedReceiptWithoutSendNotificationDefaultsTrue() {
+        Receipt failedReceipt = createFailedReceipt();
+        Receipt recovered = Receipt.builder().status(ReceiptStatusType.INSERTED).build();
+
+        doReturn(failedReceipt).when(receiptCosmosServiceMock).getReceipt(EVENT_ID);
+        doReturn(recovered).when(helpdeskServiceMock).recoverFailedReceipt(eq(failedReceipt), eq(true));
+
+        // test execution
+        HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, EVENT_ID, documentdb, contextMock));
+
+        // test assertion
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatus());
+        assertNotNull(response.getBody());
+
+        verify(helpdeskServiceMock).recoverFailedReceipt(eq(failedReceipt), eq(true));
+        verify(documentdb, never()).setValue(receiptCaptor.capture());
     }
 
     private Receipt createFailedReceipt() {

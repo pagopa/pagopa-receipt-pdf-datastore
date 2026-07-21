@@ -24,6 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -52,9 +54,8 @@ class RecoverFailedReceiptScheduledTest {
     void recoverFailedReceiptScheduledSuccess() {
         sut = new RecoverFailedReceiptScheduled(helpdeskServiceMock);
 
-        doReturn(createMassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverFailedReceipt(ReceiptStatusType.FAILED);
-        doReturn(createMassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverFailedReceipt(ReceiptStatusType.INSERTED);
-
+        doReturn(createMassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverFailedReceipt(eq(ReceiptStatusType.FAILED), eq(true));
+        doReturn(createMassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverFailedReceipt(eq(ReceiptStatusType.INSERTED), eq(true));
         // test execution
         assertDoesNotThrow(() -> sut.run("info", documentdb, contextMock));
 
@@ -68,8 +69,8 @@ class RecoverFailedReceiptScheduledTest {
     void recoverFailedReceiptScheduledSuccessWithoutAction() {
         sut = new RecoverFailedReceiptScheduled(helpdeskServiceMock);
 
-        doReturn(new MassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverFailedReceipt(ReceiptStatusType.FAILED);
-        doReturn(new MassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverFailedReceipt(ReceiptStatusType.INSERTED);
+        doReturn(new MassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverFailedReceipt(eq(ReceiptStatusType.FAILED), eq(true));
+        doReturn(new MassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverFailedReceipt(eq(ReceiptStatusType.INSERTED), eq(true));
 
         // test execution
         assertDoesNotThrow(() -> sut.run("info", documentdb, contextMock));
@@ -91,7 +92,7 @@ class RecoverFailedReceiptScheduledTest {
         assertDoesNotThrow(() -> sut.run("info", documentdb, contextMock));
 
         verify(documentdb, never()).setValue(any());
-        verify(helpdeskServiceMock, never()).massiveRecoverFailedReceipt(any(ReceiptStatusType.class));
+        verify(helpdeskServiceMock, never()).massiveRecoverFailedReceipt(any(ReceiptStatusType.class), anyBoolean());
     }
 
     private MassiveRecoverResult createMassiveRecoverResult() {
