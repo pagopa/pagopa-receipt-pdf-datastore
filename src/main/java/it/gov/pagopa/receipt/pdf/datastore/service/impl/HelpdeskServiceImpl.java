@@ -62,7 +62,7 @@ public class HelpdeskServiceImpl implements HelpdeskService {
     }
 
     @Override
-    public Receipt recoverFailedReceipt(Receipt existingReceipt)
+    public Receipt recoverFailedReceipt(Receipt existingReceipt, Boolean sendNotification)
             throws BizEventUnprocessableEntityException, BizEventBadRequestException, BizEventNotFoundException {
         // retrieve biz-event with the specified cartId
 
@@ -72,6 +72,7 @@ public class HelpdeskServiceImpl implements HelpdeskService {
         Receipt receipt = createReceipt(bizEvent, bizEventToReceiptService, logger);
         // override generated id to avoid receipt duplication
         receipt.setId(existingReceipt.getId());
+        receipt.setSendNotification(sendNotification);
 
         if (isReceiptStatusValid(receipt)) {
             receipt.setStatus(ReceiptStatusType.INSERTED);
@@ -135,7 +136,7 @@ public class HelpdeskServiceImpl implements HelpdeskService {
     }
 
     @Override
-    public MassiveRecoverResult massiveRecoverFailedReceipt(ReceiptStatusType status) {
+    public MassiveRecoverResult massiveRecoverFailedReceipt(ReceiptStatusType status, Boolean sendNotification) {
         List<Receipt> failedReceipts = new ArrayList<>();
         int successCounter = 0;
         int errorCounter = 0;
@@ -151,7 +152,7 @@ public class HelpdeskServiceImpl implements HelpdeskService {
                 }
 
                 try {
-                    Receipt restored = recoverFailedReceipt(receipt);
+                    Receipt restored = recoverFailedReceipt(receipt, sendNotification);
 
                     if (isReceiptStatusValid(restored)) {
                         successCounter++;
