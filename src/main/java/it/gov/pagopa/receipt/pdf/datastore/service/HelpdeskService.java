@@ -30,7 +30,7 @@ public interface HelpdeskService {
      * @throws BizEventBadRequestException          in case the biz event is invalid for receipt generation
      * @throws BizEventNotFoundException            in case no biz event is found for the specified receipt
      */
-    Receipt recoverFailedReceipt(Receipt existingReceipt)
+    Receipt recoverFailedReceipt(Receipt existingReceipt, Boolean sendNotification)
             throws BizEventUnprocessableEntityException, BizEventBadRequestException, BizEventNotFoundException;
 
     /**
@@ -74,7 +74,7 @@ public interface HelpdeskService {
      * @param status the status to be recovered
      * @return the recover result
      */
-    MassiveRecoverResult massiveRecoverFailedReceipt(ReceiptStatusType status);
+    MassiveRecoverResult massiveRecoverFailedReceipt(ReceiptStatusType status, Boolean sendNotification);
 
     /**
      * Massive recover all failed cart with the specified status {@link CartStatusType}

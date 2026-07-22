@@ -10,6 +10,7 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptSta
 import it.gov.pagopa.receipt.pdf.datastore.model.MassiveRecoverResult;
 import it.gov.pagopa.receipt.pdf.datastore.service.HelpdeskService;
 import it.gov.pagopa.receipt.pdf.datastore.utils.HttpResponseMessageMock;
+import java.util.HashMap;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,8 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -70,7 +73,7 @@ class RecoverFailedReceiptMassiveTest {
     @SneakyThrows
     void recoverFailedReceiptMassiveSuccess(ReceiptStatusType status) {
         doReturn(Collections.singletonMap("status", status.name())).when(requestMock).getQueryParameters();
-        doReturn(new MassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverFailedReceipt(any(ReceiptStatusType.class));
+        doReturn(new MassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverFailedReceipt(any(ReceiptStatusType.class), anyBoolean());
 
         // test execution
         HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, documentdb, contextMock));
@@ -94,7 +97,7 @@ class RecoverFailedReceiptMassiveTest {
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatus());
         assertNotNull(response.getBody());
 
-        verify(helpdeskServiceMock, never()).massiveRecoverFailedReceipt(any(ReceiptStatusType.class));
+        verify(helpdeskServiceMock, never()).massiveRecoverFailedReceipt(any(ReceiptStatusType.class),  anyBoolean());
         verify(documentdb, never()).setValue(receiptCaptor.capture());
     }
 
@@ -111,7 +114,7 @@ class RecoverFailedReceiptMassiveTest {
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatus());
         assertNotNull(response.getBody());
 
-        verify(helpdeskServiceMock, never()).massiveRecoverFailedReceipt(any(ReceiptStatusType.class));
+        verify(helpdeskServiceMock, never()).massiveRecoverFailedReceipt(any(ReceiptStatusType.class), anyBoolean());
         verify(documentdb, never()).setValue(receiptCaptor.capture());
     }
 
@@ -129,7 +132,7 @@ class RecoverFailedReceiptMassiveTest {
         assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, response.getStatus());
         assertNotNull(response.getBody());
 
-        verify(helpdeskServiceMock, never()).massiveRecoverFailedReceipt(any(ReceiptStatusType.class));
+        verify(helpdeskServiceMock, never()).massiveRecoverFailedReceipt(any(ReceiptStatusType.class), anyBoolean());
         verify(documentdb, never()).setValue(receiptCaptor.capture());
     }
 
@@ -143,7 +146,7 @@ class RecoverFailedReceiptMassiveTest {
                 .build();
 
         doReturn(Collections.singletonMap("status", ReceiptStatusType.FAILED.name())).when(requestMock).getQueryParameters();
-        doReturn(recoverResult).when(helpdeskServiceMock).massiveRecoverFailedReceipt(any(ReceiptStatusType.class));
+        doReturn(recoverResult).when(helpdeskServiceMock).massiveRecoverFailedReceipt(any(ReceiptStatusType.class), anyBoolean());
 
         // test execution
         HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, documentdb, contextMock));
@@ -155,5 +158,44 @@ class RecoverFailedReceiptMassiveTest {
 
         verify(documentdb).setValue(receiptCaptor.capture());
         assertNotNull(receiptCaptor.getValue());
+    }
+
+    @Test
+    @SneakyThrows
+    void recoverFailedReceiptMassiveWithSendNotificationFalse() {
+        HashMap<String, String> queryParams = new HashMap<>();
+        queryParams.put("status", ReceiptStatusType.FAILED.name());
+        queryParams.put("sendNotification", "false");
+        doReturn(queryParams).when(requestMock).getQueryParameters();
+        doReturn(new MassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverFailedReceipt(any(ReceiptStatusType.class), eq(false));
+
+        // test execution
+        HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, documentdb, contextMock));
+
+        // test assertion
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatus());
+        assertNotNull(response.getBody());
+
+        verify(helpdeskServiceMock).massiveRecoverFailedReceipt(eq(ReceiptStatusType.FAILED), eq(false));
+        verify(documentdb, never()).setValue(receiptCaptor.capture());
+    }
+
+    @Test
+    @SneakyThrows
+    void recoverFailedReceiptMassiveWithoutSendNotificationDefaultsTrue() {
+        doReturn(Collections.singletonMap("status", ReceiptStatusType.FAILED.name())).when(requestMock).getQueryParameters();
+        doReturn(new MassiveRecoverResult()).when(helpdeskServiceMock).massiveRecoverFailedReceipt(any(ReceiptStatusType.class), eq(true));
+
+        // test execution
+        HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(requestMock, documentdb, contextMock));
+
+        // test assertion
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatus());
+        assertNotNull(response.getBody());
+
+        verify(helpdeskServiceMock).massiveRecoverFailedReceipt(eq(ReceiptStatusType.FAILED), eq(true));
+        verify(documentdb, never()).setValue(receiptCaptor.capture());
     }
 }

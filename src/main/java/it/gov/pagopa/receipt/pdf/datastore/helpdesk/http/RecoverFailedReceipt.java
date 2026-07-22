@@ -118,9 +118,12 @@ public class RecoverFailedReceipt {
             return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, errMsg);
         }
 
+        boolean sendNotification = Boolean.parseBoolean(request.getQueryParameters().getOrDefault(
+            "sendNotification", "true"));
+
         Receipt receipt;
         try {
-            receipt = this.helpdeskService.recoverFailedReceipt(existingReceipt);
+            receipt = this.helpdeskService.recoverFailedReceipt(existingReceipt, sendNotification);
         } catch (BizEventUnprocessableEntityException e) {
             logger.warn(e.getMessage(), e);
             return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, e.getMessage());

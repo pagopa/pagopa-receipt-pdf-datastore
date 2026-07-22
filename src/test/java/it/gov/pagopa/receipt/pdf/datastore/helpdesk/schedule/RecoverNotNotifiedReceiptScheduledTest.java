@@ -16,6 +16,7 @@ import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -69,7 +70,7 @@ class RecoverNotNotifiedReceiptScheduledTest {
         // test execution
         assertDoesNotThrow(() -> sut.processRecoverNotNotifiedScheduledTrigger("info", contextMock));
 
-        verify(helpdeskServiceMock, never()).massiveRecoverFailedReceipt(any(ReceiptStatusType.class));
+        verify(helpdeskServiceMock, never()).massiveRecoverFailedReceipt(any(ReceiptStatusType.class), anyBoolean());
     }
 
     private MassiveRecoverResult createMassiveRecoverResult() {

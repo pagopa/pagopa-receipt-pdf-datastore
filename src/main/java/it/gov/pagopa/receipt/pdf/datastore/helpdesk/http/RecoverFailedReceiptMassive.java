@@ -93,7 +93,10 @@ public class RecoverFailedReceiptMassive {
             return buildErrorResponse(request, HttpStatus.UNPROCESSABLE_ENTITY, message);
         }
 
-        MassiveRecoverResult recoverResult = this.helpdeskService.massiveRecoverFailedReceipt(status);
+        boolean sendNotification = Boolean.parseBoolean(request.getQueryParameters().getOrDefault(
+            "sendNotification", "true"));
+
+        MassiveRecoverResult recoverResult = this.helpdeskService.massiveRecoverFailedReceipt(status, sendNotification);
 
         int successCounter = recoverResult.getSuccessCounter();
         int errorCounter = recoverResult.getErrorCounter();

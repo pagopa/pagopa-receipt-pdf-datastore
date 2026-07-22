@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -51,8 +52,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -98,7 +101,7 @@ class HelpdeskServiceImplTest {
         doReturn(CREATION_DATE).when(bizEventToReceiptServiceMock).getTransactionCreationDate(any());
         doReturn(buildReceipt()).when(bizEventToReceiptServiceMock).updateReceipt(any());
 
-        Receipt result = assertDoesNotThrow(() -> sut.recoverFailedReceipt(Receipt.builder().eventId("id").build()));
+        Receipt result = assertDoesNotThrow(() -> sut.recoverFailedReceipt(Receipt.builder().eventId("id").build(), true));
 
         assertNotNull(result);
         assertEquals(EVENT_ID, result.getEventId());
@@ -118,7 +121,7 @@ class HelpdeskServiceImplTest {
     void recoverFailedReceipt_KO_BizEventNotFound() {
         doThrow(BizEventNotFoundException.class).when(bizEventCosmosClientMock).getBizEventDocument(anyString());
 
-        assertThrows(BizEventNotFoundException.class, () -> sut.recoverFailedReceipt(Receipt.builder().eventId("id").build()));
+        assertThrows(BizEventNotFoundException.class, () -> sut.recoverFailedReceipt(Receipt.builder().eventId("id").build(), true));
 
         verify(bizEventToReceiptServiceMock, never()).tokenizeFiscalCodes(any(), any(), any());
         verify(bizEventToReceiptServiceMock, never()).getTransactionCreationDate(any());
@@ -134,7 +137,7 @@ class HelpdeskServiceImplTest {
         bizEvent.setEventStatus(status);
         doReturn(bizEvent).when(bizEventCosmosClientMock).getBizEventDocument(anyString());
 
-        assertThrows(BizEventBadRequestException.class, () -> sut.recoverFailedReceipt(Receipt.builder().eventId("id").build()));
+        assertThrows(BizEventBadRequestException.class, () -> sut.recoverFailedReceipt(Receipt.builder().eventId("id").build(), true));
 
         verify(bizEventToReceiptServiceMock, never()).tokenizeFiscalCodes(any(), any(), any());
         verify(bizEventToReceiptServiceMock, never()).getTransactionCreationDate(any());
@@ -149,7 +152,7 @@ class HelpdeskServiceImplTest {
         bizEvent.setPayer(null);
         doReturn(bizEvent).when(bizEventCosmosClientMock).getBizEventDocument(anyString());
 
-        assertThrows(BizEventBadRequestException.class, () -> sut.recoverFailedReceipt(Receipt.builder().eventId("id").build()));
+        assertThrows(BizEventBadRequestException.class, () -> sut.recoverFailedReceipt(Receipt.builder().eventId("id").build(), true));
 
         verify(bizEventToReceiptServiceMock, never()).tokenizeFiscalCodes(any(), any(), any());
         verify(bizEventToReceiptServiceMock, never()).getTransactionCreationDate(any());
@@ -167,7 +170,7 @@ class HelpdeskServiceImplTest {
                         .build());
         doReturn(bizEvent).when(bizEventCosmosClientMock).getBizEventDocument(anyString());
 
-        assertThrows(BizEventBadRequestException.class, () -> sut.recoverFailedReceipt(Receipt.builder().eventId("id").build()));
+        assertThrows(BizEventBadRequestException.class, () -> sut.recoverFailedReceipt(Receipt.builder().eventId("id").build(), true));
 
         verify(bizEventToReceiptServiceMock, never()).tokenizeFiscalCodes(any(), any(), any());
         verify(bizEventToReceiptServiceMock, never()).getTransactionCreationDate(any());
@@ -181,7 +184,7 @@ class HelpdeskServiceImplTest {
         BizEvent bizEvent = generateValidBizEvent("2");
         doReturn(bizEvent).when(bizEventCosmosClientMock).getBizEventDocument(anyString());
 
-        assertThrows(BizEventUnprocessableEntityException.class, () -> sut.recoverFailedReceipt(Receipt.builder().eventId("id").build()));
+        assertThrows(BizEventUnprocessableEntityException.class, () -> sut.recoverFailedReceipt(Receipt.builder().eventId("id").build(), true));
 
         verify(bizEventToReceiptServiceMock, never()).tokenizeFiscalCodes(any(), any(), any());
         verify(bizEventToReceiptServiceMock, never()).getTransactionCreationDate(any());
@@ -197,7 +200,7 @@ class HelpdeskServiceImplTest {
         doThrow(PDVTokenizerException.class)
                 .when(bizEventToReceiptServiceMock).tokenizeFiscalCodes(any(), any(Receipt.class), any(EventData.class));
 
-        Receipt result = assertDoesNotThrow(() -> sut.recoverFailedReceipt(Receipt.builder().eventId("id").build()));
+        Receipt result = assertDoesNotThrow(() -> sut.recoverFailedReceipt(Receipt.builder().eventId("id").build(), true));
 
         assertNotNull(result);
         assertEquals(ReceiptStatusType.FAILED, result.getStatus());
@@ -226,7 +229,7 @@ class HelpdeskServiceImplTest {
         doReturn(CREATION_DATE).when(bizEventToReceiptServiceMock).getTransactionCreationDate(any());
         doReturn(receipt).when(bizEventToReceiptServiceMock).updateReceipt(any());
 
-        Receipt result = assertDoesNotThrow(() -> sut.recoverFailedReceipt(Receipt.builder().eventId("id").build()));
+        Receipt result = assertDoesNotThrow(() -> sut.recoverFailedReceipt(Receipt.builder().eventId("id").build(), true));
 
         assertNotNull(result);
         assertEquals(ReceiptStatusType.FAILED, result.getStatus());
@@ -255,7 +258,7 @@ class HelpdeskServiceImplTest {
             return null;
         }).when(bizEventToReceiptServiceMock).handleSendMessageToQueue(any(), any(Receipt.class));
 
-        Receipt result = assertDoesNotThrow(() -> sut.recoverFailedReceipt(Receipt.builder().eventId("id").build()));
+        Receipt result = assertDoesNotThrow(() -> sut.recoverFailedReceipt(Receipt.builder().eventId("id").build(), true));
 
         assertNotNull(result);
         assertEquals(ReceiptStatusType.NOT_QUEUE_SENT, result.getStatus());
@@ -467,9 +470,9 @@ class HelpdeskServiceImplTest {
     void massiveRecoverFailedReceipt_OK(ReceiptStatusType status) {
         doReturn(createIteratorFeedResponse(status))
                 .when(receiptCosmosServiceMock).getFailedReceiptByStatus(null, 100, status);
-        doReturn(Receipt.builder().status(ReceiptStatusType.INSERTED).build()).when(sut).recoverFailedReceipt(any());
+        doReturn(Receipt.builder().status(ReceiptStatusType.INSERTED).build()).when(sut).recoverFailedReceipt(any(), anyBoolean());
 
-        MassiveRecoverResult result = assertDoesNotThrow(() -> sut.massiveRecoverFailedReceipt(status));
+        MassiveRecoverResult result = assertDoesNotThrow(() -> sut.massiveRecoverFailedReceipt(status, true));
 
         assertNotNull(result);
         assertEquals(2, result.getSuccessCounter());
@@ -482,9 +485,9 @@ class HelpdeskServiceImplTest {
     void massiveRecoverFailedReceipt_KO_recoverError() {
         doReturn(createIteratorFeedResponse(ReceiptStatusType.FAILED))
                 .when(receiptCosmosServiceMock).getFailedReceiptByStatus(null, 100, ReceiptStatusType.FAILED);
-        doReturn(Receipt.builder().status(ReceiptStatusType.FAILED).build()).when(sut).recoverFailedReceipt(any());
+        doReturn(Receipt.builder().status(ReceiptStatusType.FAILED).build()).when(sut).recoverFailedReceipt(any(), anyBoolean());
 
-        MassiveRecoverResult result = assertDoesNotThrow(() -> sut.massiveRecoverFailedReceipt(ReceiptStatusType.FAILED));
+        MassiveRecoverResult result = assertDoesNotThrow(() -> sut.massiveRecoverFailedReceipt(ReceiptStatusType.FAILED, true));
 
         assertNotNull(result);
         assertEquals(0, result.getSuccessCounter());
@@ -498,9 +501,9 @@ class HelpdeskServiceImplTest {
     void massiveRecoverFailedReceipt_KO_recoverThrowException() {
         doReturn(createIteratorFeedResponse(ReceiptStatusType.FAILED))
                 .when(receiptCosmosServiceMock).getFailedReceiptByStatus(null, 100, ReceiptStatusType.FAILED);
-        doThrow(BizEventBadRequestException.class).when(sut).recoverFailedReceipt(any());
+        doThrow(BizEventBadRequestException.class).when(sut).recoverFailedReceipt(any(), anyBoolean());
 
-        MassiveRecoverResult result = assertDoesNotThrow(() -> sut.massiveRecoverFailedReceipt(ReceiptStatusType.FAILED));
+        MassiveRecoverResult result = assertDoesNotThrow(() -> sut.massiveRecoverFailedReceipt(ReceiptStatusType.FAILED, true));
 
         assertNotNull(result);
         assertEquals(0, result.getSuccessCounter());
@@ -553,6 +556,68 @@ class HelpdeskServiceImplTest {
         assertEquals(0, result.getSuccessCounter());
         assertEquals(2, result.getErrorCounter());
         assertEquals(0, result.getFailedCartList().size());
+    }
+    @Test
+    @SneakyThrows
+    void recoverFailedReceipt_OK_sendNotificationFalse() {
+        doReturn(generateValidBizEvent("1")).when(bizEventCosmosClientMock).getBizEventDocument(anyString());
+        doAnswer(invocation -> {
+            EventData passed = invocation.getArgument(2);
+            passed.setDebtorFiscalCode(TOKENIZED_DEBTOR_FISCAL_CODE);
+            passed.setPayerFiscalCode(TOKENIZED_PAYER_FISCAL_CODE);
+            return null;
+        }).when(bizEventToReceiptServiceMock).tokenizeFiscalCodes(any(), any(Receipt.class), any(EventData.class));
+        doReturn(CREATION_DATE).when(bizEventToReceiptServiceMock).getTransactionCreationDate(any());
+        doReturn(buildReceipt()).when(bizEventToReceiptServiceMock).updateReceipt(any());
+
+        Receipt result = assertDoesNotThrow(() -> sut.recoverFailedReceipt(Receipt.builder().eventId("id").build(), false));
+
+        assertNotNull(result);
+
+        ArgumentCaptor<Receipt> receiptCaptor = ArgumentCaptor.forClass(Receipt.class);
+        verify(bizEventToReceiptServiceMock).updateReceipt(receiptCaptor.capture());
+        assertEquals(Boolean.FALSE, receiptCaptor.getValue().getSendNotification());
+
+        verify(bizEventToReceiptServiceMock).handleSendMessageToQueue(anyList(), any());
+    }
+
+    @Test
+    @SneakyThrows
+    void recoverFailedReceipt_OK_sendNotificationTrue() {
+        doReturn(generateValidBizEvent("1")).when(bizEventCosmosClientMock).getBizEventDocument(anyString());
+        doAnswer(invocation -> {
+            EventData passed = invocation.getArgument(2);
+            passed.setDebtorFiscalCode(TOKENIZED_DEBTOR_FISCAL_CODE);
+            passed.setPayerFiscalCode(TOKENIZED_PAYER_FISCAL_CODE);
+            return null;
+        }).when(bizEventToReceiptServiceMock).tokenizeFiscalCodes(any(), any(Receipt.class), any(EventData.class));
+        doReturn(CREATION_DATE).when(bizEventToReceiptServiceMock).getTransactionCreationDate(any());
+        doReturn(buildReceipt()).when(bizEventToReceiptServiceMock).updateReceipt(any());
+
+        Receipt result = assertDoesNotThrow(() -> sut.recoverFailedReceipt(Receipt.builder().eventId("id").build(), true));
+
+        assertNotNull(result);
+
+        ArgumentCaptor<Receipt> receiptCaptor = ArgumentCaptor.forClass(Receipt.class);
+        verify(bizEventToReceiptServiceMock).updateReceipt(receiptCaptor.capture());
+        assertEquals(Boolean.TRUE, receiptCaptor.getValue().getSendNotification());
+
+        verify(bizEventToReceiptServiceMock).handleSendMessageToQueue(anyList(), any());
+    }
+
+    @Test
+    @SneakyThrows
+    void massiveRecoverFailedReceipt_OK_sendNotificationFalsePropagated() {
+        doReturn(createIteratorFeedResponse(ReceiptStatusType.FAILED))
+            .when(receiptCosmosServiceMock).getFailedReceiptByStatus(null, 100, ReceiptStatusType.FAILED);
+        doReturn(Receipt.builder().status(ReceiptStatusType.INSERTED).build()).when(sut).recoverFailedReceipt(any(), eq(false));
+
+        MassiveRecoverResult result = assertDoesNotThrow(() -> sut.massiveRecoverFailedReceipt(ReceiptStatusType.FAILED, false));
+
+        assertNotNull(result);
+        assertEquals(2, result.getSuccessCounter());
+
+        verify(sut, org.mockito.Mockito.times(2)).recoverFailedReceipt(any(), eq(false));
     }
 
     @ParameterizedTest
