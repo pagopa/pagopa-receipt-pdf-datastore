@@ -15,6 +15,8 @@ import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.service.BizEventToReceiptService;
 import it.gov.pagopa.receipt.pdf.datastore.service.impl.BizEventToReceiptServiceImpl;
 import it.gov.pagopa.receipt.pdf.datastore.utils.BizEventToReceiptUtils;
+import it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils;
+import it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.TriggerLagStats;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,56 +94,75 @@ public class BizEventToReceipt {
             OutputBinding<List<CartForReceipt>> cartDocumentdb,
             final ExecutionContext context
     ) {
-        List<Receipt> receiptFailed = new ArrayList<>();
-        List<CartForReceipt> cartFailed = new ArrayList<>();
+        final long batchStartMs = System.currentTimeMillis();
+        LoggingUtils.setCorrelationId(context.getInvocationId());
+        try {
+            List<Receipt> receiptFailed = new ArrayList<>();
+            List<CartForReceipt> cartFailed = new ArrayList<>();
+            TriggerLagStats triggerLag = new TriggerLagStats();
+            int processed = 0;
+            int discarded = 0;
 
-        logger.info("[{}] stat {} function - num events triggered {}",
-                context.getFunctionName(),
-                context.getInvocationId(),
-                items.size());
+            logger.debug("[{}] batch received: invocationId={} size={}",
+                    context.getFunctionName(), context.getInvocationId(), items.size());
 
-        // Retrieve receipt data from biz-event
-        for (BizEvent bizEvent : items) {
+            // Retrieve receipt data from biz-event
+            for (BizEvent bizEvent : items) {
+                /*
+                Discard biz-events:
+                  - null
+                  - not in status DONE
+                  - with invalid fiscal codes
+                  - eCommerce filter (if enabled)
+                  - legacy cart
+                  - already processed
+                 */
+                if (isInvalid(bizEvent) || isBizEventAlreadyProcessed(context, bizEvent)) {
+                    discarded++;
+                    continue;
+                }
 
-            /*
-            Discard biz-events:
-              - null
-              - not in status DONE
-              - with invalid fiscal codes
-              - eCommerce filter (if enabled)
-              - legacy cart
-              - already processed
-             */
-            if (isInvalid(bizEvent) || isBizEventAlreadyProcessed(context, bizEvent)) {
-                continue;
+                triggerLag.track(bizEvent.getTs());
+                logger.debug("[{}] function called at {} for event with id {} and status {}",
+                        context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
+
+                Integer totalNotice = getTotalNotice(bizEvent);
+                if (totalNotice == 1) {
+                    Receipt receipt = processSingleReceipt(bizEvent);
+
+                    if (!isReceiptStatusValid(receipt)) {
+                        receiptFailed.add(receipt);
+                    }
+                } else if (isCartEnabled && totalNotice > 1) {
+                    CartForReceipt cartForReceipt = processCartReceipt(bizEvent);
+
+                    if (!isCartStatusValid(cartForReceipt)) {
+                        cartFailed.add(cartForReceipt);
+                    }
+                }
+                processed++;
             }
 
-            logger.debug("[{}] function called at {} for event with id {} and status {}",
-                    context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
-
-            Integer totalNotice = getTotalNotice(bizEvent);
-            if (totalNotice == 1) {
-                Receipt receipt = processSingleReceipt(bizEvent);
-
-                if (!isReceiptStatusValid(receipt)) {
-                    receiptFailed.add(receipt);
-                }
-            } else if (isCartEnabled && totalNotice > 1) {
-                CartForReceipt cartForReceipt = processCartReceipt(bizEvent);
-
-                if (!isCartStatusValid(cartForReceipt)) {
-                    cartFailed.add(cartForReceipt);
-                }
+            // Save failed receipts to CosmosDB
+            if (!receiptFailed.isEmpty()) {
+                documentdb.setValue(receiptFailed);
             }
-        }
+            // Save failed cart receipts to CosmosDB
+            if (!cartFailed.isEmpty()) {
+                cartDocumentdb.setValue(cartFailed);
+            }
 
-        // Save failed receipts to CosmosDB
-        if (!receiptFailed.isEmpty()) {
-            documentdb.setValue(receiptFailed);
-        }
-        // Save failed cart receipts to CosmosDB
-        if (!cartFailed.isEmpty()) {
-            cartDocumentdb.setValue(cartFailed);
+            LoggingUtils.logBizEventBatchProcessed(
+                    logger,
+                    items.size(),
+                    processed,
+                    discarded,
+                    receiptFailed.size(),
+                    cartFailed.size(),
+                    System.currentTimeMillis() - batchStartMs,
+                    triggerLag);
+        } finally {
+            LoggingUtils.clearCorrelationId();
         }
     }
 
