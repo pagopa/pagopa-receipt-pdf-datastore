@@ -19,12 +19,18 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.CartReceiptError;
 import it.gov.pagopa.receipt.pdf.datastore.exception.CartConcurrentUpdateException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
+import it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils;
+import it.gov.pagopa.receipt.pdf.datastore.utils.PerfTracer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
+
+    private final Logger logger = LoggerFactory.getLogger(CartReceiptsCosmosClientImpl.class);
 
     private static final String DOCUMENT_NOT_FOUND_ERR_MSG = "Document not found in the defined container";
 
@@ -84,13 +90,19 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
 
     @Override
     public CartForReceipt getCartItem(String cartId) throws CartNotFoundException {
-        try {
-            return cartForReceiptContainer.readItem(cartId, new PartitionKey(cartId), CartForReceipt.class).getItem();
-        } catch (CosmosException e) {
-            if (e.getStatusCode() != 404) {
+        try (PerfTracer t = PerfTracer.start(logger, LoggingUtils.STEP_COSMOS_GET_CART)) {
+            try {
+                CartForReceipt cart = cartForReceiptContainer.readItem(cartId, new PartitionKey(cartId), CartForReceipt.class).getItem();
+                t.tag(LoggingUtils.TAG_FOUND, true);
+                return cart;
+            } catch (CosmosException e) {
+                t.markFailure(e);
+                if (e.getStatusCode() == 404) {
+                    t.tag(LoggingUtils.TAG_FOUND, false);
+                    throw new CartNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG, e);
+                }
                 throw e;
             }
-            throw new CartNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG, e);
         }
     }
 
@@ -99,10 +111,20 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
      */
     @Override
     public CosmosItemResponse<CartForReceipt> updateCart(CartForReceipt receipt) throws CartConcurrentUpdateException {
-        try {
-            return cartForReceiptContainer.upsertItem(receipt, new CosmosItemRequestOptions().setIfMatchETag(receipt.get_etag()));
-        } catch (PreconditionFailedException e) {
-            throw new CartConcurrentUpdateException("The cart has been updated since the last fetch", e);
+        try (PerfTracer t = PerfTracer.start(logger, LoggingUtils.STEP_COSMOS_UPDATE_CART)) {
+            try {
+                CosmosItemResponse<CartForReceipt> resp = cartForReceiptContainer.upsertItem(receipt, new CosmosItemRequestOptions().setIfMatchETag(receipt.get_etag()));
+                t.tag(LoggingUtils.TAG_STATUS_CODE, resp.getStatusCode());
+                return resp;
+            } catch (PreconditionFailedException e) {
+                // ETag mismatch: expected optimistic-concurrency signal, not a failure.
+                t.tag(LoggingUtils.TAG_STATUS_CODE, 412);
+                t.markFailure(e);
+                throw new CartConcurrentUpdateException("The cart has been updated since the last fetch", e);
+            } catch (RuntimeException e) {
+                t.markFailure(e);
+                throw e;
+            }
         }
     }
 

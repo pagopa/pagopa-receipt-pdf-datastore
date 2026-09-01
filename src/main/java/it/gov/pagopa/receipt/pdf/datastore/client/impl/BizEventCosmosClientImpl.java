@@ -11,6 +11,10 @@ import com.azure.cosmos.models.SqlQuerySpec;
 import it.gov.pagopa.receipt.pdf.datastore.client.BizEventCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventNotFoundException;
+import it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils;
+import it.gov.pagopa.receipt.pdf.datastore.utils.PerfTracer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -18,6 +22,8 @@ import java.util.List;
  * Client for the CosmosDB database
  */
 public class BizEventCosmosClientImpl implements BizEventCosmosClient {
+
+    private final Logger logger = LoggerFactory.getLogger(BizEventCosmosClientImpl.class);
 
     private final CosmosContainer bizEventContainer;
 
@@ -65,13 +71,19 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
      */
     @Override
     public BizEvent getBizEventDocument(String bizEventId) throws BizEventNotFoundException {
-        try {
-            return bizEventContainer.readItem(bizEventId, new PartitionKey(bizEventId), BizEvent.class).getItem();
-        } catch (CosmosException e) {
-            if (e.getStatusCode() != 404) {
+        try (PerfTracer t = PerfTracer.start(logger, LoggingUtils.STEP_COSMOS_GET_BIZ_EVENT)) {
+            try {
+                BizEvent bizEvent = bizEventContainer.readItem(bizEventId, new PartitionKey(bizEventId), BizEvent.class).getItem();
+                t.tag(LoggingUtils.TAG_FOUND, true);
+                return bizEvent;
+            } catch (CosmosException e) {
+                t.markFailure(e);
+                if (e.getStatusCode() == 404) {
+                    t.tag(LoggingUtils.TAG_FOUND, false);
+                    throw new BizEventNotFoundException("Document not found in the defined container", e);
+                }
                 throw e;
             }
-            throw new BizEventNotFoundException("Document not found in the defined container", e);
         }
     }
 
@@ -80,16 +92,25 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
      */
     @Override
     public List<BizEvent> getAllCartBizEventDocument(String transactionId) {
-        //Build query
-        SqlQuerySpec querySpec = new SqlQuerySpec(
-                "SELECT * FROM c WHERE c.transactionDetails.transaction.transactionId = @transactionId",
-                List.of(new SqlParameter("@transactionId", transactionId))
-        );
+        try (PerfTracer t = PerfTracer.start(logger, LoggingUtils.STEP_COSMOS_GET_CART_BIZ_EVENTS)) {
+            try {
+                //Build query
+                SqlQuerySpec querySpec = new SqlQuerySpec(
+                        "SELECT * FROM c WHERE c.transactionDetails.transaction.transactionId = @transactionId",
+                        List.of(new SqlParameter("@transactionId", transactionId))
+                );
 
-        //Query the container
-        return bizEventContainer
-                .queryItems(querySpec, new CosmosQueryRequestOptions(), BizEvent.class)
-                .stream().limit(6)
-                .toList();
+                //Query the container
+                List<BizEvent> results = bizEventContainer
+                        .queryItems(querySpec, new CosmosQueryRequestOptions(), BizEvent.class)
+                        .stream().limit(6)
+                        .toList();
+                t.tag(LoggingUtils.TAG_RESULT_COUNT, results.size());
+                return results;
+            } catch (RuntimeException e) {
+                t.markFailure(e);
+                throw e;
+            }
+        }
     }
 }

@@ -63,6 +63,26 @@ public final class LoggingUtils {
     public static final String MSG_BIZ_EVENT_BATCH_PROCESSED = "Biz event batch processed";
     public static final String MSG_BIZ_EVENT_PROCESSED = "Biz event processed";
 
+    // --- I/O step names (used by PerfTracer as event.action on the I/O boundary log) ------------
+    public static final String STEP_COSMOS_GET_RECEIPT = "cosmos.getReceipt";
+    public static final String STEP_COSMOS_SAVE_RECEIPT = "cosmos.saveReceipt";
+    public static final String STEP_COSMOS_UPDATE_RECEIPT = "cosmos.updateReceipt";
+    public static final String STEP_COSMOS_GET_CART = "cosmos.getCart";
+    public static final String STEP_COSMOS_UPDATE_CART = "cosmos.updateCart";
+    public static final String STEP_COSMOS_GET_BIZ_EVENT = "cosmos.getBizEvent";
+    public static final String STEP_COSMOS_GET_CART_BIZ_EVENTS = "cosmos.getCartBizEvents";
+    public static final String STEP_QUEUE_SEND_RECEIPT = "queue.sendReceipt";
+    public static final String STEP_QUEUE_SEND_CART = "queue.sendCart";
+    public static final String STEP_PDV_SEARCH_TOKEN = "pdv.searchToken";
+    public static final String STEP_PDV_FIND_PII = "pdv.findPii";
+    public static final String STEP_PDV_CREATE_TOKEN = "pdv.createToken";
+
+    // --- common tag keys for PerfTracer.tag(...) ----------------------------------------------
+    public static final String TAG_STATUS_CODE = "status_code";
+    public static final String TAG_FOUND = "found";
+    public static final String TAG_FALLBACK = "fallback";
+    public static final String TAG_RESULT_COUNT = "result_count";
+
     /** Classifies the per-item processing path taken by the Function. */
     public enum ReceiptType { SINGLE, CART }
 
