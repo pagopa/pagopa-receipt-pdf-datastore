@@ -37,12 +37,35 @@ public final class LoggingUtils {
     public static final String DETAILS_TRIGGER_LAG_AVG_MS = "ctx.details.trigger_lag_avg_ms";
     public static final String DETAILS_TRIGGER_LAG_MAX_MS = "ctx.details.trigger_lag_max_ms";
     public static final String DETAILS_TRIGGER_LAG_P95_MS = "ctx.details.trigger_lag_p95_ms";
+
     /** Duration of a single I/O step measured by {@link PerfTracer}. */
     public static final String DETAILS_STEP_DURATION_MS = "ctx.details.step_duration_ms";
+
+    // --- per-item milestone keys ---------------------------------------------------------------
+
+    /** ECS-style business ids. Indexed as top-level fields for cross-service correlation. */
+    public static final String BIZ_EVENT_ID = "biz_event.id";
+    public static final String CART_ID = "cart.id";
+    public static final String EVENT_ID = "event.id";
+
+    /** Per-item volatile details. */
+    public static final String DETAILS_ITEM_TYPE = "ctx.details.item_type";
+    public static final String DETAILS_ITEM_STATUS = "ctx.details.item_status";
+    public static final String DETAILS_PROCESSING_MS = "ctx.details.processing_ms";
+    public static final String DETAILS_TRIGGER_LAG_MS = "ctx.details.trigger_lag_ms";
+    public static final String DETAILS_E2E_LAG_MS = "ctx.details.e2e_lag_ms";
+
     // --- event.action values --------------------------------------------------------------------
     public static final String ACTION_BIZ_EVENT_TO_RECEIPT_PROCESSOR = "cosmos-trigger-biz-event-processor";
+    public static final String ACTION_BIZ_EVENT_PROCESSING = "biz-event-processing";
+
     // --- messages -------------------------------------------------------------------------------
     public static final String MSG_BIZ_EVENT_BATCH_PROCESSED = "Biz event batch processed";
+    public static final String MSG_BIZ_EVENT_PROCESSED = "Biz event processed";
+
+    /** Classifies the per-item processing path taken by the Function. */
+    public enum ReceiptType { SINGLE, CART }
+
     private LoggingUtils() {
         // utility class
     }
@@ -92,6 +115,44 @@ public final class LoggingUtils {
                 .addKeyValue(DETAILS_TRIGGER_LAG_P95_MS, triggerLag.p95())
                 .log(MSG_BIZ_EVENT_BATCH_PROCESSED);
     }
+
+    /**
+     * Emits the per-item milestone at the end of a single biz-event processing.
+     * Business ids ({@code biz_event.id}, {@code receipt.event_id}
+     * or {@code cart.id}) are top-level ECS attributes so they are indexed on ELK and
+     * can be searched/correlated across services; timings and status live under
+     * {@code ctx.details.*} as volatile fields.
+     *
+     * @param triggerLagMs delta between Cosmos {@code _ts} and the moment this item
+     *                     was picked up by the Function (may be {@code null} if unknown).
+     * @param e2eLagMs     delta between Cosmos {@code _ts} and the completion of the
+     *                     processing (may be {@code null} if unknown).
+     */
+    public static void logBizEventProcessed(
+            Logger logger,
+            String bizEventId,
+            String entityId,
+            ReceiptType receiptType,
+            String receiptStatus,
+            boolean success,
+            long processingMs,
+            Long triggerLagMs,
+            Long e2eLagMs
+    ) {
+        String entityKey = receiptType == ReceiptType.CART ? CART_ID : EVENT_ID;
+        logger.atInfo()
+                .addKeyValue(EVENT_ACTION, ACTION_BIZ_EVENT_PROCESSING)
+                .addKeyValue(EVENT_OUTCOME, success ? OUTCOME_SUCCESS : OUTCOME_FAILURE)
+                .addKeyValue(BIZ_EVENT_ID, bizEventId)
+                .addKeyValue(entityKey, entityId)
+                .addKeyValue(DETAILS_ITEM_TYPE, receiptType.name())
+                .addKeyValue(DETAILS_ITEM_STATUS, receiptStatus)
+                .addKeyValue(DETAILS_PROCESSING_MS, processingMs)
+                .addKeyValue(DETAILS_TRIGGER_LAG_MS, triggerLagMs)
+                .addKeyValue(DETAILS_E2E_LAG_MS, e2eLagMs)
+                .log(MSG_BIZ_EVENT_PROCESSED);
+    }
+
     // --- support data structures ---------------------------------------------------------------
     /**
      * Fixed-capacity accumulator for the Cosmos change-feed trigger lag

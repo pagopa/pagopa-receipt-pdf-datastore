@@ -126,16 +126,17 @@ public class BizEventToReceipt {
                 logger.debug("[{}] function called at {} for event with id {} and status {}",
                         context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
 
+                final long itemStartMs = System.currentTimeMillis();
                 Integer totalNotice = getTotalNotice(bizEvent);
                 if (totalNotice == 1) {
                     Receipt receipt = processSingleReceipt(bizEvent);
-
+                    logSingleReceiptProcessed(bizEvent, receipt, itemStartMs);
                     if (!isReceiptStatusValid(receipt)) {
                         receiptFailed.add(receipt);
                     }
                 } else if (isCartEnabled && totalNotice > 1) {
                     CartForReceipt cartForReceipt = processCartReceipt(bizEvent);
-
+                    logCartProcessed(bizEvent, cartForReceipt, itemStartMs);
                     if (!isCartStatusValid(cartForReceipt)) {
                         cartFailed.add(cartForReceipt);
                     }
@@ -239,5 +240,35 @@ public class BizEventToReceipt {
                 && cart.getPayload() != null
                 && cart.getPayload().getCart() != null
                 && cart.getPayload().getCart().stream().anyMatch(cartPayment -> cartPayment.getBizEventId().equals(bizEventId));
+    }
+
+    private void logSingleReceiptProcessed(BizEvent bizEvent, Receipt receipt, long itemStartMs) {
+        long now = System.currentTimeMillis();
+        Long bizEventTsMs = bizEvent.getTs() != null ? bizEvent.getTs() * 1000L : null;
+        LoggingUtils.logBizEventProcessed(
+                logger,
+                bizEvent.getId(),
+                receipt != null ? receipt.getEventId() : null,
+                LoggingUtils.ReceiptType.SINGLE,
+                receipt != null && receipt.getStatus() != null ? receipt.getStatus().name() : null,
+                isReceiptStatusValid(receipt),
+                now - itemStartMs,
+                bizEventTsMs != null ? itemStartMs - bizEventTsMs : null,
+                bizEventTsMs != null ? now - bizEventTsMs : null);
+    }
+
+    private void logCartProcessed(BizEvent bizEvent, CartForReceipt cart, long itemStartMs) {
+        long now = System.currentTimeMillis();
+        Long bizEventTsMs = bizEvent.getTs() != null ? bizEvent.getTs() * 1000L : null;
+        LoggingUtils.logBizEventProcessed(
+                logger,
+                bizEvent.getId(),
+                cart != null ? cart.getCartId() : null,
+                LoggingUtils.ReceiptType.CART,
+                cart != null && cart.getStatus() != null ? cart.getStatus().name() : null,
+                isCartStatusValid(cart),
+                now - itemStartMs,
+                bizEventTsMs != null ? itemStartMs - bizEventTsMs : null,
+                bizEventTsMs != null ? now - bizEventTsMs : null);
     }
 }
