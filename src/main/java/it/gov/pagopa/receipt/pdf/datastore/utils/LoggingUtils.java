@@ -39,7 +39,8 @@ public final class LoggingUtils {
     /**
      * MDC key that holds the JSON-serialized {@code ctx.details} map.
      */
-    public static final String CTX_DETAILS = "ctx.details";
+    public static final String CTX = "ctx.";
+    public static final String CTX_DETAILS = CTX + "details";
 
     // --- ctx.details inner keys -----------------------------------------------------------------
 
@@ -147,6 +148,8 @@ public final class LoggingUtils {
 
         Map<String, String> top = new LinkedHashMap<>();
         top.put(EVENT_OUTCOME, success ? OUTCOME_SUCCESS : OUTCOME_FAILURE);
+        top.put(CTX + DETAILS_BATCH_DURATION_MS, String.valueOf(batchDurationMs));
+        top.put(CTX + DETAILS_TRIGGER_LAG_P95_MS, String.valueOf(triggerLag.p95()));
 
         emit(logger, MSG_BIZ_EVENT_BATCH_PROCESSED, top, details, null);
     }
