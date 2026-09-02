@@ -4,26 +4,28 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.MDC;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.CTX_DETAILS;
 import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.DETAILS_STEP_DURATION_MS;
 import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.EVENT_ACTION;
 import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.EVENT_OUTCOME;
 import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.OUTCOME_FAILURE;
 import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.OUTCOME_SUCCESS;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.detailsAsJson;
 
 /**
  * Lightweight AutoCloseable tracer for I/O boundaries (Cosmos calls, queue sends,
  * HTTP calls). Emits a single ECS-structured INFO/WARN line on {@link #close()}
  * with the step duration and any tag added along the way.
  *
- * <p>Emitted ECS fields:
+ * <p>Emitted MDC fields (consumed by {@code EcsEncoder}):
  * <ul>
- *     <li>{@code event.action} - the logical step name.</li>
- *     <li>{@code event.outcome} - {@code success} or {@code failure}.</li>
- *     <li>{@code ctx.details.step_duration_ms} - StopWatch elapsed time.</li>
- *     <li>Any additional MDC key added via {@link #tag(String, Object)}.</li>
+ *     <li>{@code event.action} — the logical step name.</li>
+ *     <li>{@code event.outcome} — {@code success} or {@code failure}.</li>
+ *     <li>{@code ctx.details} — JSON-serialized map containing
+ *         {@code step_duration_ms} and all values added via {@link #tag(String, Object)}.</li>
  * </ul>
  *
  * <p>Usage:
@@ -33,27 +35,17 @@ import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.OUTCOME_SUC
  *     t.tag("status_code", resp.getStatusCode())
  *      .tag("request_charge", resp.getRequestCharge());
  * } catch (Exception e) {
- *     // the tracer already logged the failure via close() – rethrow / handle
+ *     t.markFailure(e);
  *     throw e;
  * }
  * }</pre>
- *
- * <p>Design notes:
- * <ul>
- *     <li>All tags are written to MDC and removed on close so nothing leaks across steps.</li>
- *     <li>Values are pushed as strings (MDC contract). Use it for context/dimensions only;
- *     the only numeric key that reliably keeps its JSON type is
- *     {@code ctx.details.step_duration_ms}, emitted via the fluent API.</li>
- *     <li>For milestone logs with multiple typed metrics use
- *     {@link LoggingUtils} static emitters instead.</li>
- * </ul>
  */
 public final class PerfTracer implements AutoCloseable {
 
     private final Logger logger;
     private final String step;
     private final StopWatch stopWatch;
-    private final List<String> tagKeys = new ArrayList<>();
+    private final Map<String, Object> details = new LinkedHashMap<>();
 
     private boolean failed;
     private Throwable failure;
@@ -71,18 +63,18 @@ public final class PerfTracer implements AutoCloseable {
     }
 
     /**
-     * Adds an MDC field available on the final log line emitted by {@link #close()}.
-     * {@code null} values are rendered as {@code "null"}.
+     * Adds a key/value pair to the {@code ctx.details} map serialized on the final
+     * log line. Values keep their JSON type when serialized (numbers stay numbers,
+     * booleans stay booleans).
      */
     public PerfTracer tag(String key, Object value) {
-        MDC.put(key, value == null ? "null" : String.valueOf(value));
-        tagKeys.add(key);
+        details.put(key, value);
         return this;
     }
 
     /**
      * Marks the step as failed. The final log line will be emitted at WARN level
-     * with {@code event.outcome=failure} and the exception details (via ECS encoder).
+     * with {@code event.outcome=failure} and the exception details attached.
      * Idempotent.
      */
     public PerfTracer markFailure(Throwable t) {
@@ -106,28 +98,26 @@ public final class PerfTracer implements AutoCloseable {
         }
         long elapsed = stopWatch.getTime();
 
+        // Prepend duration so it stays as the first field in the serialized JSON.
+        Map<String, Object> finalDetails = new LinkedHashMap<>();
+        finalDetails.put(DETAILS_STEP_DURATION_MS, elapsed);
+        finalDetails.putAll(details);
+
+        String outcome = failed ? OUTCOME_FAILURE : OUTCOME_SUCCESS;
         try {
-            String outcome = failed ? OUTCOME_FAILURE : OUTCOME_SUCCESS;
+            MDC.put(EVENT_ACTION, step);
+            MDC.put(EVENT_OUTCOME, outcome);
+            MDC.put(CTX_DETAILS, detailsAsJson(finalDetails));
+
             if (failed) {
-                logger.atWarn()
-                        .addKeyValue(EVENT_ACTION, step)
-                        .addKeyValue(EVENT_OUTCOME, outcome)
-                        .addKeyValue(DETAILS_STEP_DURATION_MS, elapsed)
-                        .setCause(failure)
-                        .log("Step {} failed after {} ms", step, elapsed);
+                logger.warn("Step {} failed after {} ms", step, elapsed, failure);
             } else {
-                logger.atInfo()
-                        .addKeyValue(EVENT_ACTION, step)
-                        .addKeyValue(EVENT_OUTCOME, outcome)
-                        .addKeyValue(DETAILS_STEP_DURATION_MS, elapsed)
-                        .log("Step {} completed in {} ms", step, elapsed);
+                logger.info("Step {} completed in {} ms", step, elapsed);
             }
         } finally {
-            for (String k : tagKeys) {
-                MDC.remove(k);
-            }
-            tagKeys.clear();
+            MDC.remove(EVENT_ACTION);
+            MDC.remove(EVENT_OUTCOME);
+            MDC.remove(CTX_DETAILS);
         }
     }
 }
-
