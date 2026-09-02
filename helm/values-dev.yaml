@@ -4,7 +4,7 @@ microservice-chart: &microservice-chart
   fullnameOverride: "pagopa-receipt-pdf-datastore"
   image:
     repository: ghcr.io/pagopa/pagopa-receipt-pdf-datastore
-    tag: "1.17.11-2-PAGOPA-3759-improve-monitoring"
+    tag: "1.17.11-3-PAGOPA-3759-improve-monitoring"
     pullPolicy: Always
   # https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script.WebHost/Controllers/HostController.cs
   livenessProbe:
