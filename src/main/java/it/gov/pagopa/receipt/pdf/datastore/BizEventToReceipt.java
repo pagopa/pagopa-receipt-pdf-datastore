@@ -20,6 +20,7 @@ import it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.TriggerLagStats;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -155,27 +156,32 @@ public class BizEventToReceipt {
           - legacy cart
           - already processed
          */
-        if (isInvalid(bizEvent) || isBizEventAlreadyProcessed(context, bizEvent)) {
-            return ItemOutcome.DISCARDED;
-        }
-
-        triggerLag.track(bizEvent.getTs());
-        logger.debug("[{}] function called at {} for event with id {} and status {}",
-                context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
-
-        Integer totalNotice = getTotalNotice(bizEvent);
-        if (totalNotice == 1) {
-            Receipt receipt = processSingleReceipt(bizEvent);
-            if (!isReceiptStatusValid(receipt)) {
-                receiptFailed.add(receipt);
+        try {
+            if (isInvalid(bizEvent) || isBizEventAlreadyProcessed(context, bizEvent)) {
+                return ItemOutcome.DISCARDED;
             }
-        } else if (isCartEnabled && totalNotice > 1) {
-            CartForReceipt cartForReceipt = processCartReceipt(bizEvent);
-            if (!isCartStatusValid(cartForReceipt)) {
-                cartFailed.add(cartForReceipt);
+
+            MDC.put(LoggingUtils.BIZ_EVENT_ID, bizEvent.getId());
+            triggerLag.track(bizEvent.getTs());
+            logger.debug("[{}] function called at {} for event with id {} and status {}",
+                    context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
+
+            Integer totalNotice = getTotalNotice(bizEvent);
+            if (totalNotice == 1) {
+                Receipt receipt = processSingleReceipt(bizEvent);
+                if (!isReceiptStatusValid(receipt)) {
+                    receiptFailed.add(receipt);
+                }
+            } else if (isCartEnabled && totalNotice > 1) {
+                CartForReceipt cartForReceipt = processCartReceipt(bizEvent);
+                if (!isCartStatusValid(cartForReceipt)) {
+                    cartFailed.add(cartForReceipt);
+                }
             }
+            return ItemOutcome.PROCESSED;
+        } finally {
+            MDC.remove(LoggingUtils.BIZ_EVENT_ID);
         }
-        return ItemOutcome.PROCESSED;
     }
 
     /**
@@ -190,36 +196,46 @@ public class BizEventToReceipt {
     }
 
     private @NonNull CartForReceipt processCartReceipt(BizEvent bizEvent) {
-        CartForReceipt cartForReceipt = this.bizEventToReceiptService.buildCartForReceipt(bizEvent);
+        try {
+            MDC.put(LoggingUtils.CART_ID, bizEvent.getTransactionDetails().getTransaction().getTransactionId());
+            CartForReceipt cartForReceipt = this.bizEventToReceiptService.buildCartForReceipt(bizEvent);
 
-        if (isCartStatusValid(cartForReceipt)) {
-            // saved on CosmosDB
-            cartForReceipt = this.bizEventToReceiptService.saveCartForReceipt(cartForReceipt, bizEvent);
-        }
-
-        if (cartForReceipt.getStatus().equals(CartStatusType.INSERTED)) {
-            // Send biz event as message to queue (to be p from the other function)
-            List<BizEvent> bizEvents = this.bizEventToReceiptService.getCartBizEvents(cartForReceipt);
             if (isCartStatusValid(cartForReceipt)) {
-                this.bizEventToReceiptService.handleSendCartMessageToQueue(bizEvents, cartForReceipt);
+                // saved on CosmosDB
+                cartForReceipt = this.bizEventToReceiptService.saveCartForReceipt(cartForReceipt, bizEvent);
             }
+
+            if (cartForReceipt.getStatus().equals(CartStatusType.INSERTED)) {
+                // Send biz event as message to queue (to be p from the other function)
+                List<BizEvent> bizEvents = this.bizEventToReceiptService.getCartBizEvents(cartForReceipt);
+                if (isCartStatusValid(cartForReceipt)) {
+                    this.bizEventToReceiptService.handleSendCartMessageToQueue(bizEvents, cartForReceipt);
+                }
+            }
+            return cartForReceipt;
+        } finally {
+            MDC.remove(LoggingUtils.CART_ID);
         }
-        return cartForReceipt;
     }
 
     private @NonNull Receipt processSingleReceipt(BizEvent bizEvent) {
-        Receipt receipt = createReceipt(bizEvent, this.bizEventToReceiptService, logger);
+        try {
+            MDC.put(LoggingUtils.EVENT_ID, bizEvent.getId());
+            Receipt receipt = createReceipt(bizEvent, this.bizEventToReceiptService, logger);
 
-        if (isReceiptStatusValid(receipt)) {
-            // Add receipt to items to be saved on CosmosDB
-            this.bizEventToReceiptService.handleSaveReceipt(receipt);
-        }
+            if (isReceiptStatusValid(receipt)) {
+                // Add receipt to items to be saved on CosmosDB
+                this.bizEventToReceiptService.handleSaveReceipt(receipt);
+            }
 
-        if (isReceiptStatusValid(receipt)) {
-            // Send biz event as message to queue (to be p from the other function)
-            this.bizEventToReceiptService.handleSendMessageToQueue(Collections.singletonList(bizEvent), receipt);
+            if (isReceiptStatusValid(receipt)) {
+                // Send biz event as message to queue (to be p from the other function)
+                this.bizEventToReceiptService.handleSendMessageToQueue(Collections.singletonList(bizEvent), receipt);
+            }
+            return receipt;
+        } finally {
+            MDC.remove(LoggingUtils.EVENT_ID);
         }
-        return receipt;
     }
 
     private boolean isInvalid(BizEvent bizEvent) {

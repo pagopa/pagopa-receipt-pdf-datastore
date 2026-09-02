@@ -11,12 +11,17 @@ import com.azure.cosmos.models.SqlQuerySpec;
 import it.gov.pagopa.receipt.pdf.datastore.client.BizEventCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventNotFoundException;
-import it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
+
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.DEP_COSMOS_BIZ_EVENTS;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.DETAILS_RESULT_COUNT;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.DETAILS_STATUS_CODE;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.logIoFailure;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.logIoSuccess;
 
 /**
  * Client for the CosmosDB database
@@ -72,24 +77,20 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
     @Override
     public BizEvent getBizEventDocument(String bizEventId) throws BizEventNotFoundException {
         long start = System.currentTimeMillis();
-        Map<String, String> ids = LoggingUtils.ids(LoggingUtils.BIZ_EVENT_ID, bizEventId);
         try {
             BizEvent bizEvent = bizEventContainer.readItem(bizEventId, new PartitionKey(bizEventId), BizEvent.class).getItem();
-            LoggingUtils.logIoSuccess(logger, "Found Biz Event",
-                    LoggingUtils.DEP_COSMOS_BIZ_EVENTS, null, start, ids,
-                    Map.of(LoggingUtils.DETAILS_FOUND, true));
+            logIoSuccess(logger, "Found Biz Event", DEP_COSMOS_BIZ_EVENTS, null, start, null);
             return bizEvent;
         } catch (CosmosException e) {
             if (e.getStatusCode() == 404) {
-                LoggingUtils.logIoSuccess(logger, "Biz Event not found",
-                        LoggingUtils.DEP_COSMOS_BIZ_EVENTS, null, start, ids,
-                        Map.of(LoggingUtils.DETAILS_FOUND, false,
-                                LoggingUtils.DETAILS_STATUS_CODE, 404));
+                logIoSuccess(logger, "Biz Event not found",
+                        DEP_COSMOS_BIZ_EVENTS, null, start,
+                        Map.of(DETAILS_STATUS_CODE, 404));
                 throw new BizEventNotFoundException("Document not found in the defined container", e);
             }
-            LoggingUtils.logIoFailure(logger, "Error fetching Biz Event",
-                    LoggingUtils.DEP_COSMOS_BIZ_EVENTS, null, start, e, ids,
-                    Map.of(LoggingUtils.DETAILS_STATUS_CODE, e.getStatusCode()));
+            logIoFailure(logger, "Error fetching Biz Event",
+                    DEP_COSMOS_BIZ_EVENTS, null, start, e,
+                    Map.of(DETAILS_STATUS_CODE, e.getStatusCode()));
             throw e;
         }
     }
@@ -100,7 +101,6 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
     @Override
     public List<BizEvent> getAllCartBizEventDocument(String transactionId) {
         long start = System.currentTimeMillis();
-        Map<String, String> ids = LoggingUtils.ids(LoggingUtils.CART_ID, transactionId);
         try {
             SqlQuerySpec querySpec = new SqlQuerySpec(
                     "SELECT * FROM c WHERE c.transactionDetails.transaction.transactionId = @transactionId",
@@ -110,13 +110,13 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
                     .queryItems(querySpec, new CosmosQueryRequestOptions(), BizEvent.class)
                     .stream().limit(6)
                     .toList();
-            LoggingUtils.logIoSuccess(logger, "Cart Biz Events fetched",
-                    LoggingUtils.DEP_COSMOS_BIZ_EVENTS, null, start, ids,
-                    Map.of(LoggingUtils.DETAILS_RESULT_COUNT, results.size()));
+            logIoSuccess(logger, "Cart Biz Events fetched",
+                    DEP_COSMOS_BIZ_EVENTS, null, start,
+                    Map.of(DETAILS_RESULT_COUNT, results.size()));
             return results;
         } catch (RuntimeException e) {
-            LoggingUtils.logIoFailure(logger, "Error fetching cart Biz Events",
-                    LoggingUtils.DEP_COSMOS_BIZ_EVENTS, null, start, e, ids, null);
+            logIoFailure(logger, "Error fetching cart Biz Events",
+                    DEP_COSMOS_BIZ_EVENTS, null, start, e, null);
             throw e;
         }
     }

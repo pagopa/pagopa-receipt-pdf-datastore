@@ -36,8 +36,9 @@ public final class LoggingUtils {
     public static final String CART_ID = "cart.id";
     public static final String EVENT_ID = "event.id";
 
-
-    /** MDC key that holds the JSON-serialized {@code ctx.details} map. */
+    /**
+     * MDC key that holds the JSON-serialized {@code ctx.details} map.
+     */
     public static final String CTX_DETAILS = "ctx.details";
 
     // --- ctx.details inner keys -----------------------------------------------------------------
@@ -59,7 +60,6 @@ public final class LoggingUtils {
     public static final String DETAILS_PATH = "path";
     public static final String DETAILS_DURATION_MS = "duration_ms";
     public static final String DETAILS_STATUS_CODE = "status_code";
-    public static final String DETAILS_FOUND = "found";
     public static final String DETAILS_FALLBACK = "fallback";
     public static final String DETAILS_RESULT_COUNT = "result_count";
 
@@ -108,19 +108,12 @@ public final class LoggingUtils {
         }
     }
 
-    /** Removes the invocation-scoped MDC keys. */
+    /**
+     * Removes the invocation-scoped MDC keys.
+     */
     public static void clearInvocation() {
         MDC.remove(CORRELATION_ID);
         MDC.remove(EVENT_ACTION);
-    }
-
-    /**
-     * Convenience factory for a single business-id top-level map that tolerates
-     * a {@code null} value (returns an empty map). Intended to be passed to the
-     * I/O emitters as the {@code businessIds} argument.
-     */
-    public static Map<String, String> ids(String key, String value) {
-        return value == null ? Map.of() : Map.of(key, value);
     }
 
     // --- milestone emitters ---------------------------------------------------------------------
@@ -176,27 +169,9 @@ public final class LoggingUtils {
             long startMs,
             Map<String, Object> extraDetails
     ) {
-        logIoSuccess(logger, message, dependency, path, startMs, null, extraDetails);
-    }
-
-    /**
-     * Variant of {@link #logIoSuccess(Logger, String, String, String, long, Map)} that
-     * accepts a map of business ids (e.g. {@code biz_event.id}, {@code cart.id})
-     * to be exposed as top-level ECS fields (indexed for cross-service correlation).
-     */
-    public static void logIoSuccess(
-            Logger logger,
-            String message,
-            String dependency,
-            String path,
-            long startMs,
-            Map<String, String> businessIds,
-            Map<String, Object> extraDetails
-    ) {
         Map<String, Object> details = ioDetails(dependency, path, System.currentTimeMillis() - startMs, extraDetails);
         Map<String, String> top = new LinkedHashMap<>();
         top.put(EVENT_OUTCOME, OUTCOME_SUCCESS);
-        if (businessIds != null) top.putAll(businessIds);
         emit(logger, message, top, details, null);
     }
 
@@ -210,37 +185,24 @@ public final class LoggingUtils {
             String message,
             String dependency,
             String path,
-            long startMs,
-            Throwable error,
-            Map<String, Object> extraDetails
-    ) {
-        logIoFailure(logger, message, dependency, path, startMs, error, null, extraDetails);
-    }
-
-    /**
-     * Variant of {@link #logIoFailure(Logger, String, String, String, long, Throwable, Map)}
-     * that accepts business ids as top-level ECS fields.
-     */
-    public static void logIoFailure(
-            Logger logger,
-            String message,
-            String dependency,
-            String path,
             Long startMs,
             Throwable error,
-            Map<String, String> businessIds,
             Map<String, Object> extraDetails
     ) {
         Map<String, Object> details = ioDetails(dependency, path, startMs, extraDetails);
         Map<String, String> top = new LinkedHashMap<>();
         top.put(EVENT_OUTCOME, OUTCOME_FAILURE);
-        if (businessIds != null) top.putAll(businessIds);
         emit(logger, message, top, details, error);
     }
 
     // --- internals ------------------------------------------------------------------------------
 
-    private static Map<String, Object> ioDetails(String dependency, String path, Long startMs, Map<String, Object> extra) {
+    private static Map<String, Object> ioDetails(
+            String dependency,
+            String path,
+            Long startMs,
+            Map<String, Object> extra
+    ) {
         Map<String, Object> d = new LinkedHashMap<>();
         if (dependency != null) d.put(DETAILS_DEPENDENCY, dependency);
         if (path != null) d.put(DETAILS_PATH, path);

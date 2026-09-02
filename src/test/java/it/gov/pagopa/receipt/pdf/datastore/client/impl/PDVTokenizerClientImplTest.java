@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
+import java.net.http.HttpResponse;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
@@ -15,15 +16,19 @@ class PDVTokenizerClientImplTest {
 
     private HttpClient clientMock;
     private PDVTokenizerClient sut;
+    private HttpResponse<String> responseMock;
 
     @BeforeEach
     void setUp() {
         clientMock = mock(HttpClient.class);
         sut = spy(new PDVTokenizerClientImpl(clientMock));
+        responseMock = mock(HttpResponse.class);
     }
 
     @Test
     void searchTokenByPIISuccess() throws PDVTokenizerException, IOException, InterruptedException {
+        doReturn(responseMock).when(clientMock).send(any(), any());
+        doReturn(200).when(responseMock).statusCode();
         sut.searchTokenByPII(anyString());
 
         verify(clientMock).send(any(), any());
@@ -31,6 +36,8 @@ class PDVTokenizerClientImplTest {
 
     @Test
     void findPIIByTokenSuccess() throws PDVTokenizerException, IOException, InterruptedException {
+        doReturn(responseMock).when(clientMock).send(any(), any());
+        doReturn(200).when(responseMock).statusCode();
         sut.findPIIByToken(anyString());
 
         verify(clientMock).send(any(), any());
@@ -38,6 +45,8 @@ class PDVTokenizerClientImplTest {
 
     @Test
     void createTokenSuccess() throws PDVTokenizerException, IOException, InterruptedException {
+        doReturn(responseMock).when(clientMock).send(any(), any());
+        doReturn(201).when(responseMock).statusCode();
         sut.createToken(anyString());
 
         verify(clientMock).send(any(), any());

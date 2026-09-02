@@ -19,7 +19,6 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.cart.CartStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.CartReceiptError;
 import it.gov.pagopa.receipt.pdf.datastore.exception.CartConcurrentUpdateException;
 import it.gov.pagopa.receipt.pdf.datastore.exception.CartNotFoundException;
-import it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +26,11 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.DEP_COSMOS_CARTS;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.DETAILS_STATUS_CODE;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.logIoFailure;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.logIoSuccess;
 
 public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
 
@@ -91,24 +95,20 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
     @Override
     public CartForReceipt getCartItem(String cartId) throws CartNotFoundException {
         long start = System.currentTimeMillis();
-        Map<String, String> ids = LoggingUtils.ids(LoggingUtils.CART_ID, cartId);
         try {
             CartForReceipt cart = cartForReceiptContainer.readItem(cartId, new PartitionKey(cartId), CartForReceipt.class).getItem();
-            LoggingUtils.logIoSuccess(logger, "Found cart",
-                    LoggingUtils.DEP_COSMOS_CARTS, null, start, ids,
-                    Map.of(LoggingUtils.DETAILS_FOUND, true));
+            logIoSuccess(logger, "Found cart", DEP_COSMOS_CARTS, null, start, null);
             return cart;
         } catch (CosmosException e) {
             if (e.getStatusCode() == 404) {
-                LoggingUtils.logIoSuccess(logger, "Cart not found",
-                        LoggingUtils.DEP_COSMOS_CARTS, null, start, ids,
-                        Map.of(LoggingUtils.DETAILS_FOUND, false,
-                                LoggingUtils.DETAILS_STATUS_CODE, 404));
+                logIoSuccess(logger, "Cart not found",
+                        DEP_COSMOS_CARTS, null, start,
+                        Map.of(DETAILS_STATUS_CODE, 404));
                 throw new CartNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG, e);
             }
-            LoggingUtils.logIoFailure(logger, "Error fetching cart",
-                    LoggingUtils.DEP_COSMOS_CARTS, null, start, e, ids,
-                    Map.of(LoggingUtils.DETAILS_STATUS_CODE, e.getStatusCode()));
+            logIoFailure(logger, "Error fetching cart",
+                    DEP_COSMOS_CARTS, null, start, e,
+                    Map.of(DETAILS_STATUS_CODE, e.getStatusCode()));
             throw e;
         }
     }
@@ -119,22 +119,19 @@ public class CartReceiptsCosmosClientImpl implements CartReceiptsCosmosClient {
     @Override
     public CosmosItemResponse<CartForReceipt> updateCart(CartForReceipt receipt) throws CartConcurrentUpdateException {
         long start = System.currentTimeMillis();
-        Map<String, String> ids = LoggingUtils.ids(LoggingUtils.CART_ID, receipt != null ? receipt.getId() : null);
         try {
             CosmosItemResponse<CartForReceipt> resp = cartForReceiptContainer.upsertItem(receipt, new CosmosItemRequestOptions().setIfMatchETag(receipt.get_etag()));
-            LoggingUtils.logIoSuccess(logger, "Cart updated",
-                    LoggingUtils.DEP_COSMOS_CARTS, null, start, ids,
-                    Map.of(LoggingUtils.DETAILS_STATUS_CODE, resp.getStatusCode()));
+            logIoSuccess(logger, "Cart updated", DEP_COSMOS_CARTS, null, start, null);
             return resp;
         } catch (PreconditionFailedException e) {
             // ETag mismatch: optimistic-concurrency signal, expected outcome of the update milestone.
-            LoggingUtils.logIoSuccess(logger, "Cart update failed due to ETag mismatch",
-                    LoggingUtils.DEP_COSMOS_CARTS, null, start, ids,
-                    Map.of(LoggingUtils.DETAILS_STATUS_CODE, 412));
+            logIoSuccess(logger, "Cart update failed due to ETag mismatch",
+                    DEP_COSMOS_CARTS, null, start,
+                    Map.of(DETAILS_STATUS_CODE, 412));
             throw new CartConcurrentUpdateException("The cart has been updated since the last fetch", e);
         } catch (RuntimeException e) {
-            LoggingUtils.logIoFailure(logger, "Error updating cart",
-                    LoggingUtils.DEP_COSMOS_CARTS, null, start, e, ids, null);
+            logIoFailure(logger, "Error updating cart",
+                    DEP_COSMOS_CARTS, null, start, e, null);
             throw e;
         }
     }

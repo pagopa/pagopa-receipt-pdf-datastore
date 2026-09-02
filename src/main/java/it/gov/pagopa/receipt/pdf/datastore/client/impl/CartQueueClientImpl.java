@@ -5,13 +5,17 @@ import com.azure.storage.queue.QueueClient;
 import com.azure.storage.queue.QueueClientBuilder;
 import com.azure.storage.queue.models.SendMessageResult;
 import it.gov.pagopa.receipt.pdf.datastore.client.CartQueueClient;
-import it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
+
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.DEP_QUEUE_CARTS;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.DETAILS_STATUS_CODE;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.logIoFailure;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.logIoSuccess;
 
 /**
  * Client for the Queue
@@ -62,13 +66,13 @@ public class CartQueueClientImpl implements CartQueueClient {
             Response<SendMessageResult> resp = this.cartQueueClient.sendMessageWithResponse(
                     messageText, Duration.of(cartQueueDelay, ChronoUnit.SECONDS),
                     null, null, null);
-            LoggingUtils.logIoSuccess(logger, "Published cart for generation",
-                    LoggingUtils.DEP_QUEUE_CARTS, null, start,
-                    Map.of(LoggingUtils.DETAILS_STATUS_CODE, resp.getStatusCode()));
+            logIoSuccess(logger, "Published cart for generation",
+                    DEP_QUEUE_CARTS, null, start,
+                    Map.of(DETAILS_STATUS_CODE, resp.getStatusCode()));
             return resp;
         } catch (RuntimeException e) {
-            LoggingUtils.logIoFailure(logger, "Error publishing cart for generation",
-                    LoggingUtils.DEP_QUEUE_CARTS, null, start, e, null);
+            logIoFailure(logger, "Error publishing cart for generation",
+                    DEP_QUEUE_CARTS, null, start, e, null);
             throw e;
         }
     }
