@@ -6,12 +6,12 @@ import com.azure.storage.queue.QueueClientBuilder;
 import com.azure.storage.queue.models.SendMessageResult;
 import it.gov.pagopa.receipt.pdf.datastore.client.CartQueueClient;
 import it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils;
-import it.gov.pagopa.receipt.pdf.datastore.utils.PerfTracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.Map;
 
 /**
  * Client for the Queue
@@ -57,17 +57,19 @@ public class CartQueueClientImpl implements CartQueueClient {
      * @return response from the queue
      */
     public Response<SendMessageResult> sendMessageToQueue(String messageText) {
-        try (PerfTracer t = PerfTracer.start(logger, LoggingUtils.STEP_QUEUE_SEND_CART)) {
-            try {
-                Response<SendMessageResult> resp = this.cartQueueClient.sendMessageWithResponse(
-                        messageText, Duration.of(cartQueueDelay, ChronoUnit.SECONDS),
-                        null, null, null);
-                t.tag(LoggingUtils.TAG_STATUS_CODE, resp.getStatusCode());
-                return resp;
-            } catch (RuntimeException e) {
-                t.markFailure(e);
-                throw e;
-            }
+        long start = System.currentTimeMillis();
+        try {
+            Response<SendMessageResult> resp = this.cartQueueClient.sendMessageWithResponse(
+                    messageText, Duration.of(cartQueueDelay, ChronoUnit.SECONDS),
+                    null, null, null);
+            LoggingUtils.logIoSuccess(logger, "Published cart for generation",
+                    LoggingUtils.DEP_QUEUE_CARTS, null, start,
+                    Map.of(LoggingUtils.DETAILS_STATUS_CODE, resp.getStatusCode()));
+            return resp;
+        } catch (RuntimeException e) {
+            LoggingUtils.logIoFailure(logger, "Error publishing cart for generation",
+                    LoggingUtils.DEP_QUEUE_CARTS, null, start, e, null);
+            throw e;
         }
     }
 }

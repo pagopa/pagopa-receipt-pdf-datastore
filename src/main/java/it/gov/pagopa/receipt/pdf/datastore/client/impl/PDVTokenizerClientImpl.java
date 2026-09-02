@@ -4,7 +4,6 @@ import it.gov.pagopa.receipt.pdf.datastore.client.PDVTokenizerClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReasonErrorCode;
 import it.gov.pagopa.receipt.pdf.datastore.exception.PDVTokenizerException;
 import it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils;
-import it.gov.pagopa.receipt.pdf.datastore.utils.PerfTracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,6 +12,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Map;
 
 /**
  * {@inheritDoc}
@@ -66,7 +66,7 @@ public class PDVTokenizerClientImpl implements PDVTokenizerClient {
                 .POST(HttpRequest.BodyPublishers.ofString(piiBody))
                 .build();
 
-        return makeCall(request, LoggingUtils.STEP_PDV_SEARCH_TOKEN);
+        return makeCall(request, LoggingUtils.MSG_PDV_SEARCHED_TOKEN, LoggingUtils.PATH_PDV_SEARCH_TOKEN);
     }
 
     /**
@@ -83,7 +83,7 @@ public class PDVTokenizerClientImpl implements PDVTokenizerClient {
                 .header(SUBSCRIPTION_KEY_HEADER, SUBSCRIPTION_KEY)
                 .build();
 
-        return makeCall(request, LoggingUtils.STEP_PDV_FIND_PII);
+        return makeCall(request, LoggingUtils.MSG_PDV_FETCHED_PII, LoggingUtils.PATH_PDV_FIND_PII);
     }
 
     /**
@@ -100,24 +100,24 @@ public class PDVTokenizerClientImpl implements PDVTokenizerClient {
                 .PUT(HttpRequest.BodyPublishers.ofString(piiBody))
                 .build();
 
-        return makeCall(request, LoggingUtils.STEP_PDV_CREATE_TOKEN);
+        return makeCall(request, LoggingUtils.MSG_PDV_CREATED_TOKEN, LoggingUtils.PATH_PDV_CREATE_TOKEN);
     }
 
-    private HttpResponse<String> makeCall(HttpRequest request, String step) throws PDVTokenizerException {
-        try (PerfTracer t = PerfTracer.start(logger, step)) {
-            try {
-                HttpResponse<String> resp = client.send(request, HttpResponse.BodyHandlers.ofString());
-                t.tag(LoggingUtils.TAG_STATUS_CODE, resp.statusCode());
-                return resp;
-            } catch (IOException e) {
-                t.markFailure(e);
-                throw new PDVTokenizerException("I/O error when invoking PDV Tokenizer", ReasonErrorCode.ERROR_PDV_IO.getCode(), e);
-            } catch (InterruptedException e) {
-                t.markFailure(e);
-                logger.warn("This thread was interrupted, restoring the state");
-                Thread.currentThread().interrupt();
-                throw new PDVTokenizerException("Unexpected error when invoking PDV Tokenizer, the thread was interrupted", ReasonErrorCode.ERROR_PDV_UNEXPECTED.getCode(), e);
-            }
+    private HttpResponse<String> makeCall(HttpRequest request, String message, String path) throws PDVTokenizerException {
+        long start = System.currentTimeMillis();
+        try {
+            HttpResponse<String> resp = client.send(request, HttpResponse.BodyHandlers.ofString());
+            LoggingUtils.logIoSuccess(logger, message,
+                    LoggingUtils.DEP_PDV_TOKENIZER, path, start,
+                    Map.of(LoggingUtils.DETAILS_STATUS_CODE, resp.statusCode()));
+            return resp;
+        } catch (IOException e) {
+            LoggingUtils.logIoFailure(logger, "I/O error when invoking PDV Tokenizer", LoggingUtils.DEP_PDV_TOKENIZER, path, start, e, null);
+            throw new PDVTokenizerException("I/O error when invoking PDV Tokenizer", ReasonErrorCode.ERROR_PDV_IO.getCode(), e);
+        } catch (InterruptedException e) {
+            LoggingUtils.logIoFailure(logger, "Unexpected error when invoking PDV Tokenizer, the thread was interrupted", LoggingUtils.DEP_PDV_TOKENIZER, path, start, e, null);
+            Thread.currentThread().interrupt();
+            throw new PDVTokenizerException("Unexpected error when invoking PDV Tokenizer, the thread was interrupted", ReasonErrorCode.ERROR_PDV_UNEXPECTED.getCode(), e);
         }
     }
 }

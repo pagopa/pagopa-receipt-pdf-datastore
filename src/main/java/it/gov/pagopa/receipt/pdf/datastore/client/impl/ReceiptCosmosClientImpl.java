@@ -16,13 +16,14 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReceiptError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
 import it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils;
-import it.gov.pagopa.receipt.pdf.datastore.utils.PerfTracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -93,25 +94,18 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      */
     @Override
     public Receipt getReceiptDocument(String eventId) throws ReceiptNotFoundException {
-        try (PerfTracer t = PerfTracer.start(logger, LoggingUtils.STEP_COSMOS_GET_RECEIPT)) {
-            try {
-                Receipt receipt = receiptContainer.readItem(eventId, new PartitionKey(eventId), Receipt.class).getItem();
-                t.tag(LoggingUtils.TAG_FOUND, true);
-                return receipt;
-            } catch (CosmosException e) {
-                if (e.getStatusCode() != 404) {
-                    t.markFailure(e);
-                    throw e;
-                }
+        long start = System.currentTimeMillis();
+        Map<String, String> ids = Map.of(LoggingUtils.EVENT_ID, eventId);
+        Map<String, Object> extras = new LinkedHashMap<>();
+        try {
+            return getReceipt(eventId, start, ids, extras);
+        } catch (RuntimeException e) {
+            // fallback path threw an unexpected runtime error (Cosmos 5xx already handled above)
+            if (!(e instanceof CosmosException)) {
+                LoggingUtils.logIoFailure(logger, LoggingUtils.MSG_FETCHED_RECEIPT,
+                        LoggingUtils.DEP_COSMOS_RECEIPTS, null, start, e, ids, extras);
             }
-            // if not found use fallback query
-            SqlQuerySpec querySpec = new SqlQuerySpec(
-                    "SELECT * FROM c WHERE c.eventId = @eventId",
-                    List.of(new SqlParameter("@eventId", eventId))
-            );
-            Optional<Receipt> optionalReceipt = getDocumentByFilter(receiptContainer, querySpec, Receipt.class);
-            t.tag(LoggingUtils.TAG_FOUND, optionalReceipt.isPresent()).tag(LoggingUtils.TAG_FALLBACK, true);
-            return optionalReceipt.orElseThrow(() -> new ReceiptNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG));
+            throw e;
         }
     }
 
@@ -159,15 +153,18 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      */
     @Override
     public CosmosItemResponse<Receipt> saveReceipts(Receipt receipt) {
-        try (PerfTracer t = PerfTracer.start(logger, LoggingUtils.STEP_COSMOS_SAVE_RECEIPT)) {
-            try {
-                CosmosItemResponse<Receipt> resp = receiptContainer.createItem(receipt);
-                t.tag(LoggingUtils.TAG_STATUS_CODE, resp.getStatusCode());
-                return resp;
-            } catch (RuntimeException e) {
-                t.markFailure(e);
-                throw e;
-            }
+        long start = System.currentTimeMillis();
+        Map<String, String> ids = LoggingUtils.ids(LoggingUtils.EVENT_ID, receipt != null ? receipt.getEventId() : null);
+        try {
+            CosmosItemResponse<Receipt> resp = receiptContainer.createItem(receipt);
+            LoggingUtils.logIoSuccess(logger, "Receipt saved",
+                    LoggingUtils.DEP_COSMOS_RECEIPTS, null, start, ids,
+                    Map.of(LoggingUtils.DETAILS_STATUS_CODE, resp.getStatusCode()));
+            return resp;
+        } catch (RuntimeException e) {
+            LoggingUtils.logIoFailure(logger, "Error saving receipt",
+                    LoggingUtils.DEP_COSMOS_RECEIPTS, null, start, e, ids, null);
+            throw e;
         }
     }
 
@@ -176,15 +173,18 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      */
     @Override
     public CosmosItemResponse<Receipt> updateReceipts(Receipt receipt) {
-        try (PerfTracer t = PerfTracer.start(logger, LoggingUtils.STEP_COSMOS_UPDATE_RECEIPT)) {
-            try {
-                CosmosItemResponse<Receipt> resp = receiptContainer.upsertItem(receipt);
-                t.tag(LoggingUtils.TAG_STATUS_CODE, resp.getStatusCode());
-                return resp;
-            } catch (RuntimeException e) {
-                t.markFailure(e);
-                throw e;
-            }
+        long start = System.currentTimeMillis();
+        Map<String, String> ids = LoggingUtils.ids(LoggingUtils.EVENT_ID, receipt != null ? receipt.getEventId() : null);
+        try {
+            CosmosItemResponse<Receipt> resp = receiptContainer.upsertItem(receipt);
+            LoggingUtils.logIoSuccess(logger, "Receipt updated",
+                    LoggingUtils.DEP_COSMOS_RECEIPTS, null, start, ids,
+                    Map.of(LoggingUtils.DETAILS_STATUS_CODE, resp.getStatusCode()));
+            return resp;
+        } catch (RuntimeException e) {
+            LoggingUtils.logIoFailure(logger, "Error updating receipt",
+                    LoggingUtils.DEP_COSMOS_RECEIPTS, null, start, e, ids, null);
+            throw e;
         }
     }
 
@@ -275,9 +275,36 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
         return executePagedQuery(querySpec, continuationToken, pageSize);
     }
 
-    /**
-     * PRIVATE METHODS
-     */
+    private Receipt getReceipt(
+            String eventId,
+            long start,
+            Map<String, String> ids,
+            Map<String, Object> extras
+    ) throws ReceiptNotFoundException {
+        try {
+            Receipt receipt = receiptContainer.readItem(eventId, new PartitionKey(eventId), Receipt.class).getItem();
+            LoggingUtils.logIoSuccess(logger, "Found Receipt with point read",
+                    LoggingUtils.DEP_COSMOS_RECEIPTS, null, start, ids, extras);
+            return receipt;
+        } catch (CosmosException e) {
+            if (e.getStatusCode() != 404) {
+                extras.put("Receipt not found with point read", e.getStatusCode());
+                LoggingUtils.logIoFailure(logger, LoggingUtils.MSG_FETCHED_RECEIPT,
+                        LoggingUtils.DEP_COSMOS_RECEIPTS, null, start, e, ids, extras);
+                throw e;
+            }
+        }
+        // fallback query when read-by-id returns 404
+        SqlQuerySpec querySpec = new SqlQuerySpec(
+                "SELECT * FROM c WHERE c.eventId = @eventId",
+                List.of(new SqlParameter("@eventId", eventId))
+        );
+        Optional<Receipt> optionalReceipt = getDocumentByFilter(receiptContainer, querySpec, Receipt.class);
+        extras.put(LoggingUtils.DETAILS_FALLBACK, true);
+        LoggingUtils.logIoSuccess(logger, "Found Receipt with query",
+                LoggingUtils.DEP_COSMOS_RECEIPTS, null, start, ids, extras);
+        return optionalReceipt.orElseThrow(() -> new ReceiptNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG));
+    }
 
     private <T> Optional<T> getDocumentByFilter(CosmosContainer container, SqlQuerySpec querySpec, Class<T> classType) {
         // use stream() to convert iterable and find first element

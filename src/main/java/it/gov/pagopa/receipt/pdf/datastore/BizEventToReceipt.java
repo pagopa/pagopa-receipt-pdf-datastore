@@ -95,7 +95,7 @@ public class BizEventToReceipt {
             final ExecutionContext context
     ) {
         final long batchStartMs = System.currentTimeMillis();
-        LoggingUtils.setCorrelationId(context.getInvocationId());
+        LoggingUtils.initInvocation(context.getInvocationId(), LoggingUtils.ACTION_BIZ_EVENT_TO_RECEIPT_PROCESSOR);
         try {
             List<Receipt> receiptFailed = new ArrayList<>();
             List<CartForReceipt> cartFailed = new ArrayList<>();
@@ -135,7 +135,7 @@ public class BizEventToReceipt {
                     System.currentTimeMillis() - batchStartMs,
                     triggerLag);
         } finally {
-            LoggingUtils.clearCorrelationId();
+            LoggingUtils.clearInvocation();
         }
     }
 
