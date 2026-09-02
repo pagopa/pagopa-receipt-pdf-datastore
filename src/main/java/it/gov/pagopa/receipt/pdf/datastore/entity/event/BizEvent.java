@@ -32,13 +32,7 @@ public class BizEvent {
     private Long timestamp;
     private Map<String, Object> properties;
 
-    /**
-     * Cosmos DB server-side timestamp (epoch seconds) of the biz-event document.
-     * Populated automatically by Cosmos when the item is written; used only to compute
-     * the change-feed trigger lag on the Function. Never re-serialized downstream.
-     */
-    @JsonProperty(value = "_ts", access = JsonProperty.Access.WRITE_ONLY)
-    private Long ts;
+    private Long _ts;
 
     // internal management field
     @Builder.Default
