@@ -162,7 +162,7 @@ public class BizEventToReceipt {
             }
 
             MDC.put(LoggingUtils.BIZ_EVENT_ID, bizEvent.getId());
-            triggerLag.track(bizEvent.getTs());
+            triggerLag.track(bizEvent.get_ts());
             logger.debug("[{}] function called at {} for event with id {} and status {}",
                     context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
 

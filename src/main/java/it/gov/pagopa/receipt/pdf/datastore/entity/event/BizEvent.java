@@ -1,7 +1,6 @@
 package it.gov.pagopa.receipt.pdf.datastore.entity.event;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.enumeration.BizEventStatusType;
 import lombok.*;
 
