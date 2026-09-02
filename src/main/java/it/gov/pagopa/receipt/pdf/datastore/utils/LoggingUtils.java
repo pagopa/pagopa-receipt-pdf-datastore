@@ -172,46 +172,6 @@ public final class LoggingUtils {
     }
 
     /**
-     * Emits the per-item milestone at the end of a single biz-event processing.
-     * Business ids ({@code biz_event.id}, {@code event.id} or {@code cart.id})
-     * are top-level MDC fields so they are indexed on ELK and can be searched /
-     * correlated across services; timings and status live under {@code ctx.details}.
-     *
-     * @param triggerLagMs delta between Cosmos {@code _ts} and the moment this item
-     *                     was picked up by the Function (may be {@code null} if unknown).
-     * @param e2eLagMs     delta between Cosmos {@code _ts} and the completion of the
-     *                     processing (may be {@code null} if unknown).
-     */
-    public static void logBizEventProcessed(
-            Logger logger,
-            String bizEventId,
-            String entityId,
-            ReceiptType receiptType,
-            String receiptStatus,
-            boolean success,
-            long processingMs,
-            Long triggerLagMs,
-            Long e2eLagMs
-    ) {
-        String entityKey = receiptType == ReceiptType.CART ? CART_ID : EVENT_ID;
-
-        Map<String, Object> details = new LinkedHashMap<>();
-        details.put(DETAILS_ITEM_TYPE, receiptType.name());
-        details.put(DETAILS_ITEM_STATUS, receiptStatus);
-        details.put(DETAILS_PROCESSING_MS, processingMs);
-        details.put(DETAILS_TRIGGER_LAG_MS, triggerLagMs);
-        details.put(DETAILS_E2E_LAG_MS, e2eLagMs);
-
-        Map<String, String> top = new LinkedHashMap<>();
-        top.put(EVENT_ACTION, ACTION_BIZ_EVENT_PROCESSING);
-        top.put(EVENT_OUTCOME, success ? OUTCOME_SUCCESS : OUTCOME_FAILURE);
-        if (bizEventId != null) top.put(BIZ_EVENT_ID, bizEventId);
-        if (entityId != null) top.put(entityKey, entityId);
-
-        emit(logger, MSG_BIZ_EVENT_PROCESSED, top, details);
-    }
-
-    /**
      * Common emitter: publishes {@code topFields} + {@code ctx.details} on MDC,
      * logs the given message at INFO, and cleans up MDC (leaving pre-existing
      * keys like {@link #CORRELATION_ID} untouched).
