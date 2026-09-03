@@ -61,18 +61,18 @@ public class CartQueueClientImpl implements CartQueueClient {
      * @return response from the queue
      */
     public Response<SendMessageResult> sendMessageToQueue(String messageText) {
-        long start = System.currentTimeMillis();
+        long startNanos = System.nanoTime();
         try {
             Response<SendMessageResult> resp = this.cartQueueClient.sendMessageWithResponse(
                     messageText, Duration.of(cartQueueDelay, ChronoUnit.SECONDS),
                     null, null, null);
             logIoSuccess(logger, "Published cart for generation",
-                    DEP_QUEUE_CARTS, null, start,
+                    DEP_QUEUE_CARTS, null, startNanos,
                     Map.of(DETAILS_STATUS_CODE, resp.getStatusCode()));
             return resp;
         } catch (RuntimeException e) {
             logIoFailure(logger, "Error publishing cart for generation",
-                    DEP_QUEUE_CARTS, null, start, e, null);
+                    DEP_QUEUE_CARTS, null, startNanos, e, null);
             throw e;
         }
     }

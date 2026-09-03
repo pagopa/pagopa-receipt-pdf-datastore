@@ -95,7 +95,7 @@ public class BizEventToReceipt {
             OutputBinding<List<CartForReceipt>> cartDocumentdb,
             final ExecutionContext context
     ) {
-        final long batchStartMs = System.currentTimeMillis();
+        final long batchStartNanos = System.nanoTime();
         LoggingUtils.initInvocation(context.getInvocationId(), LoggingUtils.ACTION_BIZ_EVENT_TO_RECEIPT_PROCESSOR);
         try {
             List<Receipt> receiptFailed = new ArrayList<>();
@@ -133,7 +133,7 @@ public class BizEventToReceipt {
                     discarded,
                     receiptFailed.size(),
                     cartFailed.size(),
-                    System.currentTimeMillis() - batchStartMs,
+                    batchStartNanos,
                     triggerLag);
         } finally {
             LoggingUtils.clearInvocation();

@@ -61,18 +61,18 @@ public class ReceiptQueueClientImpl implements ReceiptQueueClient {
      * @return response from the queue
      */
     public Response<SendMessageResult> sendMessageToQueue(String messageText) {
-        long start = System.currentTimeMillis();
+        long startNanos = System.nanoTime();
         try {
             Response<SendMessageResult> resp = this.queueClient.sendMessageWithResponse(
                     messageText, Duration.of(receiptQueueDelay, ChronoUnit.SECONDS),
                     null, null, null);
             logIoSuccess(logger, "Published receipt for generation",
-                    DEP_QUEUE_RECEIPTS, null, start,
+                    DEP_QUEUE_RECEIPTS, null, startNanos,
                     Map.of(DETAILS_STATUS_CODE, resp.getStatusCode()));
             return resp;
         } catch (RuntimeException e) {
             logIoFailure(logger, "Error publishing receipt for generation",
-                    DEP_QUEUE_RECEIPTS, null, start, e, null);
+                    DEP_QUEUE_RECEIPTS, null, startNanos, e, null);
             throw e;
         }
     }

@@ -99,15 +99,15 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      */
     @Override
     public Receipt getReceiptDocument(String eventId) throws ReceiptNotFoundException {
-        long start = System.currentTimeMillis();
+        long startNanos = System.nanoTime();
         try {
             Receipt receipt = receiptContainer.readItem(eventId, new PartitionKey(eventId), Receipt.class).getItem();
-            logIoSuccess(logger, "Found Receipt with point read", DEP_COSMOS_RECEIPTS, null, start, null);
+            logIoSuccess(logger, "Found Receipt with point read", DEP_COSMOS_RECEIPTS, null, startNanos, null);
             return receipt;
         } catch (CosmosException e) {
             if (e.getStatusCode() != 404) {
                 logIoFailure(logger, MSG_FETCHED_RECEIPT,
-                        DEP_COSMOS_RECEIPTS, null, start, e, Map.of(DETAILS_STATUS_CODE, e.getStatusCode()));
+                        DEP_COSMOS_RECEIPTS, null, startNanos, e, Map.of(DETAILS_STATUS_CODE, e.getStatusCode()));
                 throw e;
             }
         }
@@ -118,7 +118,7 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
         );
         Optional<Receipt> optionalReceipt = getDocumentByFilter(receiptContainer, querySpec, Receipt.class);
         logIoSuccess(logger, "Found Receipt with query",
-                DEP_COSMOS_RECEIPTS, null, start, Map.of(DETAILS_FALLBACK, true));
+                DEP_COSMOS_RECEIPTS, null, startNanos, Map.of(DETAILS_FALLBACK, true));
         return optionalReceipt.orElseThrow(() -> new ReceiptNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG));
     }
 
@@ -166,13 +166,13 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      */
     @Override
     public CosmosItemResponse<Receipt> saveReceipts(Receipt receipt) {
-        long start = System.currentTimeMillis();
+        long startNanos = System.nanoTime();
         try {
             CosmosItemResponse<Receipt> resp = receiptContainer.createItem(receipt);
-            logIoSuccess(logger, "Receipt saved", DEP_COSMOS_RECEIPTS, null, start, null);
+            logIoSuccess(logger, "Receipt saved", DEP_COSMOS_RECEIPTS, null, startNanos, null);
             return resp;
         } catch (RuntimeException e) {
-            logIoFailure(logger, "Error saving receipt", DEP_COSMOS_RECEIPTS, null, start, e, null);
+            logIoFailure(logger, "Error saving receipt", DEP_COSMOS_RECEIPTS, null, startNanos, e, null);
             throw e;
         }
     }
@@ -182,13 +182,13 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      */
     @Override
     public CosmosItemResponse<Receipt> updateReceipts(Receipt receipt) {
-        long start = System.currentTimeMillis();
+        long startNanos = System.nanoTime();
         try {
             CosmosItemResponse<Receipt> resp = receiptContainer.upsertItem(receipt);
-            logIoSuccess(logger, "Receipt updated", DEP_COSMOS_RECEIPTS, null, start, null);
+            logIoSuccess(logger, "Receipt updated", DEP_COSMOS_RECEIPTS, null, startNanos, null);
             return resp;
         } catch (RuntimeException e) {
-            logIoFailure(logger, "Error updating receipt", DEP_COSMOS_RECEIPTS, null, start, e, null);
+            logIoFailure(logger, "Error updating receipt", DEP_COSMOS_RECEIPTS, null, startNanos, e, null);
             throw e;
         }
     }

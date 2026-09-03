@@ -130,9 +130,10 @@ public final class LoggingUtils {
             int discarded,
             int receiptFailed,
             int cartFailed,
-            long batchDurationMs,
+            long batchStartNanos,
             TriggerLagStats triggerLag
     ) {
+        long batchDurationMs = elapsedMs(batchStartNanos);
         boolean success = receiptFailed == 0 && cartFailed == 0;
         Map<String, Object> details = new LinkedHashMap<>();
         details.put(DETAILS_BATCH_SIZE, batchSize);
@@ -161,7 +162,9 @@ public final class LoggingUtils {
      * @param message      static message describing the completed action (past tense).
      * @param dependency   logical name of the downstream system (e.g. {@code cosmos-receipts}).
      * @param path         endpoint / container / queue identifier.
-     * @param startMs      value returned by {@link System#currentTimeMillis()} before the I/O.
+     * @param startNanos   value returned by {@link System#nanoTime()} before the I/O.
+     *                     {@code nanoTime()} is monotonic and the only reliable
+     *                     source for measuring elapsed time.
      * @param extraDetails optional per-call fields merged into {@code ctx.details} (nullable).
      */
     public static void logIoSuccess(
@@ -169,10 +172,10 @@ public final class LoggingUtils {
             String message,
             String dependency,
             String path,
-            long startMs,
+            long startNanos,
             Map<String, Object> extraDetails
     ) {
-        Map<String, Object> details = ioDetails(dependency, path, System.currentTimeMillis() - startMs, extraDetails);
+        Map<String, Object> details = ioDetails(dependency, path, elapsedMs(startNanos), extraDetails);
         Map<String, String> top = new LinkedHashMap<>();
         top.put(EVENT_OUTCOME, OUTCOME_SUCCESS);
         emit(logger, message, top, details, null);
@@ -182,17 +185,19 @@ public final class LoggingUtils {
      * Milestone for a failed I/O interaction. Emits a single ERROR log with
      * {@code event.outcome=failure}, {@code error.type}, {@code error.message}
      * and stack trace populated by the ECS encoder from {@code error}.
+     *
+     * @param startNanos value returned by {@link System#nanoTime()} before the I/O.
      */
     public static void logIoFailure(
             Logger logger,
             String message,
             String dependency,
             String path,
-            Long startMs,
+            long startNanos,
             Throwable error,
             Map<String, Object> extraDetails
     ) {
-        Map<String, Object> details = ioDetails(dependency, path, startMs, extraDetails);
+        Map<String, Object> details = ioDetails(dependency, path, elapsedMs(startNanos), extraDetails);
         Map<String, String> top = new LinkedHashMap<>();
         top.put(EVENT_OUTCOME, OUTCOME_FAILURE);
         emit(logger, message, top, details, error);
@@ -200,16 +205,23 @@ public final class LoggingUtils {
 
     // --- internals ------------------------------------------------------------------------------
 
+    /**
+     * Converts a {@link System#nanoTime()} start marker into elapsed milliseconds.
+     */
+    private static long elapsedMs(long startNanos) {
+        return (System.nanoTime() - startNanos) / 1_000_000L;
+    }
+
     private static Map<String, Object> ioDetails(
             String dependency,
             String path,
-            Long startMs,
+            long durationMs,
             Map<String, Object> extra
     ) {
         Map<String, Object> d = new LinkedHashMap<>();
         if (dependency != null) d.put(DETAILS_DEPENDENCY, dependency);
         if (path != null) d.put(DETAILS_PATH, path);
-        if (startMs != null) d.put(DETAILS_DURATION_MS, System.currentTimeMillis() - startMs);
+        d.put(DETAILS_DURATION_MS, durationMs);
         if (extra != null) d.putAll(extra);
         return d;
     }

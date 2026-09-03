@@ -76,20 +76,20 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
      */
     @Override
     public BizEvent getBizEventDocument(String bizEventId) throws BizEventNotFoundException {
-        long start = System.currentTimeMillis();
+        long startNanos = System.nanoTime();
         try {
             BizEvent bizEvent = bizEventContainer.readItem(bizEventId, new PartitionKey(bizEventId), BizEvent.class).getItem();
-            logIoSuccess(logger, "Found Biz Event", DEP_COSMOS_BIZ_EVENTS, null, start, null);
+            logIoSuccess(logger, "Found Biz Event", DEP_COSMOS_BIZ_EVENTS, null, startNanos, null);
             return bizEvent;
         } catch (CosmosException e) {
             if (e.getStatusCode() == 404) {
                 logIoSuccess(logger, "Biz Event not found",
-                        DEP_COSMOS_BIZ_EVENTS, null, start,
+                        DEP_COSMOS_BIZ_EVENTS, null, startNanos,
                         Map.of(DETAILS_STATUS_CODE, 404));
                 throw new BizEventNotFoundException("Document not found in the defined container", e);
             }
             logIoFailure(logger, "Error fetching Biz Event",
-                    DEP_COSMOS_BIZ_EVENTS, null, start, e,
+                    DEP_COSMOS_BIZ_EVENTS, null, startNanos, e,
                     Map.of(DETAILS_STATUS_CODE, e.getStatusCode()));
             throw e;
         }
@@ -100,7 +100,7 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
      */
     @Override
     public List<BizEvent> getAllCartBizEventDocument(String transactionId) {
-        long start = System.currentTimeMillis();
+        long startNanos = System.nanoTime();
         try {
             SqlQuerySpec querySpec = new SqlQuerySpec(
                     "SELECT * FROM c WHERE c.transactionDetails.transaction.transactionId = @transactionId",
@@ -111,12 +111,12 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
                     .stream().limit(6)
                     .toList();
             logIoSuccess(logger, "Cart Biz Events fetched",
-                    DEP_COSMOS_BIZ_EVENTS, null, start,
+                    DEP_COSMOS_BIZ_EVENTS, null, startNanos,
                     Map.of(DETAILS_RESULT_COUNT, results.size()));
             return results;
         } catch (RuntimeException e) {
             logIoFailure(logger, "Error fetching cart Biz Events",
-                    DEP_COSMOS_BIZ_EVENTS, null, start, e, null);
+                    DEP_COSMOS_BIZ_EVENTS, null, startNanos, e, null);
             throw e;
         }
     }
