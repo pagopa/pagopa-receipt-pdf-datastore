@@ -67,7 +67,7 @@ public class PDVTokenizerClientImpl implements PDVTokenizerClient {
                 .POST(HttpRequest.BodyPublishers.ofString(piiBody))
                 .build();
 
-        return makeCall(request, MSG_PDV_SEARCHED_TOKEN, PATH_PDV_SEARCH_TOKEN);
+        return makeCall(request, MSG_PDV_SEARCHED_TOKEN, SEARCH_TOKEN_ENDPOINT);
     }
 
     /**
@@ -84,7 +84,7 @@ public class PDVTokenizerClientImpl implements PDVTokenizerClient {
                 .header(SUBSCRIPTION_KEY_HEADER, SUBSCRIPTION_KEY)
                 .build();
 
-        return makeCall(request, MSG_PDV_FETCHED_PII, PATH_PDV_FIND_PII);
+        return makeCall(request, MSG_PDV_FETCHED_PII, FIND_PII_ENDPOINT);
     }
 
     /**
@@ -101,7 +101,7 @@ public class PDVTokenizerClientImpl implements PDVTokenizerClient {
                 .PUT(HttpRequest.BodyPublishers.ofString(piiBody))
                 .build();
 
-        return makeCall(request, MSG_PDV_CREATED_TOKEN, PATH_PDV_CREATE_TOKEN);
+        return makeCall(request, MSG_PDV_CREATED_TOKEN, CREATE_TOKEN_ENDPOINT);
     }
 
     private HttpResponse<String> makeCall(

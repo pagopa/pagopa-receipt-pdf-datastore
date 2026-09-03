@@ -82,11 +82,6 @@ public final class LoggingUtils {
     public static final String DEP_QUEUE_CARTS = "storage-queue-carts";
     public static final String DEP_PDV_TOKENIZER = "pdv-tokenizer";
 
-    // --- endpoint / container paths (ctx.details.path) ------------------------------------------
-    public static final String PATH_PDV_SEARCH_TOKEN = "/tokens/search";
-    public static final String PATH_PDV_FIND_PII = "/tokens/{token}/pii";
-    public static final String PATH_PDV_CREATE_TOKEN = "/tokens";
-
     private static final ObjectMapper JSON = new ObjectMapper();
 
     private LoggingUtils() {
