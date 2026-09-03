@@ -157,11 +157,12 @@ public class BizEventToReceipt {
           - already processed
          */
         try {
+            MDC.put(LoggingUtils.BIZ_EVENT_ID, bizEvent != null ? bizEvent.getId() : null);
             if (isInvalid(bizEvent) || isBizEventAlreadyProcessed(context, bizEvent)) {
                 return ItemOutcome.DISCARDED;
             }
 
-            MDC.put(LoggingUtils.BIZ_EVENT_ID, bizEvent.getId());
+            assert bizEvent != null;
             triggerLag.track(bizEvent.get_ts());
             logger.debug("[{}] function called at {} for event with id {} and status {}",
                     context.getFunctionName(), LocalDateTime.now(), bizEvent.getId(), bizEvent.getEventStatus());
@@ -248,26 +249,33 @@ public class BizEventToReceipt {
 
     private boolean isBizEventAlreadyProcessed(ExecutionContext context, BizEvent bizEvent) {
         Integer totalNotice = getTotalNotice(bizEvent);
+        String bizEventId = bizEvent.getId();
         if (totalNotice == 1) {
             try {
-                Receipt receipt = this.bizEventToReceiptService.getReceipt(bizEvent.getId());
+                MDC.put(LoggingUtils.EVENT_ID, bizEventId);
+                Receipt receipt = this.bizEventToReceiptService.getReceipt(bizEventId);
                 logger.debug("[{}] event with id {} discarded because already p, receipt already exist with id {}",
-                        context.getFunctionName(), bizEvent.getId(), receipt.getId());
+                        context.getFunctionName(), bizEventId, receipt.getId());
                 return true;
             } catch (ReceiptNotFoundException ignored) {
                 // the receipt does not exist
+            } finally {
+                MDC.remove(LoggingUtils.EVENT_ID);
             }
         } else {
             String transactionId = bizEvent.getTransactionDetails().getTransaction().getTransactionId();
             try {
+                MDC.put(LoggingUtils.CART_ID, transactionId);
                 CartForReceipt cart = this.bizEventToReceiptService.getCartForReceipt(transactionId);
-                if (isBizEventInCart(cart, bizEvent.getId())) {
+                if (isBizEventInCart(cart, bizEventId)) {
                     logger.debug("[{}] event with id {} discarded because already p, cart-for-receipts already exist with id {}",
-                            context.getFunctionName(), bizEvent.getId(), transactionId);
+                            context.getFunctionName(), bizEventId, transactionId);
                     return true;
                 }
             } catch (CartNotFoundException ignored) {
                 // the cart does not exist
+            } finally {
+                MDC.remove(LoggingUtils.CART_ID);
             }
         }
         return false;
