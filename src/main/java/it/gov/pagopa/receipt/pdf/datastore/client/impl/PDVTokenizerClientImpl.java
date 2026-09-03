@@ -11,6 +11,9 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Map;
+
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.*;
 
 /**
  * {@inheritDoc}
@@ -64,7 +67,7 @@ public class PDVTokenizerClientImpl implements PDVTokenizerClient {
                 .POST(HttpRequest.BodyPublishers.ofString(piiBody))
                 .build();
 
-        return makeCall(request);
+        return makeCall(request, MSG_PDV_SEARCHED_TOKEN, SEARCH_TOKEN_ENDPOINT);
     }
 
     /**
@@ -81,7 +84,7 @@ public class PDVTokenizerClientImpl implements PDVTokenizerClient {
                 .header(SUBSCRIPTION_KEY_HEADER, SUBSCRIPTION_KEY)
                 .build();
 
-        return makeCall(request);
+        return makeCall(request, MSG_PDV_FETCHED_PII, FIND_PII_ENDPOINT);
     }
 
     /**
@@ -98,16 +101,26 @@ public class PDVTokenizerClientImpl implements PDVTokenizerClient {
                 .PUT(HttpRequest.BodyPublishers.ofString(piiBody))
                 .build();
 
-        return makeCall(request);
+        return makeCall(request, MSG_PDV_CREATED_TOKEN, CREATE_TOKEN_ENDPOINT);
     }
 
-    private HttpResponse<String> makeCall(HttpRequest request) throws PDVTokenizerException {
+    private HttpResponse<String> makeCall(
+            HttpRequest request,
+            String message,
+            String path
+    ) throws PDVTokenizerException {
+        long startNanos = System.nanoTime();
         try {
-            return client.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> resp = client.send(request, HttpResponse.BodyHandlers.ofString());
+            logIoSuccess(logger, message,
+                    DEP_PDV_TOKENIZER, path, startNanos,
+                    Map.of(DETAILS_STATUS_CODE, resp.statusCode()));
+            return resp;
         } catch (IOException e) {
+            logIoFailure(logger, "I/O error when invoking PDV Tokenizer", DEP_PDV_TOKENIZER, path, startNanos, e, null);
             throw new PDVTokenizerException("I/O error when invoking PDV Tokenizer", ReasonErrorCode.ERROR_PDV_IO.getCode(), e);
         } catch (InterruptedException e) {
-            logger.warn("This thread was interrupted, restoring the state");
+            logIoFailure(logger, "Unexpected error when invoking PDV Tokenizer, the thread was interrupted", DEP_PDV_TOKENIZER, path, startNanos, e, null);
             Thread.currentThread().interrupt();
             throw new PDVTokenizerException("Unexpected error when invoking PDV Tokenizer, the thread was interrupted", ReasonErrorCode.ERROR_PDV_UNEXPECTED.getCode(), e);
         }

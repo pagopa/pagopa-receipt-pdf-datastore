@@ -15,16 +15,28 @@ import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.Receipt;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.ReceiptError;
 import it.gov.pagopa.receipt.pdf.datastore.entity.receipt.enumeration.ReceiptStatusType;
 import it.gov.pagopa.receipt.pdf.datastore.exception.ReceiptNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.DEP_COSMOS_RECEIPTS;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.DETAILS_FALLBACK;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.DETAILS_STATUS_CODE;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.MSG_FETCHED_RECEIPT;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.logIoFailure;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.logIoSuccess;
 
 /**
  * Client for the CosmosDB database
  */
 public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
+
+    private final Logger logger = LoggerFactory.getLogger(ReceiptCosmosClientImpl.class);
 
     private static final String DOCUMENT_NOT_FOUND_ERR_MSG = "Document not found in the defined container";
 
@@ -87,22 +99,27 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      */
     @Override
     public Receipt getReceiptDocument(String eventId) throws ReceiptNotFoundException {
+        long startNanos = System.nanoTime();
         try {
-            return receiptContainer.readItem(eventId, new PartitionKey(eventId), Receipt.class)
-                    .getItem();
+            Receipt receipt = receiptContainer.readItem(eventId, new PartitionKey(eventId), Receipt.class).getItem();
+            logIoSuccess(logger, "Found Receipt with point read", DEP_COSMOS_RECEIPTS, null, startNanos, null);
+            return receipt;
         } catch (CosmosException e) {
             if (e.getStatusCode() != 404) {
+                logIoFailure(logger, MSG_FETCHED_RECEIPT,
+                        DEP_COSMOS_RECEIPTS, null, startNanos, e, Map.of(DETAILS_STATUS_CODE, e.getStatusCode()));
                 throw e;
             }
         }
-        // if not found use fallback query
+        // fallback query when read-by-id returns 404
         SqlQuerySpec querySpec = new SqlQuerySpec(
                 "SELECT * FROM c WHERE c.eventId = @eventId",
                 List.of(new SqlParameter("@eventId", eventId))
         );
-
-        return getDocumentByFilter(receiptContainer, querySpec, Receipt.class)
-                .orElseThrow(() -> new ReceiptNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG));
+        Optional<Receipt> optionalReceipt = getDocumentByFilter(receiptContainer, querySpec, Receipt.class);
+        logIoSuccess(logger, "Found Receipt with query",
+                DEP_COSMOS_RECEIPTS, null, startNanos, Map.of(DETAILS_FALLBACK, true));
+        return optionalReceipt.orElseThrow(() -> new ReceiptNotFoundException(DOCUMENT_NOT_FOUND_ERR_MSG));
     }
 
     /**
@@ -149,7 +166,15 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      */
     @Override
     public CosmosItemResponse<Receipt> saveReceipts(Receipt receipt) {
-        return receiptContainer.createItem(receipt);
+        long startNanos = System.nanoTime();
+        try {
+            CosmosItemResponse<Receipt> resp = receiptContainer.createItem(receipt);
+            logIoSuccess(logger, "Receipt saved", DEP_COSMOS_RECEIPTS, null, startNanos, null);
+            return resp;
+        } catch (RuntimeException e) {
+            logIoFailure(logger, "Error saving receipt", DEP_COSMOS_RECEIPTS, null, startNanos, e, null);
+            throw e;
+        }
     }
 
     /**
@@ -157,7 +182,15 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
      */
     @Override
     public CosmosItemResponse<Receipt> updateReceipts(Receipt receipt) {
-        return receiptContainer.upsertItem(receipt);
+        long startNanos = System.nanoTime();
+        try {
+            CosmosItemResponse<Receipt> resp = receiptContainer.upsertItem(receipt);
+            logIoSuccess(logger, "Receipt updated", DEP_COSMOS_RECEIPTS, null, startNanos, null);
+            return resp;
+        } catch (RuntimeException e) {
+            logIoFailure(logger, "Error updating receipt", DEP_COSMOS_RECEIPTS, null, startNanos, e, null);
+            throw e;
+        }
     }
 
     /**
@@ -246,10 +279,6 @@ public class ReceiptCosmosClientImpl implements ReceiptCosmosClient {
 
         return executePagedQuery(querySpec, continuationToken, pageSize);
     }
-
-    /**
-     * PRIVATE METHODS
-     */
 
     private <T> Optional<T> getDocumentByFilter(CosmosContainer container, SqlQuerySpec querySpec, Class<T> classType) {
         // use stream() to convert iterable and find first element

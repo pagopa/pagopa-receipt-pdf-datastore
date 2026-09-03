@@ -5,14 +5,24 @@ import com.azure.storage.queue.QueueClient;
 import com.azure.storage.queue.QueueClientBuilder;
 import com.azure.storage.queue.models.SendMessageResult;
 import it.gov.pagopa.receipt.pdf.datastore.client.ReceiptQueueClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.Map;
+
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.DEP_QUEUE_RECEIPTS;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.DETAILS_STATUS_CODE;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.logIoFailure;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.logIoSuccess;
 
 /**
  * Client for the Queue
  */
 public class ReceiptQueueClientImpl implements ReceiptQueueClient {
+
+    private final Logger logger = LoggerFactory.getLogger(ReceiptQueueClientImpl.class);
 
     private final int receiptQueueDelay = Integer.parseInt(System.getenv().getOrDefault("RECEIPT_QUEUE_DELAY", "1"));
 
@@ -51,10 +61,19 @@ public class ReceiptQueueClientImpl implements ReceiptQueueClient {
      * @return response from the queue
      */
     public Response<SendMessageResult> sendMessageToQueue(String messageText) {
-
-        return this.queueClient.sendMessageWithResponse(
-                messageText, Duration.of(receiptQueueDelay, ChronoUnit.SECONDS),
-                null, null, null);
-
+        long startNanos = System.nanoTime();
+        try {
+            Response<SendMessageResult> resp = this.queueClient.sendMessageWithResponse(
+                    messageText, Duration.of(receiptQueueDelay, ChronoUnit.SECONDS),
+                    null, null, null);
+            logIoSuccess(logger, "Published receipt for generation",
+                    DEP_QUEUE_RECEIPTS, null, startNanos,
+                    Map.of(DETAILS_STATUS_CODE, resp.getStatusCode()));
+            return resp;
+        } catch (RuntimeException e) {
+            logIoFailure(logger, "Error publishing receipt for generation",
+                    DEP_QUEUE_RECEIPTS, null, startNanos, e, null);
+            throw e;
+        }
     }
 }

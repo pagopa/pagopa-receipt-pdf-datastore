@@ -31,6 +31,8 @@ public class BizEvent {
     private Long timestamp;
     private Map<String, Object> properties;
 
+    private Long _ts;
+
     // internal management field
     @Builder.Default
     private BizEventStatusType eventStatus = BizEventStatusType.NA;

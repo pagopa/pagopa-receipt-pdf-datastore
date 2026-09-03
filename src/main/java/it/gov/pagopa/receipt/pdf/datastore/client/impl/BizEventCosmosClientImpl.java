@@ -11,13 +11,24 @@ import com.azure.cosmos.models.SqlQuerySpec;
 import it.gov.pagopa.receipt.pdf.datastore.client.BizEventCosmosClient;
 import it.gov.pagopa.receipt.pdf.datastore.entity.event.BizEvent;
 import it.gov.pagopa.receipt.pdf.datastore.exception.BizEventNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
+
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.DEP_COSMOS_BIZ_EVENTS;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.DETAILS_RESULT_COUNT;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.DETAILS_STATUS_CODE;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.logIoFailure;
+import static it.gov.pagopa.receipt.pdf.datastore.utils.LoggingUtils.logIoSuccess;
 
 /**
  * Client for the CosmosDB database
  */
 public class BizEventCosmosClientImpl implements BizEventCosmosClient {
+
+    private final Logger logger = LoggerFactory.getLogger(BizEventCosmosClientImpl.class);
 
     private final CosmosContainer bizEventContainer;
 
@@ -65,13 +76,22 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
      */
     @Override
     public BizEvent getBizEventDocument(String bizEventId) throws BizEventNotFoundException {
+        long startNanos = System.nanoTime();
         try {
-            return bizEventContainer.readItem(bizEventId, new PartitionKey(bizEventId), BizEvent.class).getItem();
+            BizEvent bizEvent = bizEventContainer.readItem(bizEventId, new PartitionKey(bizEventId), BizEvent.class).getItem();
+            logIoSuccess(logger, "Found Biz Event", DEP_COSMOS_BIZ_EVENTS, null, startNanos, null);
+            return bizEvent;
         } catch (CosmosException e) {
-            if (e.getStatusCode() != 404) {
-                throw e;
+            if (e.getStatusCode() == 404) {
+                logIoSuccess(logger, "Biz Event not found",
+                        DEP_COSMOS_BIZ_EVENTS, null, startNanos,
+                        Map.of(DETAILS_STATUS_CODE, 404));
+                throw new BizEventNotFoundException("Document not found in the defined container", e);
             }
-            throw new BizEventNotFoundException("Document not found in the defined container", e);
+            logIoFailure(logger, "Error fetching Biz Event",
+                    DEP_COSMOS_BIZ_EVENTS, null, startNanos, e,
+                    Map.of(DETAILS_STATUS_CODE, e.getStatusCode()));
+            throw e;
         }
     }
 
@@ -80,16 +100,24 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
      */
     @Override
     public List<BizEvent> getAllCartBizEventDocument(String transactionId) {
-        //Build query
-        SqlQuerySpec querySpec = new SqlQuerySpec(
-                "SELECT * FROM c WHERE c.transactionDetails.transaction.transactionId = @transactionId",
-                List.of(new SqlParameter("@transactionId", transactionId))
-        );
-
-        //Query the container
-        return bizEventContainer
-                .queryItems(querySpec, new CosmosQueryRequestOptions(), BizEvent.class)
-                .stream().limit(6)
-                .toList();
+        long startNanos = System.nanoTime();
+        try {
+            SqlQuerySpec querySpec = new SqlQuerySpec(
+                    "SELECT * FROM c WHERE c.transactionDetails.transaction.transactionId = @transactionId",
+                    List.of(new SqlParameter("@transactionId", transactionId))
+            );
+            List<BizEvent> results = bizEventContainer
+                    .queryItems(querySpec, new CosmosQueryRequestOptions(), BizEvent.class)
+                    .stream().limit(6)
+                    .toList();
+            logIoSuccess(logger, "Cart Biz Events fetched",
+                    DEP_COSMOS_BIZ_EVENTS, null, startNanos,
+                    Map.of(DETAILS_RESULT_COUNT, results.size()));
+            return results;
+        } catch (RuntimeException e) {
+            logIoFailure(logger, "Error fetching cart Biz Events",
+                    DEP_COSMOS_BIZ_EVENTS, null, startNanos, e, null);
+            throw e;
+        }
     }
 }
