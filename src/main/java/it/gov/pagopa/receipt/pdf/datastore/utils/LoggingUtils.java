@@ -17,29 +17,29 @@ import java.util.Map;
  *
  * <p>All milestone data is emitted through {@link MDC}.
  *
- * <p>Top-level ECS attributes (e.g. {@code event.action}, {@code event.outcome},
- * business ids like {@code biz_event.id}) are set as individual MDC entries.
- * Volatile per-log details live under a single MDC key {@code ctx.details}
+ * <p>Top-level ECS attributes (e.g. {@code event_action}, {@code event_outcome},
+ * business ids like {@code biz_event_id}) are set as individual MDC entries.
+ * Volatile per-log details live under a single MDC key {@code ctx_details}
  * whose value is a JSON-serialized map.
  */
 public final class LoggingUtils {
 
     // --- MDC / ECS top-level keys ---------------------------------------------------------------
 
-    public static final String CORRELATION_ID = "correlation.id";
-    public static final String EVENT_ACTION = "event.action";
-    public static final String EVENT_OUTCOME = "event.outcome";
+    public static final String CORRELATION_ID = "correlation_id";
+    public static final String EVENT_ACTION = "event_action";
+    public static final String EVENT_OUTCOME = "event_outcome";
     public static final String OUTCOME_SUCCESS = "success";
     public static final String OUTCOME_FAILURE = "failure";
 
-    public static final String BIZ_EVENT_ID = "biz_event.id";
-    public static final String CART_ID = "cart.id";
-    public static final String EVENT_ID = "event.id";
+    public static final String BIZ_EVENT_ID = "biz_event_id";
+    public static final String CART_ID = "cart_id";
+    public static final String EVENT_ID = "event_id";
 
     /**
-     * MDC key that holds the JSON-serialized {@code ctx.details} map.
+     * MDC key that holds the JSON-serialized {@code ctx_details} map.
      */
-    public static final String CTX = "ctx.";
+    public static final String CTX = "ctx_";
     public static final String CTX_DETAILS = CTX + "details";
 
     // --- ctx.details inner keys -----------------------------------------------------------------
@@ -136,11 +136,9 @@ public final class LoggingUtils {
         details.put(DETAILS_DISCARDED, discarded);
         details.put(DETAILS_RECEIPT_FAILED, receiptFailed);
         details.put(DETAILS_CART_FAILED, cartFailed);
-        details.put(DETAILS_BATCH_DURATION_MS, batchDurationMs);
         details.put(DETAILS_TRIGGER_LAG_MIN_MS, triggerLag.min());
         details.put(DETAILS_TRIGGER_LAG_AVG_MS, triggerLag.avg());
         details.put(DETAILS_TRIGGER_LAG_MAX_MS, triggerLag.max());
-        details.put(DETAILS_TRIGGER_LAG_P95_MS, triggerLag.p95());
 
         Map<String, String> top = new LinkedHashMap<>();
         top.put(EVENT_OUTCOME, success ? OUTCOME_SUCCESS : OUTCOME_FAILURE);
@@ -160,7 +158,7 @@ public final class LoggingUtils {
      * @param startNanos   value returned by {@link System#nanoTime()} before the I/O.
      *                     {@code nanoTime()} is monotonic and the only reliable
      *                     source for measuring elapsed time.
-     * @param extraDetails optional per-call fields merged into {@code ctx.details} (nullable).
+     * @param extraDetails optional per-call fields merged into {@code ctx_details} (nullable).
      */
     public static void logIoSuccess(
             Logger logger,
@@ -178,8 +176,7 @@ public final class LoggingUtils {
 
     /**
      * Milestone for a failed I/O interaction. Emits a single ERROR log with
-     * {@code event.outcome=failure}, {@code error.type}, {@code error.message}
-     * and stack trace populated by the ECS encoder from {@code error}.
+     * {@code event.outcome=failure}.
      *
      * @param startNanos value returned by {@link System#nanoTime()} before the I/O.
      */
@@ -222,7 +219,7 @@ public final class LoggingUtils {
     }
 
     /**
-     * Serializes the given map as a JSON string suitable for the {@code ctx.details}
+     * Serializes the given map as a JSON string suitable for the {@code ctx_details}
      * MDC value. Never throws: on serialization error falls back to
      * {@code map.toString()}.
      */
@@ -235,7 +232,7 @@ public final class LoggingUtils {
     }
 
     /**
-     * Common emitter: publishes {@code topFields} + {@code ctx.details} on MDC,
+     * Common emitter: publishes {@code topFields} + {@code ctx_details} on MDC,
      * logs the given message and cleans up MDC (leaving invocation-scoped keys
      * untouched). Uses INFO when {@code error == null}, ERROR otherwise.
      */
